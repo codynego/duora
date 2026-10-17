@@ -3,5 +3,5 @@ import { getRoom } from '@/lib/duora-api';
 
 export default async function RoomPage({ params }: { params: { roomId: string } }) {
   const room = await getRoom(params.roomId);
-  return <RoomExperience roomId={room?.id ?? ''} roomCode={params.roomId} roomName={room?.title ?? 'Connection Room'} />;
+  return <RoomExperience roomId={room?.id ?? ''} roomCode={params.roomId} roomName={room?.title ?? 'Connection Room'} mode={room?.mode ?? 'talk'} />;
 }

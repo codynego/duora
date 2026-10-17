@@ -13,6 +13,17 @@ PRIVATE_EXPERIENCES = {
     'better-question': ('The Better Question', 'Prompts that take the pressure off the first real conversation.', 15, 4),
     'make-a-plan': ('Make a Plan', 'Turn shared taste into something you could actually do together.', 10, 2),
     'truth-or-dare': ('Truth or Dare', 'A playful prompt-led room for people ready to be a little more open.', 12, 6),
+    'first-spark': ('First Spark', 'Playful prompts that make early chemistry feel less awkward.', 10, 2),
+    'story-thread': ('Story Thread', 'Build a strange, sweet story together one line at a time.', 12, 4),
+}
+
+EXPERIENCE_MODES = {
+    'predict-my-answer': Room.Mode.PLAY,
+    'better-question': Room.Mode.TALK,
+    'make-a-plan': Room.Mode.PLAN,
+    'truth-or-dare': Room.Mode.PLAY,
+    'first-spark': Room.Mode.FLIRT,
+    'story-thread': Room.Mode.CREATE,
 }
 
 
@@ -31,6 +42,7 @@ def create_private_room(*, user, experience: str):
         description=description,
         tone='Private',
         intent='connection',
+        mode=EXPERIENCE_MODES[experience],
         is_discovery_room=False,
         status=Room.Status.OPEN,
         max_members=2,
@@ -59,6 +71,7 @@ def create_public_room(*, user, experience: str, tone: str, audience: str, max_m
         description=description,
         tone=tone,
         intent='connection',
+        mode=EXPERIENCE_MODES[experience],
         audience=audience,
         city=city.strip(),
         is_discovery_room=True,

@@ -24,6 +24,11 @@ class RoomViewSet(ReadOnlyModelViewSet):
             return [AllowAny()]
         return [IsAuthenticated()]
 
+    @action(detail=False, methods=['get'])
+    def mine(self, request):
+        rooms = Room.objects.filter(created_by=request.user).prefetch_related('memberships').order_by('-created_at')[:6]
+        return Response({'data': RoomSerializer(rooms, many=True).data})
+
     @action(detail=True, methods=['post'], throttle_classes=[ScopedRateThrottle], throttle_scope='room_join')
     def join(self, request, code=None):
         membership = join_room(room=self.get_object(), user=request.user)

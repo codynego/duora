@@ -7,11 +7,11 @@ class RoomSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Room
-        fields = ('id', 'code', 'slug', 'title', 'description', 'tone', 'intent', 'audience', 'city', 'status', 'max_members', 'members_count', 'duration_minutes', 'starts_at')
+        fields = ('id', 'code', 'slug', 'title', 'description', 'tone', 'intent', 'mode', 'audience', 'city', 'is_discovery_room', 'status', 'max_members', 'members_count', 'duration_minutes', 'starts_at')
 
 
 class PublicRoomCreateSerializer(serializers.Serializer):
-    experience = serializers.ChoiceField(choices=('predict-my-answer', 'better-question', 'make-a-plan', 'truth-or-dare'))
+    experience = serializers.ChoiceField(choices=('predict-my-answer', 'better-question', 'make-a-plan', 'truth-or-dare', 'first-spark', 'story-thread'))
     tone = serializers.ChoiceField(choices=('Easygoing', 'Playful', 'Thoughtful', 'Flirty'))
     audience = serializers.ChoiceField(choices=Room.Audience.values, default=Room.Audience.ADULTS)
     max_members = serializers.IntegerField(min_value=2, max_value=6)

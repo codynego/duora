@@ -5,6 +5,12 @@ from django.db import models
 
 
 class Room(models.Model):
+    class Mode(models.TextChoices):
+        TALK = 'talk', 'Talk'
+        PLAY = 'play', 'Play'
+        FLIRT = 'flirt', 'Flirt'
+        CREATE = 'create', 'Create'
+        PLAN = 'plan', 'Plan'
     class Audience(models.TextChoices):
         ADULTS = 'adults', 'Adults (18+)'
         ALL = 'all', 'Everyone'
@@ -21,6 +27,7 @@ class Room(models.Model):
     description = models.CharField(max_length=280)
     tone = models.CharField(max_length=32, default='Easygoing')
     intent = models.CharField(max_length=20, default='conversation')
+    mode = models.CharField(max_length=12, choices=Mode, default=Mode.TALK)
     audience = models.CharField(max_length=12, choices=Audience, default=Audience.ADULTS)
     city = models.CharField(max_length=100, blank=True)
     is_discovery_room = models.BooleanField(default=True)
