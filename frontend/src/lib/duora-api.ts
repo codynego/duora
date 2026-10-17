@@ -5,7 +5,7 @@ export type RoomSummary = {
   title: string;
   description: string;
   tone: string;
-  mode: 'talk' | 'play' | 'flirt' | 'create' | 'plan';
+  mode: 'talk' | 'play' | 'plan';
   status: 'scheduled' | 'open' | 'active';
   max_members: number;
   members_count: number;

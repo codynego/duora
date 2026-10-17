@@ -39,7 +39,7 @@ class CreatePrivateRoomView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        room, invite = create_private_room(user=request.user, experience=request.data.get('experience', ''))
+        room, invite = create_private_room(user=request.user, experience=request.data.get('experience', ''), topic=request.data.get('topic', ''), discussion_description=request.data.get('discussion_description', ''))
         return Response({'data': {
             'room': {'id': str(room.id), 'code': room.code, 'title': room.title},
             'invite': {'token': str(invite.token), 'expires_at': invite.expires_at},

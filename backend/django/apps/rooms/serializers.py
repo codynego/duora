@@ -16,6 +16,10 @@ class PublicRoomCreateSerializer(serializers.Serializer):
     audience = serializers.ChoiceField(choices=Room.Audience.values, default=Room.Audience.ADULTS)
     max_members = serializers.IntegerField(min_value=2, max_value=6)
     city = serializers.CharField(max_length=100, required=False, allow_blank=True)
+    topic = serializers.CharField(max_length=120, required=False, allow_blank=True)
+    discussion_description = serializers.CharField(max_length=500, required=False, allow_blank=True)
+    starts_at = serializers.DateTimeField(required=False, allow_null=True)
+    starts_at = serializers.DateTimeField(required=False, allow_null=True, default=None)
 
     def validate_max_members(self, value):
         if value not in {2, 4, 6}:

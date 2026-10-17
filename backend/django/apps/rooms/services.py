@@ -28,26 +28,28 @@ EXPERIENCE_MODES = {
 
 
 @transaction.atomic
-def create_private_room(*, user, experience: str):
+def create_private_room(*, user, experience: str, topic: str = '', discussion_description: str = '', starts_at=None):
     try:
         title, description, duration_minutes, max_members = PRIVATE_EXPERIENCES[experience]
     except KeyError as error:
         raise ValidationError({'experience': 'Choose a supported private experience.'}) from error
 
     code = f'P-{secrets.token_urlsafe(6).replace("-", "").replace("_", "")[:8].upper()}'
+    scheduled_at = starts_at if starts_at and starts_at > timezone.now() else timezone.now()
+    is_scheduled = scheduled_at > timezone.now()
     room = Room.objects.create(
         code=code,
         slug=f'private-{code.lower()}',
-        title=title,
-        description=description,
+        title=topic.strip() if topic.strip() else title,
+        description=discussion_description.strip() if discussion_description.strip() else description,
         tone='Private',
         intent='connection',
         mode=EXPERIENCE_MODES[experience],
         is_discovery_room=False,
-        status=Room.Status.OPEN,
+        status=Room.Status.SCHEDULED if is_scheduled else Room.Status.OPEN,
         max_members=2,
         duration_minutes=duration_minutes,
-        starts_at=timezone.now(),
+        starts_at=scheduled_at,
         created_by=user,
     )
     RoomMembership.objects.create(room=room, user=user)
@@ -56,7 +58,7 @@ def create_private_room(*, user, experience: str):
 
 
 @transaction.atomic
-def create_public_room(*, user, experience: str, tone: str, audience: str, max_members: int, city: str):
+def create_public_room(*, user, experience: str, tone: str, audience: str, max_members: int, city: str, topic: str = '', discussion_description: str = '', starts_at=None):
     try:
         title, description, duration_minutes, experience_max_members = PRIVATE_EXPERIENCES[experience]
     except KeyError as error:
@@ -64,21 +66,23 @@ def create_public_room(*, user, experience: str, tone: str, audience: str, max_m
     if max_members > experience_max_members:
         raise ValidationError({'max_members': f'{title} supports up to {experience_max_members} people.'})
     code = f'R-{secrets.token_urlsafe(6).replace("-", "").replace("_", "")[:8].upper()}'
+    scheduled_at = starts_at if starts_at and starts_at > timezone.now() else timezone.now()
+    is_scheduled = scheduled_at > timezone.now()
     room = Room.objects.create(
         code=code,
         slug=f'room-{code.lower()}',
-        title=title,
-        description=description,
+        title=topic.strip() if topic.strip() else title,
+        description=discussion_description.strip() if discussion_description.strip() else description,
         tone=tone,
         intent='connection',
         mode=EXPERIENCE_MODES[experience],
         audience=audience,
         city=city.strip(),
         is_discovery_room=True,
-        status=Room.Status.OPEN,
+        status=Room.Status.SCHEDULED if is_scheduled else Room.Status.OPEN,
         max_members=max_members,
         duration_minutes=duration_minutes,
-        starts_at=timezone.now(),
+        starts_at=scheduled_at,
         created_by=user,
     )
     RoomMembership.objects.create(room=room, user=user)

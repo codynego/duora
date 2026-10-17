@@ -1,168 +1,579 @@
 'use client';
 
+import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, ArrowRight, Clock3, HandHeart, Heart, Laugh, LockKeyhole, MessageCircle, Mic, MoreHorizontal, Send, ShieldCheck, Sparkles, UsersRound, Video, Volume2 } from 'lucide-react';
+import {
+  ArrowLeft,
+  ArrowRight,
+  ShieldCheck,
+  UsersRound,
+} from 'lucide-react';
 import { useRoomSocket } from '@/lib/use-room-socket';
 import { getAccessToken } from '@/lib/auth';
+import RoomShell from './room/RoomShell';
+import { ExperienceTemplate, RoomParticipant, ReactionKind, RoomEvent } from './room/types';
+import OpenConversationStage from './room/activities/OpenConversationStage';
+import GuidedConversationStage from './room/activities/GuidedConversationStage';
+import DebateStage from './room/activities/DebateStage';
+import QuickTakesStage from './room/activities/QuickTakesStage';
+import MostLikelyToStage from './room/activities/MostLikelyToStage';
+import TruthOrDareStage from './room/activities/TruthOrDareStage';
+import GuessMyAnswerStage from './room/activities/GuessMyAnswerStage';
+import WordBattleStage from './room/activities/WordBattleStage';
+import BuildStoryStage from './room/activities/BuildStoryStage';
+import PlanTogetherStage from './room/activities/PlanTogetherStage';
+import SharedChallengesStage from './room/activities/SharedChallengesStage';
+import DateNightAnywhereStage from './room/activities/DateNightAnywhereStage';
 
-const people = [{ name: 'Ada', initial: 'A', color: '#281D32' }, { name: 'Maya', initial: 'M', color: '#c94f70' }, { name: 'Jon', initial: 'J', color: '#8770a0' }, { name: 'Sam', initial: 'S', color: '#d7953d' }];
-type ExperienceMode = 'talk' | 'play' | 'flirt' | 'create' | 'plan';
+const DEFAULT_PEOPLE: RoomParticipant[] = [
+  { id: '1', name: 'Ada', initial: 'A', color: '#281D32', statusLabel: 'Here' },
+  { id: '2', name: 'Maya', initial: 'M', color: '#c94f70', statusLabel: 'Speaking', isSpeaking: true },
+  { id: '3', name: 'Jon', initial: 'J', color: '#8770a0', statusLabel: 'Listening' },
+  { id: '4', name: 'Sam', initial: 'S', color: '#d7953d', statusLabel: 'Here' },
+];
 
-export default function RoomExperience({ roomId, roomCode, roomName, mode = 'talk', alreadyJoined = false }: { roomId: string; roomCode: string; roomName: string; mode?: ExperienceMode; alreadyJoined?: boolean }) {
+type ExperienceMode = 'talk' | 'play' | 'together' | 'plan';
+
+interface RoomExperienceProps {
+  roomId: string;
+  roomCode: string;
+  roomName: string;
+  mode?: ExperienceMode;
+  alreadyJoined?: boolean;
+}
+
+export default function RoomExperience({
+  roomId,
+  roomCode,
+  roomName,
+  mode = 'talk',
+  alreadyJoined = false,
+}: RoomExperienceProps) {
   const [view, setView] = useState<'overview' | 'arrival' | 'live' | 'wrap'>('overview');
-  const [stage, setStage] = useState(1); const [answer, setAnswer] = useState(''); const [saved, setSaved] = useState(false); const [seconds, setSeconds] = useState(731);
-  const [joined, setJoined] = useState(alreadyJoined); const [joining, setJoining] = useState(false); const [joinError, setJoinError] = useState(''); const [chatOpen, setChatOpen] = useState(false); const [message, setMessage] = useState('');
-  const { connected, events, send } = useRoomSocket(roomId, joined);
-  const [previewEvents, setPreviewEvents] = useState<Array<{ event: string; payload?: Record<string, unknown>; user_id?: number }>>([]);
-  const roomEvents = roomId ? events : previewEvents;
+  const [seconds, setSeconds] = useState(720);
+  const [joined, setJoined] = useState(alreadyJoined);
+  const [joining, setJoining] = useState(false);
+  const [joinError, setJoinError] = useState('');
+  const [chatOpen, setChatOpen] = useState(false);
   const [unreadMessages, setUnreadMessages] = useState(0);
   const seenChatCount = useRef(0);
-  const isTalk = mode === 'talk';
-  const roomSummary = isTalk ? 'A small room for people who want an easier way into an honest conversation.' : 'A small shared experience with a little structure and room to be yourself.';
 
-  useEffect(() => { if (view !== 'live') return; const timer = window.setInterval(() => setSeconds((current) => Math.max(0, current - 1)), 1000); return () => window.clearInterval(timer); }, [view]);
-  const time = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+  const isTalk = mode === 'talk';
+  const isPlay = mode === 'play';
+  const isTogether = mode === 'together' || mode === 'plan';
+
+  // Initialize template based on mode
+  const [template, setTemplate] = useState<ExperienceTemplate>(
+    isPlay ? 'most_likely_to' : isTogether ? 'plan_together' : 'open_talk'
+  );
+
+  const { connected, events, send } = useRoomSocket(roomId, joined);
+  const [previewEvents, setPreviewEvents] = useState<RoomEvent[]>([]);
+  const roomEvents = roomId ? events : previewEvents;
+
+  // Together is strictly 2 people (You + 1 Partner)
+  const roomParticipants = isTogether ? [DEFAULT_PEOPLE[1]] : DEFAULT_PEOPLE;
+
+  const roomSummary = isTalk
+    ? 'A small room for people who want an easier way into an honest conversation.'
+    : isPlay
+    ? 'A playful shared game room with lively interaction, turns, and laughs.'
+    : 'A private shared experience for two people to connect, plan, and share moments.';
+
+  useEffect(() => {
+    if (view !== 'live') return;
+    const timer = window.setInterval(() => setSeconds((cur) => Math.max(0, cur - 1)), 1000);
+    return () => window.clearInterval(timer);
+  }, [view]);
+
+  const formattedTime = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
 
   async function joinRoom() {
     const token = await getAccessToken();
     if (!token) return setJoinError('Sign in to join this room.');
     if (!roomId) return setJoinError('This room is unavailable. Return to Discover and choose another room.');
-    setJoining(true); setJoinError('');
+    setJoining(true);
+    setJoinError('');
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_DUORA_API_URL ?? 'http://127.0.0.1:8000'}/api/v1/rooms/${encodeURIComponent(roomCode)}/join/`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_DUORA_API_URL ?? 'http://127.0.0.1:8000'}/api/v1/rooms/${encodeURIComponent(roomCode)}/join/`,
+        { method: 'POST', headers: { Authorization: `Bearer ${token}` } }
+      );
       if (!response.ok) throw new Error('This room cannot be joined right now.');
-      setJoined(true); setView('arrival');
-    } catch (error) { setJoinError(error instanceof Error ? error.message : 'This room cannot be joined right now.'); } finally { setJoining(false); }
+      setJoined(true);
+      setView('arrival');
+    } catch (error) {
+      setJoinError(error instanceof Error ? error.message : 'This room cannot be joined right now.');
+    } finally {
+      setJoining(false);
+    }
   }
-  useEffect(() => { const chatCount = roomEvents.filter((event) => event.event === 'chat.sent').length; const newCount = Math.max(0, chatCount - seenChatCount.current); if (newCount && !chatOpen) setUnreadMessages((count) => count + newCount); seenChatCount.current = chatCount; }, [roomEvents, chatOpen]);
-  function saveAnswer() { send('answer.saved', { answer }); setSaved(true); window.setTimeout(() => setStage(2), 500); }
-  function sendChat() { const text = message.trim(); if (!text) return; if (!roomId) setPreviewEvents((current) => [...current, { event: 'chat.sent', payload: { message: text, actor_name: 'You' } }]); send('chat.sent', { message: text }); setMessage(''); }
-  function sendReaction(kind: 'heart' | 'support' | 'laugh' | 'cheer') { if (!roomId) setPreviewEvents((current) => [...current, { event: 'reaction.sent', payload: { kind, actor_name: 'You' } }]); send('reaction.sent', { kind }); }
-  function toggleChat() { setChatOpen((open) => { if (!open) setUnreadMessages(0); return !open; }); }
 
-  if (view === 'overview') return <main className="min-h-screen bg-[#fffdfc] px-5 py-6 text-dark-950 sm:px-8 sm:py-9"><div className="mx-auto max-w-5xl"><Link href="/discover" className="inline-flex items-center gap-2 text-sm font-bold text-[#6F6470]"><ArrowLeft className="h-4 w-4" />Back to rooms</Link><section className="mt-7 overflow-hidden rounded-[32px] bg-dark-950 text-white"><div className="grid lg:grid-cols-[1.1fr_.9fr]"><div className="p-7 sm:p-10"><p className="text-xs font-bold tracking-[.18em] text-spark-rose">{isTalk ? 'OPEN CONVERSATION' : 'SHARED EXPERIENCE'}</p><h1 className="mt-4 text-4xl font-bold tracking-[-.06em] sm:text-5xl">{roomName}</h1><p className="mt-5 max-w-lg text-base leading-7 text-white/68">{roomSummary}</p><div className="mt-9 flex flex-wrap gap-3 text-sm text-white/75"><span className="rounded-full border border-white/15 px-3 py-2">4 people</span><span className="rounded-full border border-white/15 px-3 py-2">12 minutes</span><span className="rounded-full border border-white/15 px-3 py-2">{isTalk ? 'Thoughtful conversation' : 'Guided activity'}</span></div><button disabled={joining} onClick={() => joined ? setView('arrival') : joinRoom()} className="mt-10 inline-flex items-center gap-2 rounded-full bg-spark-coral px-5 py-3 text-sm font-bold text-white disabled:cursor-wait disabled:opacity-70">{joining ? 'Joining room…' : joined ? 'Enter room' : 'Join this room'} <ArrowRight className="h-4 w-4" /></button>{joinError && <p role="alert" className="mt-4 text-sm text-spark-rose">{joinError}</p>}</div><div className="bg-[#fff0f3] p-7 text-dark-950 sm:p-10"><p className="text-xs font-bold tracking-[.16em] text-spark-coral">HOW IT MOVES</p><ol className="mt-7 space-y-6">{isTalk ? <><Step number="1" title="Arrive as you are." copy="There is nothing to prepare or prove." /><Step number="2" title="Follow one good question." copy="Speak, listen, or take a quiet moment." /><Step number="3" title="Let the room find its shape." copy="Change direction whenever it feels right." /></> : <><Step number="1" title="Start with the activity." copy="The room gives everyone the same place to begin." /><Step number="2" title="See what emerges." copy="Each experience moves at its own pace." /><Step number="3" title="Follow what feels interesting." copy="A few prompts carry it forward." /></>}</ol></div></div></section><p className="mt-5 flex items-center justify-center gap-2 text-xs text-[#6F6470]"><ShieldCheck className="h-4 w-4" />Leave any time. Nothing opens into a private chat unless both people choose it.</p></div></main>;
+  useEffect(() => {
+    const chatCount = roomEvents.filter((ev) => ev.event === 'chat.sent').length;
+    const newCount = Math.max(0, chatCount - seenChatCount.current);
+    if (newCount > 0 && !chatOpen) setUnreadMessages((count) => count + newCount);
+    seenChatCount.current = chatCount;
+  }, [roomEvents, chatOpen]);
 
-  if (view === 'arrival') return <main className="grid min-h-screen place-items-center bg-[#fffdfc] px-5 text-dark-950"><section className="w-full max-w-lg text-center"><Link href="/discover" className="absolute left-5 top-6 inline-flex items-center gap-2 text-sm font-bold text-[#6F6470]"><ArrowLeft className="h-4 w-4" />Leave room</Link><span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-[#fff0f3]"><UsersRound className="h-6 w-6 text-spark-coral" /></span><p className="mt-7 section-label">{roomName}</p><h1 className="mt-3 text-3xl font-bold tracking-[-.055em]">You’re in.</h1><p className="mx-auto mt-3 max-w-sm text-sm leading-6 text-[#6F6470]">The room opens once everyone is ready. There’s nothing to prepare.</p><div className="mt-10 rounded-[28px] border border-dark-950/10 bg-white p-6 text-left soft-shadow"><div className="flex items-center justify-between"><p className="text-sm font-bold">4 of 4 people are here</p><LiveState connected={connected} /></div><div className="mt-6 flex -space-x-2">{people.map((person) => <Avatar key={person.name} person={person} />)}</div><div className="mt-6 rounded-xl bg-[#fff6f2] px-4 py-3 text-sm leading-6 text-[#6F6470]">{isTalk ? 'You’ll start with one question for the room. Speak, listen, or pass whenever you need to.' : 'The activity gives everyone the same place to begin. You can pass or leave whenever you need to.'}</div></div><button onClick={() => { send('room.ready'); setView('live'); }} className="mt-7 inline-flex items-center gap-2 rounded-full bg-dark-950 px-5 py-3 text-sm font-bold text-white">Enter the room <ArrowRight className="h-4 w-4" /></button></section></main>;
-
-  if (view === 'wrap') return <main className="grid min-h-screen place-items-center bg-[#fffdfc] px-5 py-8 text-dark-950"><section className="w-full max-w-2xl text-center"><p className="section-label">Room complete</p><h1 className="mt-3 text-4xl font-bold tracking-[-.06em]">That was {roomName}.</h1><p className="mx-auto mt-4 max-w-lg text-base leading-7 text-[#6F6470]">You shared a small moment. What happens next is entirely up to you.</p><Link href="/discover" className="mt-8 inline-flex items-center gap-2 rounded-full bg-dark-950 px-5 py-3 text-sm font-bold text-white">Back to rooms <ArrowRight className="h-4 w-4" /></Link></section></main>;
-
-  if (view === 'live') return <ActiveRoomStage mode={mode} roomName={roomName} stage={stage} time={time} answer={answer} saved={saved} chatOpen={chatOpen} message={message} connected={connected} events={roomEvents} unreadMessages={unreadMessages} onAnswer={setAnswer} onSave={saveAnswer} onNext={() => setStage((current) => Math.min(3, current + 1))} onReaction={sendReaction} onToggleChat={toggleChat} onMessage={setMessage} onSend={sendChat} onPass={() => send('prompt.skipped')} onEnd={() => setView('wrap')} />;
-
-  return <main className="min-h-screen bg-[#f7f3f2] text-dark-950"><header className="border-b border-dark-950/10 bg-white px-5 py-4 sm:px-8"><div className="mx-auto flex max-w-6xl items-center justify-between gap-4"><Link href="/discover" className="inline-flex items-center gap-2 text-sm font-bold text-[#6F6470]"><ArrowLeft className="h-4 w-4" /><span className="hidden sm:inline">Leave room</span></Link><div className="text-center"><p className="text-sm font-bold tracking-[-.02em]">{roomName}</p><LiveState connected={connected} /></div><button onClick={() => setView('wrap')} className="text-sm font-bold text-[#6F6470]">End early</button></div></header><div className="mx-auto max-w-6xl px-5 py-7 sm:px-8"><section className="mb-5 rounded-2xl border border-dark-950/10 bg-white px-5 py-4"><div className="flex items-center justify-between"><div><p className="text-xs font-bold tracking-[.15em] text-spark-coral">GUIDED CONVERSATION</p><p className="mt-1 text-sm font-bold">Round {stage} of 3</p></div><span className="flex items-center gap-1 text-sm font-bold text-[#6F6470]"><Clock3 className="h-4 w-4" />{time}</span></div><div className="mt-3 grid grid-cols-3 gap-2">{[1, 2, 3].map((item) => <span key={item} className={`h-1 rounded-full ${item <= stage ? 'bg-spark-coral' : 'bg-dark-950/10'}`} />)}</div></section><div className="grid gap-5 lg:grid-cols-[1fr_280px]"><section className="rounded-[28px] bg-white p-6 shadow-[0_12px_40px_rgba(40,29,50,.07)] sm:p-9">{stage === 1 ? <><div className="flex items-center justify-between"><span className="inline-flex items-center gap-2 rounded-full bg-[#fff0f3] px-3 py-1.5 text-xs font-bold text-spark-coral"><LockKeyhole className="h-3.5 w-3.5" />Only you can see this</span><span className="text-xs font-bold text-[#6F6470]">Others are answering</span></div><p className="mt-12 text-xs font-bold tracking-[.15em] text-dark-950/40">FIRST PROMPT</p><h1 className="mt-3 max-w-xl text-3xl font-bold tracking-[-.055em] sm:text-4xl">What is one small ritual that reliably resets your day?</h1><textarea value={answer} onChange={(event) => setAnswer(event.target.value)} placeholder="Write whatever comes first…" className="mt-8 min-h-28 w-full resize-none rounded-2xl border border-dark-950/12 bg-[#fffdfc] p-4 text-sm leading-6 outline-none transition focus:border-spark-coral" aria-label="Your private answer" /><div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><p className="text-xs text-[#6F6470]">Your answer stays hidden until everyone submits.</p><button onClick={saveAnswer} className="rounded-full bg-dark-950 px-5 py-3 text-sm font-bold text-white">{saved ? 'Answer saved' : 'Save my answer'}</button></div></> : stage === 2 ? <><p className="text-xs font-bold tracking-[.15em] text-spark-coral">SHARED REVEAL</p><h1 className="mt-3 text-3xl font-bold tracking-[-.055em]">The room has a little more to work with now.</h1><div className="mt-7 grid gap-3 sm:grid-cols-2">{[['Ada', answer || 'A walk without my phone, even if it’s only ten minutes.'], ['Maya', 'Putting on an album and making something warm.'], ['Jon', 'My dog insisting we go outside.'], ['Sam', 'Writing down one thing I can actually finish today.']].map(([name, response]) => <article key={name} className="rounded-2xl border border-dark-950/10 bg-[#fffdfc] p-4"><p className="text-xs font-bold text-spark-coral">{name}</p><p className="mt-2 text-sm leading-6">{response}</p></article>)}</div><div className="mt-7 flex justify-end"><button onClick={() => setStage(3)} className="inline-flex items-center gap-2 rounded-full bg-spark-coral px-5 py-3 text-sm font-bold text-white">Continue together <ArrowRight className="h-4 w-4" /></button></div></> : <><p className="text-xs font-bold tracking-[.15em] text-[#4d8568]">FOLLOW THE THREAD</p><h1 className="mt-3 max-w-xl text-3xl font-bold tracking-[-.055em] sm:text-4xl">Pick one answer you want to know more about.</h1><p className="mt-4 max-w-xl text-sm leading-6 text-[#6F6470]">Try a specific follow-up, or simply tell someone why theirs stayed with you.</p><button onClick={() => send('reaction.sent', { kind: 'support' })} className="mt-7 inline-flex items-center gap-2 text-sm font-bold text-spark-coral"><Heart className="h-4 w-4" />Send support</button></>}</section><aside className="rounded-[28px] bg-dark-950 p-6 text-white"><p className="text-xs font-bold tracking-[.15em] text-spark-rose">IN THE ROOM</p><div className="mt-6 space-y-4">{people.map((person) => <div key={person.name} className="flex items-center gap-3"><Avatar person={person} /><span className="flex-1 text-sm font-semibold">{person.name}</span><span className="h-2 w-2 rounded-full bg-[#88c99d]" /></div>)}</div><div className="mt-8 border-t border-white/10 pt-5"><p className="text-xs leading-5 text-white/60">A guided room, not a performance. You can pass or leave at any time.</p></div></aside></div></div><footer className="sticky bottom-0 border-t border-dark-950/10 bg-white/95 px-5 py-3 backdrop-blur"><div className="mx-auto flex max-w-6xl items-center gap-2"><button onClick={() => send('reaction.sent', { kind: 'heart' })} aria-label="Send appreciation" className="grid h-10 w-10 place-items-center rounded-full bg-[#fff0f3] text-spark-coral"><Heart className="h-4 w-4" /></button><button onClick={() => setChatOpen((open) => !open)} aria-label="Toggle room chat" className="grid h-10 w-10 place-items-center rounded-full bg-dark-950/5 text-dark-950/60"><MessageCircle className="h-4 w-4" /></button><button onClick={() => send('prompt.skipped')} aria-label="Pass this prompt" className="grid h-10 w-10 place-items-center rounded-full bg-dark-950/5 text-dark-950/60"><MoreHorizontal className="h-4 w-4" /></button>{chatOpen && <form onSubmit={(event) => { event.preventDefault(); sendChat(); }} className="ml-1 flex flex-1 gap-2"><input value={message} onChange={(event) => setMessage(event.target.value)} placeholder="Say something…" className="min-w-0 flex-1 rounded-full bg-dark-950/5 px-4 py-2 text-sm outline-none" /><button aria-label="Send message" className="grid h-10 w-10 place-items-center rounded-full bg-spark-coral text-white"><Send className="h-4 w-4" /></button></form>}</div></footer></main>;
-}
-
-function ActiveRoomStage({ mode, roomName, stage, time, answer, saved, chatOpen, message, connected, events, unreadMessages, onAnswer, onSave, onNext, onReaction, onToggleChat, onMessage, onSend, onPass, onEnd }: { mode: ExperienceMode; roomName: string; stage: number; time: string; answer: string; saved: boolean; chatOpen: boolean; message: string; connected: boolean; events: Array<{ event: string; payload?: Record<string, unknown>; user_id?: number }>; unreadMessages: number; onAnswer: (value: string) => void; onSave: () => void; onNext: () => void; onReaction: (kind: 'heart' | 'support' | 'laugh' | 'cheer') => void; onToggleChat: () => void; onMessage: (value: string) => void; onSend: () => void; onPass: () => void; onEnd: () => void }) {
-  const prompt = stage === 1 ? 'What is one small ritual that reliably resets your day?' : stage === 2 ? 'Here is what the room shared.' : 'Whose answer would you like to know more about?';
-  const sharedAnswers = [
-    ['Ada', answer || 'A walk without my phone, even if it’s only ten minutes.'],
-    ['Maya', 'Putting on an album and making something warm.'],
-    ['Jon', 'My dog insisting we go outside.'],
-    ['Sam', 'Writing down one thing I can actually finish today.'],
-  ];
-  const [selectedName, setSelectedName] = useState<string | null>(null);
-  const [supportSent, setSupportSent] = useState(false);
-  const selectedAnswer = sharedAnswers.find(([name]) => name === selectedName)?.[1];
-
-  function openFollowUp() {
-    if (!selectedName) return;
-    onMessage(`${selectedName}, what is it about that ritual that helps you reset?`);
-    if (!chatOpen) onToggleChat();
+  function sendChatMessage(text: string) {
+    if (!text.trim()) return;
+    if (!roomId) {
+      setPreviewEvents((cur) => [
+        ...cur,
+        { event: 'chat.sent', payload: { message: text, actor_name: 'You' } },
+      ]);
+    }
+    send('chat.sent', { message: text });
   }
-  if (mode === 'talk') return <TalkRoomStage roomName={roomName} time={time} chatOpen={chatOpen} message={message} connected={connected} events={events} unreadMessages={unreadMessages} onReaction={onReaction} onToggleChat={onToggleChat} onMessage={onMessage} onSend={onSend} onPass={onPass} onEnd={onEnd} />;
-  return <RoomRollStage roomName={roomName} stage={stage} time={time} answer={answer} saved={saved} chatOpen={chatOpen} message={message} connected={connected} events={events} unreadMessages={unreadMessages} sharedAnswers={sharedAnswers as [string, string][]} selectedName={selectedName} selectedAnswer={selectedAnswer} supportSent={supportSent} onAnswer={onAnswer} onSave={onSave} onNext={onNext} onSelect={(name) => { setSelectedName(name); setSupportSent(false); }} onOpenFollowUp={openFollowUp} onSupport={() => { onReaction('support'); setSupportSent(true); }} onReaction={onReaction} onToggleChat={onToggleChat} onMessage={onMessage} onSend={onSend} onPass={onPass} onEnd={onEnd} />;
 
-  return <main className="min-h-screen overflow-hidden bg-[#18121e] text-white"><header className="absolute inset-x-0 top-0 z-20 flex items-center justify-between px-4 py-4 sm:px-7"><Link href="/discover" className="inline-flex items-center gap-2 rounded-full bg-black/25 px-3 py-2 text-xs font-bold text-white/80 backdrop-blur hover:bg-black/40"><ArrowLeft className="h-4 w-4" />Leave</Link><div className="rounded-full border border-white/10 bg-black/25 px-4 py-2 text-center backdrop-blur"><p className="text-xs font-bold">{roomName}</p><p className="mt-0.5 flex items-center justify-center gap-1 text-[10px] text-white/55"><span className={`h-1.5 w-1.5 rounded-full ${connected ? 'bg-[#8bd49f]' : 'bg-[#f4c96b]'}`} />{connected ? 'Live together' : 'Connecting'} · {time}</p></div><button onClick={onEnd} className="rounded-full bg-white/10 px-3 py-2 text-xs font-bold text-white/80 backdrop-blur hover:bg-white/20">End room</button></header><section className="grid min-h-screen grid-cols-2 gap-1 bg-[#0e0a12] p-1 pt-20 sm:gap-2 sm:p-2 sm:pt-20"><StagePerson person={people[0]} label="You" active={stage === 1} /><StagePerson person={people[1]} label="Listening" active={false} /><StagePerson person={people[2]} label="Ready" active={false} /><StagePerson person={people[3]} label="Thinking" active={false} /></section><section className="absolute inset-x-3 bottom-[78px] z-20 mx-auto max-w-2xl rounded-[26px] border border-white/15 bg-[#fffdfa] p-5 text-dark-950 shadow-[0_16px_55px_rgba(0,0,0,.32)] sm:bottom-24 sm:p-6"><div className="flex items-center justify-between gap-3"><span className="text-[10px] font-bold tracking-[.16em] text-spark-coral">ROUND {stage} OF 3</span><span className="inline-flex items-center gap-1 text-xs font-bold text-[#6F6470]"><LockKeyhole className="h-3.5 w-3.5" />{stage === 1 ? 'Private answer' : stage === 2 ? 'Shared reveal' : 'Open conversation'}</span></div><h1 className="mt-3 text-xl font-bold tracking-[-.045em] sm:text-2xl">{prompt}</h1>{stage === 1 ? <><textarea value={answer} onChange={(event) => onAnswer(event.target.value)} placeholder="Write whatever comes first…" aria-label="Your private answer" className="mt-4 min-h-20 w-full resize-none rounded-2xl border border-dark-950/10 bg-white p-3 text-sm leading-6 outline-none focus:border-spark-coral" /><div className="mt-3 flex items-center justify-between gap-3"><p className="text-xs text-[#6F6470]">No one sees this until the room reveals.</p><button onClick={onSave} className="rounded-full bg-dark-950 px-4 py-2.5 text-sm font-bold text-white">{saved ? 'Answer saved' : 'Save answer'}</button></div></> : stage === 2 ? <><p className="mt-2 text-sm leading-5 text-[#6F6470]">Everyone sees these at the same time.</p><div className="mt-4 grid gap-2 sm:grid-cols-2">{sharedAnswers.map(([name, response]) => <article key={name} className="rounded-2xl bg-[#fff0f3] p-3"><p className="text-[10px] font-bold tracking-[.12em] text-spark-coral">{name.toUpperCase()}</p><p className="mt-1 text-sm leading-5">{response}</p></article>)}</div><div className="mt-4 flex justify-end"><button onClick={onNext} className="rounded-full bg-spark-coral px-4 py-2.5 text-sm font-bold text-white">Keep talking <ArrowRight className="inline h-4 w-4" /></button></div></> : <><p className="mt-2 text-sm leading-5 text-[#6F6470]">Choose an answer to make the next moment specific.</p><div className="mt-4 grid grid-cols-2 gap-2">{sharedAnswers.map(([name, response]) => <button key={name} onClick={() => { setSelectedName(name); setSupportSent(false); }} className={`rounded-2xl border p-3 text-left transition ${selectedName === name ? 'border-spark-coral bg-[#fff0f3] ring-1 ring-spark-coral' : 'border-dark-950/10 bg-white hover:border-dark-950/30'}`}><span className="block text-[10px] font-bold tracking-[.12em] text-spark-coral">{name.toUpperCase()}</span><span className="mt-1 block line-clamp-2 text-sm leading-5">{response}</span></button>)}</div>{selectedName && <div className="mt-3 rounded-2xl bg-[#eef7f1] p-3"><p className="text-sm font-bold">Follow up with {selectedName}</p><p className="mt-1 text-sm leading-5 text-[#436d55]">“What is it about {selectedAnswer?.toLowerCase()} that helps you reset?”</p><div className="mt-3 flex flex-wrap gap-2"><button onClick={openFollowUp} className="rounded-full bg-dark-950 px-3 py-2 text-xs font-bold text-white">Ask in room chat</button><button onClick={() => { onReaction('support'); setSupportSent(true); }} className="rounded-full bg-[#4d8568] px-3 py-2 text-xs font-bold text-white">{supportSent ? 'Support sent' : 'Send support'}</button></div></div>}</>}</section>{chatOpen && <form onSubmit={(event) => { event.preventDefault(); onSend(); }} className="absolute bottom-[144px] left-3 right-3 z-30 mx-auto flex max-w-md gap-2 rounded-2xl bg-white p-2 shadow-xl"><input value={message} onChange={(event) => onMessage(event.target.value)} placeholder="Say something to the room…" className="min-w-0 flex-1 rounded-xl bg-dark-950/5 px-3 text-sm outline-none" /><button aria-label="Send message" className="grid h-10 w-10 place-items-center rounded-xl bg-spark-coral text-white"><Send className="h-4 w-4" /></button></form>}<footer className="fixed inset-x-0 bottom-0 z-30 flex h-[70px] items-center justify-center gap-2 border-t border-white/10 bg-[#18121e]/90 px-4 backdrop-blur"><button onClick={() => onReaction('heart')} aria-label="Send appreciation" className="grid h-11 w-11 place-items-center rounded-full bg-white/10 text-[#f7b8c7] hover:bg-white/20"><Heart className="h-4 w-4" /></button><button aria-label="Microphone status" className="grid h-11 w-11 place-items-center rounded-full bg-white/10 text-white"><Mic className="h-4 w-4" /></button><button aria-label="Camera status" className="grid h-11 w-11 place-items-center rounded-full bg-white/10 text-white"><Video className="h-4 w-4" /></button><button onClick={onToggleChat} aria-label="Toggle room chat" className={`grid h-11 w-11 place-items-center rounded-full ${chatOpen ? 'bg-spark-coral text-white' : 'bg-white/10 text-white'}`}><MessageCircle className="h-4 w-4" /></button><button onClick={onPass} aria-label="Pass prompt" className="grid h-11 w-11 place-items-center rounded-full bg-white/10 text-white"><MoreHorizontal className="h-4 w-4" /></button></footer></main>;
-}
+  function sendReaction(kind: ReactionKind) {
+    if (!roomId) {
+      setPreviewEvents((cur) => [
+        ...cur,
+        { event: 'reaction.sent', payload: { kind, actor_name: 'You' } },
+      ]);
+    }
+    send('reaction.sent', { kind });
+  }
 
-function TalkRoomStage({ roomName, time, chatOpen, message, connected, events, unreadMessages, onReaction, onToggleChat, onMessage, onSend, onPass, onEnd }: { roomName: string; time: string; chatOpen: boolean; message: string; connected: boolean; events: Array<{ event: string; payload?: Record<string, unknown>; user_id?: number }>; unreadMessages: number; onReaction: (kind: 'heart' | 'support' | 'laugh' | 'cheer') => void; onToggleChat: () => void; onMessage: (value: string) => void; onSend: () => void; onPass: () => void; onEnd: () => void }) {
-  const topics = [
-    ['What makes you feel most like yourself?', 'There is no need to be impressive here. Answer in the way that feels true.'],
-    ['What is something you have changed your mind about recently?', 'A change of mind can be a small kind of growth.'],
-    ['What do you wish people asked you about more often?', 'Take your time. You can also listen for a while.'],
-    ['Where do you find a little bit of peace lately?', 'A place, a person, a routine, or a thought all count.'],
-  ];
-  const [topic, setTopic] = useState(0);
-  const [reactionPickerOpen, setReactionPickerOpen] = useState(false);
-  const messages = events.filter((item) => item.event === 'chat.sent').map((item, index) => ({ id: `${item.user_id ?? 'member'}-${index}`, body: String(item.payload?.message ?? ''), author: String(item.payload?.actor_name ?? 'Room member') })).filter((item) => item.body);
-  const latestReaction = [...events].reverse().find((item) => item.event === 'reaction.sent');
-  const latestMessage = [...events].reverse().find((item) => item.event === 'chat.sent');
-  const [reactionBubble, setReactionBubble] = useState<typeof latestReaction | null>(null);
-  const [chatBubble, setChatBubble] = useState<typeof latestMessage | null>(null);
-  useEffect(() => { if (!latestReaction) return; setReactionBubble(latestReaction); const timer = window.setTimeout(() => setReactionBubble(null), 3200); return () => window.clearTimeout(timer); }, [latestReaction]);
-  useEffect(() => { if (!latestMessage || chatOpen || latestMessage.payload?.actor_name === 'You') { if (chatOpen) setChatBubble(null); return; } setChatBubble(latestMessage); const timer = window.setTimeout(() => setChatBubble(null), 4200); return () => window.clearTimeout(timer); }, [latestMessage, chatOpen]);
-  const reactionKind = String(reactionBubble?.payload?.kind ?? 'heart');
-  const reactionLabel = reactionKind === 'laugh' ? 'laughed' : reactionKind === 'support' ? 'sent support' : reactionKind === 'cheer' ? 'celebrated' : 'sent appreciation';
-  const ReactionIcon = reactionKind === 'laugh' ? Laugh : reactionKind === 'support' ? HandHeart : reactionKind === 'cheer' ? Sparkles : Heart;
-  function moveTopic() { setTopic((current) => (current + 1) % topics.length); }
-  function goDeeper() { onMessage(`What makes you say that about “${topics[topic][0]}”?”`); if (!chatOpen) onToggleChat(); }
-  return <main className="flex h-[100dvh] flex-col overflow-hidden bg-[#17111d] pb-[70px] text-white">
-    <header className="flex shrink-0 items-center justify-between gap-3 px-4 py-4 sm:px-7"><Link href="/discover" className="inline-flex items-center gap-2 rounded-full bg-white/8 px-3 py-2 text-xs font-bold text-white/80 transition hover:bg-white/15"><ArrowLeft className="h-4 w-4" />Leave</Link><div className="min-w-0 text-center"><p className="truncate text-sm font-bold">{roomName}</p><p className="mt-0.5 flex items-center justify-center gap-1 text-[10px] text-white/55"><span className={`h-1.5 w-1.5 rounded-full ${connected ? 'bg-[#8bd49f]' : 'bg-[#f4c96b]'}`} />{connected ? 'Open conversation' : 'Connecting'} · {time}</p></div><button onClick={onEnd} className="rounded-full bg-white/8 px-3 py-2 text-xs font-bold text-white/80 transition hover:bg-white/15">End</button></header>
-    <div className="mx-auto flex min-h-0 w-full max-w-5xl flex-1 flex-col px-3 pb-3 sm:px-6"><section aria-label="People in the room" className="scrollbar-none flex shrink-0 gap-2 overflow-x-auto pb-2">{people.map((person, index) => <RoomRollParticipant key={person.name} person={person} label={index === 0 ? 'You' : index === 1 ? 'Speaking' : 'Listening'} active={index === 1} />)}</section><section className="relative mt-3 flex min-h-0 flex-1 flex-col overflow-hidden rounded-[30px] bg-[#fffdfa] p-5 text-dark-950 shadow-[0_22px_70px_rgba(0,0,0,.22)] sm:mt-4 sm:p-8 lg:p-10"><div className="flex shrink-0 items-center justify-between gap-3"><p className="text-[10px] font-bold tracking-[.15em] text-spark-coral">OPEN CONVERSATION</p><p className="text-[11px] font-medium text-[#6F6470]">No scores. No right answer.</p></div><div className="flex min-h-0 flex-1 flex-col justify-center"><p className="text-xs font-bold tracking-[.14em] text-dark-950/40">A QUESTION FOR THE ROOM</p><h1 className="mt-3 max-w-3xl text-balance text-[clamp(1.65rem,7vw,3.35rem)] font-bold leading-[1.06] tracking-[-.065em]">{topics[topic][0]}</h1><p className="mt-4 max-w-xl text-sm leading-6 text-[#6F6470] sm:text-base">{topics[topic][1]}</p><div className="mt-7 flex flex-wrap gap-2"><button onClick={goDeeper} className="rounded-full bg-dark-950 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#3b2b48]">Go deeper</button><button onClick={moveTopic} className="rounded-full border border-dark-950/12 bg-white px-4 py-2.5 text-sm font-bold text-dark-950 transition hover:border-dark-950/30">Change direction</button><button onClick={() => { onMessage('I’d love to hear a thought about… '); if (!chatOpen) onToggleChat(); }} className="rounded-full px-3 py-2.5 text-sm font-bold text-spark-coral">Suggest a topic</button></div></div><div className="shrink-0 border-t border-dark-950/8 pt-4"><p className="text-xs leading-5 text-[#6F6470]">You can speak, write in the room conversation, react quietly, or pass without explaining.</p></div></section></div>
-    {reactionBubble && <div aria-live="polite" className="fixed right-4 top-[132px] z-20 flex animate-[bounce_1.1s_ease-in-out_1] items-center gap-2 rounded-full border border-white/10 bg-[#281d32]/90 px-3 py-2 text-xs font-bold text-white shadow-lg backdrop-blur"><span className="grid h-6 w-6 place-items-center rounded-full bg-white/10"><ReactionIcon className="h-3.5 w-3.5 text-[#f7b8c7]" fill={reactionKind === 'heart' ? 'currentColor' : 'none'} /></span>{String(reactionBubble.payload?.actor_name ?? 'Someone')} {reactionLabel}</div>}
-    {chatBubble && !chatOpen && <button onClick={onToggleChat} className="fixed bottom-[86px] left-4 z-20 max-w-[min(20rem,calc(100vw-2rem))] animate-[bounce_900ms_ease-in-out_1] rounded-2xl border border-white/10 bg-[#fffdfa] px-3 py-2.5 text-left text-dark-950 shadow-xl"><span className="block text-[10px] font-bold text-spark-coral">{String(chatBubble.payload?.actor_name ?? 'Room member')}</span><span className="block truncate text-xs font-medium">{String(chatBubble.payload?.message ?? '')}</span></button>}
-    {chatOpen && <section aria-label="Room conversation" className="fixed bottom-[82px] left-3 right-3 z-30 mx-auto flex h-[min(25rem,calc(100dvh-180px))] max-w-md flex-col overflow-hidden rounded-[24px] border border-dark-950/10 bg-[#fffdfa] text-dark-950 shadow-2xl"><header className="flex shrink-0 items-center justify-between border-b border-dark-950/8 px-4 py-3"><div><p className="text-sm font-bold">Room conversation</p><p className="text-[11px] text-[#6F6470]">Visible to everyone here</p></div><button onClick={onToggleChat} className="rounded-full bg-dark-950/5 px-3 py-1.5 text-xs font-bold">Close</button></header><div className="min-h-0 flex-1 space-y-2 overflow-y-auto px-3 py-3">{messages.length ? messages.map((item) => <article key={item.id} className={`max-w-[88%] rounded-2xl px-3 py-2 ${item.author === 'You' ? 'ml-auto bg-[#fff0f3]' : 'bg-dark-950/5'}`}><p className="text-[10px] font-bold text-spark-coral">{item.author}</p><p className="mt-1 text-sm leading-5">{item.body}</p></article>) : <p className="px-2 pt-3 text-sm leading-6 text-[#6F6470]">No messages yet. Start wherever the conversation naturally goes.</p>}</div><form onSubmit={(event) => { event.preventDefault(); onSend(); }} className="flex shrink-0 gap-2 border-t border-dark-950/8 p-2"><input value={message} onChange={(event) => onMessage(event.target.value)} placeholder="Say something to the room…" maxLength={500} className="min-w-0 flex-1 rounded-xl bg-dark-950/5 px-3 text-sm outline-none" /><button aria-label="Send message" className="grid h-10 w-10 place-items-center rounded-xl bg-spark-coral text-white"><Send className="h-4 w-4" /></button></form></section>}
-    {reactionPickerOpen && <div className="fixed bottom-[82px] left-1/2 z-40 flex -translate-x-1/2 gap-1 rounded-full border border-white/15 bg-[#281d32] p-1.5 shadow-xl"><button onClick={() => { onReaction('heart'); setReactionPickerOpen(false); }} aria-label="Send appreciation" className="grid h-10 w-10 place-items-center rounded-full text-[#f7b8c7] hover:bg-white/10"><Heart className="h-5 w-5" fill="currentColor" /></button><button onClick={() => { onReaction('laugh'); setReactionPickerOpen(false); }} aria-label="Send laughter" className="grid h-10 w-10 place-items-center rounded-full text-[#f4c96b] hover:bg-white/10"><Laugh className="h-5 w-5" /></button><button onClick={() => { onReaction('support'); setReactionPickerOpen(false); }} aria-label="Send support" className="grid h-10 w-10 place-items-center rounded-full text-[#9ad4ac] hover:bg-white/10"><HandHeart className="h-5 w-5" /></button><button onClick={() => { onReaction('cheer'); setReactionPickerOpen(false); }} aria-label="Send celebration" className="grid h-10 w-10 place-items-center rounded-full text-[#d8b5f1] hover:bg-white/10"><Sparkles className="h-5 w-5" /></button></div>}
-    <footer className="fixed inset-x-0 bottom-0 z-30 flex h-[70px] items-center justify-center gap-2 border-t border-white/10 bg-[#17111d]/95 px-4 backdrop-blur"><button onClick={() => setReactionPickerOpen((open) => !open)} aria-label="Choose a reaction" aria-expanded={reactionPickerOpen} className={`grid h-11 w-11 place-items-center rounded-full transition ${reactionPickerOpen ? 'bg-spark-coral text-white' : 'bg-white/10 text-[#f7b8c7] hover:bg-white/20'}`}><Heart className="h-4 w-4" fill={reactionPickerOpen ? 'currentColor' : 'none'} /></button><button onClick={onToggleChat} aria-label="Toggle room chat" className={`relative grid h-11 w-11 place-items-center rounded-full transition ${chatOpen ? 'bg-spark-coral text-white' : 'bg-white/10 text-white hover:bg-white/20'}`}><MessageCircle className="h-4 w-4" />{unreadMessages > 0 && !chatOpen && <span className="absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-spark-coral px-1 text-[9px] font-bold text-white">{unreadMessages > 9 ? '9+' : unreadMessages}</span>}</button><button onClick={onPass} aria-label="Pass this topic" className="grid h-11 w-11 place-items-center rounded-full bg-white/10 text-white transition hover:bg-white/20"><MoreHorizontal className="h-4 w-4" /></button></footer>
-  </main>;
-}
+  function toggleChat() {
+    setChatOpen((open) => {
+      if (!open) setUnreadMessages(0);
+      return !open;
+    });
+  }
 
-function RoomRollStage({ roomName, stage, time, answer, saved, chatOpen, message, connected, events, unreadMessages, sharedAnswers, selectedName, selectedAnswer, supportSent, onAnswer, onSave, onNext, onSelect, onOpenFollowUp, onSupport, onReaction, onToggleChat, onMessage, onSend, onPass, onEnd }: { roomName: string; stage: number; time: string; answer: string; saved: boolean; chatOpen: boolean; message: string; connected: boolean; events: Array<{ event: string; payload?: Record<string, unknown>; user_id?: number }>; unreadMessages: number; sharedAnswers: [string, string][]; selectedName: string | null; selectedAnswer?: string; supportSent: boolean; onAnswer: (value: string) => void; onSave: () => void; onNext: () => void; onSelect: (name: string) => void; onOpenFollowUp: () => void; onSupport: () => void; onReaction: (kind: 'heart' | 'support' | 'laugh' | 'cheer') => void; onToggleChat: () => void; onMessage: (value: string) => void; onSend: () => void; onPass: () => void; onEnd: () => void }) {
-  const messages = events.filter((item) => item.event === 'chat.sent').map((item, index) => ({ id: `${item.user_id ?? 'member'}-${index}`, body: String(item.payload?.message ?? ''), author: String(item.payload?.actor_name ?? 'Room member') })).filter((item) => item.body);
-  const latestReaction = [...events].reverse().find((item) => item.event === 'reaction.sent');
-  const latestMessage = [...events].reverse().find((item) => item.event === 'chat.sent');
-  const [reactionPickerOpen, setReactionPickerOpen] = useState(false);
-  const [answerPreview, setAnswerPreview] = useState<[string, string] | null>(null);
-  const [reactionBubble, setReactionBubble] = useState<typeof latestReaction | null>(null);
-  const [chatBubble, setChatBubble] = useState<typeof latestMessage | null>(null);
-  useEffect(() => { if (!latestReaction) return; setReactionBubble(latestReaction); const timer = window.setTimeout(() => setReactionBubble(null), 3200); return () => window.clearTimeout(timer); }, [latestReaction]);
-  useEffect(() => { if (!latestMessage || chatOpen || latestMessage.payload?.actor_name === 'You') { if (chatOpen) setChatBubble(null); return; } setChatBubble(latestMessage); const timer = window.setTimeout(() => setChatBubble(null), 4200); return () => window.clearTimeout(timer); }, [latestMessage, chatOpen]);
-  const reactionKind = String(reactionBubble?.payload?.kind ?? 'heart');
-  const reactionLabel = reactionKind === 'laugh' ? 'laughed' : reactionKind === 'support' ? 'sent support' : reactionKind === 'cheer' ? 'celebrated' : 'sent appreciation';
-  const ReactionIcon = reactionKind === 'laugh' ? Laugh : reactionKind === 'support' ? HandHeart : reactionKind === 'cheer' ? Sparkles : Heart;
-  return <main className="flex h-[100dvh] flex-col overflow-hidden bg-[#17111d] pb-[70px] text-white">
-    <header className="shrink-0 flex items-center justify-between gap-3 px-4 py-4 sm:px-7">
-      <Link href="/discover" className="inline-flex items-center gap-2 rounded-full bg-white/8 px-3 py-2 text-xs font-bold text-white/80 transition hover:bg-white/15"><ArrowLeft className="h-4 w-4" />Leave</Link>
-      <div className="min-w-0 text-center"><p className="truncate text-sm font-bold">{roomName}</p><p className="mt-0.5 flex items-center justify-center gap-1 text-[10px] text-white/55"><span className={`h-1.5 w-1.5 rounded-full ${connected ? 'bg-[#8bd49f]' : 'bg-[#f4c96b]'}`} />{connected ? 'Live together' : 'Connecting'} · {time}</p></div>
-      <button onClick={onEnd} className="rounded-full bg-white/8 px-3 py-2 text-xs font-bold text-white/80 transition hover:bg-white/15">End</button>
-    </header>
-    <div className="mx-auto flex min-h-0 w-full max-w-5xl flex-1 flex-col px-3 pb-3 sm:px-6">
-      <section aria-label="People in the room" className="scrollbar-none flex shrink-0 gap-2 overflow-x-auto pb-2">
-        {people.map((person, index) => <RoomRollParticipant key={person.name} person={person} label={index === 0 ? 'You · answering' : index === 1 ? 'Listening' : index === 2 ? 'Ready' : 'Thinking'} active={index === 0 && stage === 1} />)}
-      </section>
-      <section className="mt-3 flex min-h-0 flex-1 flex-col rounded-[30px] bg-[#fffdfa] p-5 text-dark-950 shadow-[0_22px_70px_rgba(0,0,0,.22)] sm:mt-4 sm:p-8 lg:p-10">
-        <div className="flex items-center justify-between gap-3"><span className="flex gap-1.5" aria-label={`Step ${stage} of 3`}>{[1, 2, 3].map((step) => <span key={step} className={`h-1.5 w-1.5 rounded-full ${step <= stage ? 'bg-spark-coral' : 'bg-dark-950/15'}`} />)}</span><span className="text-[11px] font-semibold text-[#6F6470]">{stage === 1 ? 'Your answer stays private' : stage === 2 ? 'Shared with the room' : 'Choose what you want to explore'}</span></div>
-        <div className="flex min-h-0 flex-1 flex-col justify-start py-3 sm:justify-center sm:py-6 lg:py-10">
-          {stage === 1 ? <>
-            <p className="text-xs font-bold tracking-[.14em] text-dark-950/40">START WITH YOURSELF</p>
-            <h1 className="mt-2 max-w-3xl text-balance text-[clamp(1.45rem,6.8vw,3rem)] font-bold leading-[1.08] tracking-[-.06em] sm:mt-3">What is one small ritual that reliably resets your day?</h1>
-            <div className="mt-4 max-w-3xl sm:mt-6"><textarea value={answer} onChange={(event) => onAnswer(event.target.value)} placeholder="Write whatever comes first…" aria-label="Your private answer" className="min-h-16 w-full resize-none rounded-2xl border border-dark-950/12 bg-white p-3 text-sm leading-5 outline-none transition focus:border-spark-coral focus:ring-2 focus:ring-spark-coral/15 sm:min-h-24 sm:p-4 sm:leading-6" /><div className="mt-3 flex flex-col gap-2.5 sm:mt-3 sm:flex-row sm:items-center sm:justify-between"><p className="text-xs leading-4 text-[#6F6470]">Only you can see this until everyone answers.</p><button onClick={onSave} className="w-full shrink-0 rounded-full bg-dark-950 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#3b2b48] sm:w-auto sm:px-5 sm:py-3">{saved ? 'Answer saved' : 'Save my answer'}</button></div></div>
-          </> : stage === 2 ? <div className="flex min-h-0 flex-1 flex-col">
-            <div className="shrink-0"><p className="text-[10px] font-bold tracking-[.14em] text-spark-coral sm:text-xs">SHARED REVEAL</p><h1 className="mt-2 max-w-3xl text-[clamp(1.45rem,6vw,3rem)] font-bold leading-[1.06] tracking-[-.06em] sm:mt-3">Here is what the room shared.</h1><p className="mt-2 max-w-xl text-xs leading-5 text-[#6F6470] sm:mt-4 sm:text-sm sm:leading-6">Everyone’s answer arrives together—take a moment with what feels familiar.</p></div>
-            <div className="mt-3 grid min-h-0 flex-1 grid-cols-2 grid-rows-2 gap-2 sm:mt-6 sm:max-w-4xl sm:gap-3">{sharedAnswers.map(([name, response]) => <button key={name} onClick={() => setAnswerPreview([name, response])} className="min-w-0 overflow-hidden rounded-2xl border border-dark-950/8 bg-white p-2.5 text-left transition hover:border-spark-coral/55 focus:outline-none focus:ring-2 focus:ring-spark-coral sm:p-4"><p className="text-[9px] font-bold tracking-[.13em] text-spark-coral sm:text-[10px]">{name.toUpperCase()}</p><p className="mt-1 line-clamp-2 text-xs leading-4 sm:mt-2 sm:text-sm sm:leading-6">{response}</p><span className="mt-1.5 block text-[10px] font-bold text-dark-950/40 sm:hidden">Tap to read</span></button>)}</div>
-            <div className="shrink-0 pt-3 sm:pt-6"><button onClick={onNext} className="inline-flex items-center gap-2 rounded-full bg-spark-coral px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#d54d6b] sm:px-5 sm:py-3">Keep talking <ArrowRight className="h-4 w-4" /></button></div>
-          </div> : <>
-            <h1 className="max-w-3xl text-[clamp(1.65rem,7vw,3rem)] font-bold leading-[1.08] tracking-[-.06em]">What would you like to know more about?</h1>
-            <p className="mt-3 max-w-xl text-sm leading-6 text-[#6F6470]">Choose an answer that stayed with you.</p>
-            <div className="mt-5 grid max-w-4xl grid-cols-2 gap-2 sm:mt-8 sm:gap-3">{sharedAnswers.map(([name, response]) => <button key={name} onClick={() => onSelect(name)} className={`rounded-2xl border p-3 text-left transition sm:p-4 ${selectedName === name ? 'border-spark-coral bg-[#fff0f3] ring-1 ring-spark-coral' : 'border-dark-950/10 bg-white hover:border-dark-950/30'}`}><span className="text-[10px] font-bold tracking-[.13em] text-spark-coral">{name.toUpperCase()}</span><span className="mt-1 block text-xs leading-5 sm:mt-2 sm:text-sm sm:leading-6">{response}</span></button>)}</div>
-            {selectedName && <div className="mt-3 max-w-2xl rounded-2xl bg-[#eef7f1] p-3 sm:mt-5 sm:p-4"><p className="text-sm font-bold">Follow up with {selectedName}</p><p className="mt-1 text-xs leading-5 text-[#436d55] sm:text-sm sm:leading-6">“What is it about {selectedAnswer?.toLowerCase()} that helps you reset?”</p><div className="mt-3 flex flex-wrap gap-2 sm:mt-4"><button onClick={onOpenFollowUp} className="rounded-full bg-dark-950 px-3 py-2 text-xs font-bold text-white sm:px-4 sm:py-2.5">Ask in room chat</button><button onClick={onSupport} className="rounded-full bg-[#4d8568] px-3 py-2 text-xs font-bold text-white sm:px-4 sm:py-2.5">{supportSent ? 'Support sent' : 'Send support'}</button></div></div>}
-          </>}
+  function handlePromptChat(promptText: string) {
+    setChatOpen(true);
+    sendChatMessage(promptText);
+  }
+
+  // --- 1. OVERVIEW VIEW ---
+  if (view === 'overview') {
+    return (
+      <main className="min-h-screen bg-[#fffdfc] px-5 py-6 text-dark-950 sm:px-8 sm:py-9">
+        <div className="mx-auto max-w-5xl">
+          <Link href="/discover" className="inline-flex items-center gap-2 text-sm font-bold text-[#6F6470]">
+            <ArrowLeft className="h-4 w-4" />
+            Back to rooms
+          </Link>
+          <section className="mt-7 overflow-hidden rounded-[32px] bg-dark-950 text-white">
+            <div className="grid lg:grid-cols-[1.1fr_.9fr]">
+              <div className="p-7 sm:p-10">
+                <p className="text-xs font-bold tracking-[.18em] text-spark-rose">
+                  {isTalk ? 'OPEN CONVERSATION' : isPlay ? 'SHARED GAME ROOM' : 'SHARED EXPERIENCE'}
+                </p>
+                <h1 className="mt-4 text-4xl font-bold tracking-[-.06em] sm:text-5xl">{roomName}</h1>
+                <p className="mt-5 max-w-lg text-base leading-7 text-white/68">{roomSummary}</p>
+                <div className="mt-9 flex flex-wrap gap-3 text-sm text-white/75">
+                  <span className="rounded-full border border-white/15 px-3 py-2">4 people</span>
+                  <span className="rounded-full border border-white/15 px-3 py-2">12 minutes</span>
+                  <span className="rounded-full border border-white/15 px-3 py-2">
+                    {isTalk ? 'Thoughtful conversation' : isPlay ? 'Playful game format' : 'Guided activity'}
+                  </span>
+                </div>
+                <button
+                  disabled={joining}
+                  onClick={() => (joined ? setView('arrival') : joinRoom())}
+                  className="mt-10 inline-flex items-center gap-2 rounded-full bg-spark-coral px-5 py-3 text-sm font-bold text-white transition hover:bg-spark-flame disabled:cursor-wait disabled:opacity-70"
+                >
+                  {joining ? 'Joining room…' : joined ? 'Enter room' : 'Join this room'}
+                  <ArrowRight className="h-4 w-4" />
+                </button>
+                {joinError && <p role="alert" className="mt-4 text-sm text-spark-rose">{joinError}</p>}
+              </div>
+
+              <div className="bg-[#fff0f3] p-7 text-dark-950 sm:p-10">
+                <p className="text-xs font-bold tracking-[.16em] text-spark-coral">HOW IT MOVES</p>
+                <ol className="mt-7 space-y-6">
+                  <li className="flex gap-4">
+                    <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white text-xs font-bold text-spark-coral">1</span>
+                    <p className="text-sm leading-6"><b>Arrive as you are.</b><br />There is nothing to prepare or prove.</p>
+                  </li>
+                  <li className="flex gap-4">
+                    <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white text-xs font-bold text-spark-coral">2</span>
+                    <p className="text-sm leading-6">
+                      <b>{isPlay ? 'Jump into the game mechanic.' : 'Follow one good question or topic.'}</b><br />
+                      {isPlay ? 'Private voting, turns, dares, or quick battles.' : 'Speak, listen, or take a quiet moment.'}
+                    </p>
+                  </li>
+                  <li className="flex gap-4">
+                    <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white text-xs font-bold text-spark-coral">3</span>
+                    <p className="text-sm leading-6"><b>Switch anytime.</b><br />Change formats whenever the room wants a new vibe.</p>
+                  </li>
+                </ol>
+              </div>
+            </div>
+          </section>
+          <p className="mt-5 flex items-center justify-center gap-2 text-xs text-[#6F6470]">
+            <ShieldCheck className="h-4 w-4" />
+            Leave any time. Nothing opens into a private chat unless both people choose it.
+          </p>
         </div>
-      </section>
-    </div>
-    {answerPreview && <div role="dialog" aria-modal="true" aria-label={`${answerPreview[0]}'s full answer`} className="fixed inset-0 z-50 grid place-items-center bg-[#17111d]/60 p-4 backdrop-blur-sm"><section className="w-full max-w-lg rounded-[28px] bg-[#fffdfa] p-6 text-dark-950 shadow-2xl sm:p-8"><div className="flex items-start justify-between gap-4"><div><p className="text-xs font-bold tracking-[.14em] text-spark-coral">{answerPreview[0].toUpperCase()}’S ANSWER</p><h2 className="mt-2 text-2xl font-bold tracking-[-.045em]">A closer look</h2></div><button onClick={() => setAnswerPreview(null)} className="rounded-full bg-dark-950/5 px-3 py-2 text-xs font-bold">Close</button></div><p className="mt-7 text-base leading-7 sm:text-lg sm:leading-8">{answerPreview[1]}</p><button onClick={() => setAnswerPreview(null)} className="mt-8 rounded-full bg-dark-950 px-5 py-3 text-sm font-bold text-white">Back to answers</button></section></div>}
-    {reactionBubble && <div aria-live="polite" className="fixed right-4 top-[132px] z-20 flex animate-[bounce_1.1s_ease-in-out_1] items-center gap-2 rounded-full border border-white/10 bg-[#281d32]/90 px-3 py-2 text-xs font-bold text-white shadow-lg backdrop-blur"><span className="grid h-6 w-6 place-items-center rounded-full bg-white/10"><ReactionIcon className="h-3.5 w-3.5 text-[#f7b8c7]" fill={reactionKind === 'heart' ? 'currentColor' : 'none'} /></span>{String(reactionBubble.payload?.actor_name ?? 'Someone')} {reactionLabel}</div>}
-    {chatBubble && !chatOpen && <button onClick={onToggleChat} className="fixed bottom-[86px] left-4 z-20 max-w-[min(20rem,calc(100vw-2rem))] animate-[bounce_900ms_ease-in-out_1] rounded-2xl border border-white/10 bg-[#fffdfa] px-3 py-2.5 text-left text-dark-950 shadow-xl"><span className="flex items-center gap-2"><span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[#fff0f3] text-spark-coral"><MessageCircle className="h-3.5 w-3.5" /></span><span className="min-w-0"><span className="block text-[10px] font-bold text-spark-coral">{String(chatBubble.payload?.actor_name ?? 'Room member')}</span><span className="block truncate text-xs font-medium">{String(chatBubble.payload?.message ?? '')}</span></span></span></button>}
-    {chatOpen && <section aria-label="Room conversation" className="fixed bottom-[82px] left-3 right-3 z-30 mx-auto flex h-[min(25rem,calc(100dvh-180px))] max-w-md flex-col overflow-hidden rounded-[24px] border border-dark-950/10 bg-[#fffdfa] text-dark-950 shadow-2xl"><header className="flex shrink-0 items-center justify-between border-b border-dark-950/8 px-4 py-3"><div><p className="text-sm font-bold">Room conversation</p><p className="text-[11px] text-[#6F6470]">Visible to everyone here</p></div><button onClick={onToggleChat} className="rounded-full bg-dark-950/5 px-3 py-1.5 text-xs font-bold">Close</button></header><div className="min-h-0 flex-1 space-y-2 overflow-y-auto px-3 py-3">{messages.length ? messages.map((item) => <article key={item.id} className={`max-w-[88%] rounded-2xl px-3 py-2 ${item.author === 'You' ? 'ml-auto bg-[#fff0f3]' : 'bg-dark-950/5'}`}><p className="text-[10px] font-bold text-spark-coral">{item.author}</p><p className="mt-1 text-sm leading-5">{item.body}</p></article>) : <p className="px-2 pt-3 text-sm leading-6 text-[#6F6470]">No messages yet. Keep it light and related to the room.</p>}</div><form onSubmit={(event) => { event.preventDefault(); onSend(); }} className="flex shrink-0 gap-2 border-t border-dark-950/8 p-2"><input value={message} onChange={(event) => onMessage(event.target.value)} placeholder="Say something to the room…" maxLength={500} className="min-w-0 flex-1 rounded-xl bg-dark-950/5 px-3 text-sm outline-none" /><button aria-label="Send message" className="grid h-10 w-10 place-items-center rounded-xl bg-spark-coral text-white"><Send className="h-4 w-4" /></button></form></section>}
-    {reactionPickerOpen && <div className="fixed bottom-[82px] left-1/2 z-40 flex -translate-x-1/2 gap-1 rounded-full border border-white/15 bg-[#281d32] p-1.5 shadow-xl"><button onClick={() => { onReaction('heart'); setReactionPickerOpen(false); }} aria-label="Send appreciation" className="grid h-10 w-10 place-items-center rounded-full text-[#f7b8c7] transition hover:bg-white/10"><Heart className="h-5 w-5" fill="currentColor" /></button><button onClick={() => { onReaction('laugh'); setReactionPickerOpen(false); }} aria-label="Send laughter" className="grid h-10 w-10 place-items-center rounded-full text-[#f4c96b] transition hover:bg-white/10"><Laugh className="h-5 w-5" /></button><button onClick={() => { onReaction('support'); setReactionPickerOpen(false); }} aria-label="Send support" className="grid h-10 w-10 place-items-center rounded-full text-[#9ad4ac] transition hover:bg-white/10"><HandHeart className="h-5 w-5" /></button><button onClick={() => { onReaction('cheer'); setReactionPickerOpen(false); }} aria-label="Send celebration" className="grid h-10 w-10 place-items-center rounded-full text-[#d8b5f1] transition hover:bg-white/10"><Sparkles className="h-5 w-5" /></button></div>}
-    <footer className="fixed inset-x-0 bottom-0 z-30 flex h-[70px] items-center justify-center gap-2 border-t border-white/10 bg-[#17111d]/95 px-4 backdrop-blur"><button onClick={() => setReactionPickerOpen((open) => !open)} aria-label="Choose a reaction" aria-expanded={reactionPickerOpen} className={`grid h-11 w-11 place-items-center rounded-full transition ${reactionPickerOpen ? 'bg-spark-coral text-white' : 'bg-white/10 text-[#f7b8c7] hover:bg-white/20'}`}><Heart className="h-4 w-4" fill={reactionPickerOpen ? 'currentColor' : 'none'} /></button><button aria-label="Microphone status" className="grid h-11 w-11 place-items-center rounded-full bg-white/10 text-white"><Mic className="h-4 w-4" /></button><button aria-label="Camera status" className="grid h-11 w-11 place-items-center rounded-full bg-white/10 text-white"><Video className="h-4 w-4" /></button><button onClick={onToggleChat} aria-label="Toggle room chat" className={`relative grid h-11 w-11 place-items-center rounded-full transition ${chatOpen ? 'bg-spark-coral text-white' : 'bg-white/10 text-white hover:bg-white/20'}`}><MessageCircle className="h-4 w-4" />{unreadMessages > 0 && !chatOpen && <span className="absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-spark-coral px-1 text-[9px] font-bold text-white">{unreadMessages > 9 ? '9+' : unreadMessages}</span>}</button><button onClick={onPass} aria-label="Pass prompt" className="grid h-11 w-11 place-items-center rounded-full bg-white/10 text-white transition hover:bg-white/20"><MoreHorizontal className="h-4 w-4" /></button></footer>
-  </main>;
+      </main>
+    );
+  }
+
+  // --- 2. ARRIVAL VIEW ---
+  if (view === 'arrival') {
+    return (
+      <main className="grid min-h-screen place-items-center bg-[#fffdfc] px-5 text-dark-950">
+        <section className="w-full max-w-lg text-center">
+          <Link href="/discover" className="absolute left-5 top-6 inline-flex items-center gap-2 text-sm font-bold text-[#6F6470]">
+            <ArrowLeft className="h-4 w-4" />
+            Leave room
+          </Link>
+          <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-[#fff0f3]">
+            <UsersRound className="h-6 w-6 text-spark-coral" />
+          </span>
+          <p className="mt-7 text-xs font-bold uppercase tracking-widest text-[#6F6470]">{roomName}</p>
+          <h1 className="mt-3 text-3xl font-bold tracking-[-.055em]">You’re in.</h1>
+          <p className="mx-auto mt-3 max-w-sm text-sm leading-6 text-[#6F6470]">
+            The room opens once everyone is ready. Choose your starting format below:
+          </p>
+
+          {/* Template Choice on Arrival */}
+          <div className="mt-6 grid grid-cols-2 gap-2 text-left">
+            {isTogether ? (
+              <>
+                <button
+                  onClick={() => setTemplate('plan_together')}
+                  className={`rounded-2xl border p-3 transition ${
+                    template === 'plan_together'
+                      ? 'border-spark-coral bg-[#fff0f3] ring-1 ring-spark-coral'
+                      : 'border-dark-950/10 bg-white hover:border-dark-950/25'
+                  }`}
+                >
+                  <p className="text-xs font-bold text-dark-950">Plan a Date</p>
+                  <p className="text-[10px] text-[#6F6470]">Budget, mood & time match</p>
+                </button>
+                <button
+                  onClick={() => setTemplate('shared_challenges')}
+                  className={`rounded-2xl border p-3 transition ${
+                    template === 'shared_challenges'
+                      ? 'border-spark-coral bg-[#fff0f3] ring-1 ring-spark-coral'
+                      : 'border-dark-950/10 bg-white hover:border-dark-950/25'
+                  }`}
+                >
+                  <p className="text-xs font-bold text-dark-950">Shared Challenges</p>
+                  <p className="text-[10px] text-[#6F6470]">Connection checklist</p>
+                </button>
+                <button
+                  onClick={() => setTemplate('date_night')}
+                  className={`col-span-2 rounded-2xl border p-3 transition ${
+                    template === 'date_night'
+                      ? 'border-spark-coral bg-[#fff0f3] ring-1 ring-spark-coral'
+                      : 'border-dark-950/10 bg-white hover:border-dark-950/25'
+                  }`}
+                >
+                  <p className="text-xs font-bold text-dark-950">Date Night Anywhere</p>
+                  <p className="text-[10px] text-[#6F6470]">3-chapter journey: play, talk, keepsake</p>
+                </button>
+              </>
+            ) : isPlay ? (
+              <>
+                <button
+                  onClick={() => setTemplate('most_likely_to')}
+                  className={`rounded-2xl border p-3 transition ${
+                    template === 'most_likely_to'
+                      ? 'border-spark-coral bg-[#fff0f3] ring-1 ring-spark-coral'
+                      : 'border-dark-950/10 bg-white hover:border-dark-950/25'
+                  }`}
+                >
+                  <p className="text-xs font-bold text-dark-950">Most Likely To</p>
+                  <p className="text-[10px] text-[#6F6470]">Party voting & reveals</p>
+                </button>
+                <button
+                  onClick={() => setTemplate('truth_or_dare')}
+                  className={`rounded-2xl border p-3 transition ${
+                    template === 'truth_or_dare'
+                      ? 'border-spark-coral bg-[#fff0f3] ring-1 ring-spark-coral'
+                      : 'border-dark-950/10 bg-white hover:border-dark-950/25'
+                  }`}
+                >
+                  <p className="text-xs font-bold text-dark-950">Truth or Dare</p>
+                  <p className="text-[10px] text-[#6F6470]">Turns & challenges</p>
+                </button>
+                <button
+                  onClick={() => setTemplate('guess_my_answer')}
+                  className={`rounded-2xl border p-3 transition ${
+                    template === 'guess_my_answer'
+                      ? 'border-spark-coral bg-[#fff0f3] ring-1 ring-spark-coral'
+                      : 'border-dark-950/10 bg-white hover:border-dark-950/25'
+                  }`}
+                >
+                  <p className="text-xs font-bold text-dark-950">Guess My Answer</p>
+                  <p className="text-[10px] text-[#6F6470]">Predictions & matches</p>
+                </button>
+                <button
+                  onClick={() => setTemplate('word_battle')}
+                  className={`rounded-2xl border p-3 transition ${
+                    template === 'word_battle'
+                      ? 'border-spark-coral bg-[#fff0f3] ring-1 ring-spark-coral'
+                      : 'border-dark-950/10 bg-white hover:border-dark-950/25'
+                  }`}
+                >
+                  <p className="text-xs font-bold text-dark-950">Word Battle</p>
+                  <p className="text-[10px] text-[#6F6470]">Quick competitive round</p>
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() => setTemplate('open_talk')}
+                  className={`rounded-2xl border p-3 transition ${
+                    template === 'open_talk'
+                      ? 'border-spark-coral bg-[#fff0f3] ring-1 ring-spark-coral'
+                      : 'border-dark-950/10 bg-white hover:border-dark-950/25'
+                  }`}
+                >
+                  <p className="text-xs font-bold text-dark-950">Open Conversation</p>
+                  <p className="text-[10px] text-[#6F6470]">Spacious editorial topic</p>
+                </button>
+                <button
+                  onClick={() => setTemplate('guided_journey')}
+                  className={`rounded-2xl border p-3 transition ${
+                    template === 'guided_journey'
+                      ? 'border-spark-coral bg-[#fff0f3] ring-1 ring-spark-coral'
+                      : 'border-dark-950/10 bg-white hover:border-dark-950/25'
+                  }`}
+                >
+                  <p className="text-xs font-bold text-dark-950">Guided Journey</p>
+                  <p className="text-[10px] text-[#6F6470]">Question-by-question</p>
+                </button>
+                <button
+                  onClick={() => setTemplate('debate')}
+                  className={`rounded-2xl border p-3 transition ${
+                    template === 'debate'
+                      ? 'border-spark-coral bg-[#fff0f3] ring-1 ring-spark-coral'
+                      : 'border-dark-950/10 bg-white hover:border-dark-950/25'
+                  }`}
+                >
+                  <p className="text-xs font-bold text-dark-950">Debate</p>
+                  <p className="text-[10px] text-[#6F6470]">Positions & reveals</p>
+                </button>
+                <button
+                  onClick={() => setTemplate('quick_takes')}
+                  className={`rounded-2xl border p-3 transition ${
+                    template === 'quick_takes'
+                      ? 'border-spark-coral bg-[#fff0f3] ring-1 ring-spark-coral'
+                      : 'border-dark-950/10 bg-white hover:border-dark-950/25'
+                  }`}
+                >
+                  <p className="text-xs font-bold text-dark-950">Quick Takes</p>
+                  <p className="text-[10px] text-[#6F6470]">Rapid-fire opinions</p>
+                </button>
+              </>
+            )}
+          </div>
+
+          <div className="mt-8 rounded-[28px] border border-dark-950/10 bg-white p-6 text-left shadow-sm">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-bold">4 of 4 people are here</p>
+              <span className={`text-xs font-semibold ${connected ? 'text-[#4d8568]' : 'text-[#6F6470]'}`}>
+                {connected ? '● Live' : '○ Connecting'}
+              </span>
+            </div>
+            <div className="mt-5 flex -space-x-2">
+              {DEFAULT_PEOPLE.map((p) => (
+                <span
+                  key={p.id}
+                  className="grid h-9 w-9 place-items-center rounded-full border-2 border-white text-xs font-bold text-white shadow-sm"
+                  style={{ background: p.color }}
+                >
+                  {p.initial}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <button
+            onClick={() => {
+              send('room.ready');
+              setView('live');
+            }}
+            className="mt-7 inline-flex items-center gap-2 rounded-full bg-dark-950 px-6 py-3 text-sm font-bold text-white transition hover:bg-dark-900"
+          >
+            Enter the room <ArrowRight className="h-4 w-4" />
+          </button>
+        </section>
+      </main>
+    );
+  }
+
+  // --- 3. WRAP VIEW ---
+  if (view === 'wrap') {
+    return (
+      <main className="grid min-h-screen place-items-center bg-[#fffdfc] px-5 py-8 text-dark-950">
+        <section className="w-full max-w-2xl text-center">
+          <p className="text-xs font-bold uppercase tracking-wider text-spark-coral">Room complete</p>
+          <h1 className="mt-3 text-4xl font-bold tracking-[-.06em]">That was {roomName}.</h1>
+          <p className="mx-auto mt-4 max-w-lg text-base leading-7 text-[#6F6470]">
+            You shared a small moment. What happens next is entirely up to you.
+          </p>
+          <Link
+            href="/discover"
+            className="mt-8 inline-flex items-center gap-2 rounded-full bg-dark-950 px-6 py-3 text-sm font-bold text-white transition hover:bg-dark-900"
+          >
+            Back to rooms <ArrowRight className="h-4 w-4" />
+          </Link>
+        </section>
+      </main>
+    );
+  }
+
+  // --- 4. LIVE VIEW WITH ROOM SHELL & PLUGGABLE STAGES ---
+  return (
+    <RoomShell
+      roomName={roomName}
+      timeRemaining={formattedTime}
+      connected={connected}
+      participants={DEFAULT_PEOPLE}
+      currentTemplate={template}
+      onSelectTemplate={setTemplate}
+      onReaction={sendReaction}
+      onSendMessage={sendChatMessage}
+      onEndRoom={() => setView('wrap')}
+      events={roomEvents}
+      chatOpen={chatOpen}
+      onToggleChat={toggleChat}
+      unreadCount={unreadMessages}
+    >
+      {/* Talk Templates */}
+      {template === 'open_talk' && (
+        <OpenConversationStage
+          roomName={roomName}
+          isHost={true}
+          participants={DEFAULT_PEOPLE}
+          onSendMessage={sendChatMessage}
+          onSendReaction={sendReaction}
+          onPromptChat={handlePromptChat}
+        />
+      )}
+
+      {template === 'guided_journey' && (
+        <GuidedConversationStage
+          roomName={roomName}
+          isHost={true}
+          participants={DEFAULT_PEOPLE}
+          onSendMessage={sendChatMessage}
+          onSendReaction={sendReaction}
+          onPromptChat={handlePromptChat}
+        />
+      )}
+
+      {template === 'debate' && (
+        <DebateStage
+          roomName={roomName}
+          isHost={true}
+          participants={DEFAULT_PEOPLE}
+          onSendMessage={sendChatMessage}
+          onSendReaction={sendReaction}
+          onPromptChat={handlePromptChat}
+        />
+      )}
+
+      {template === 'quick_takes' && (
+        <QuickTakesStage
+          roomName={roomName}
+          isHost={true}
+          participants={DEFAULT_PEOPLE}
+          onSendMessage={sendChatMessage}
+          onSendReaction={sendReaction}
+          onPromptChat={handlePromptChat}
+        />
+      )}
+
+      {/* Play Templates */}
+      {template === 'most_likely_to' && (
+        <MostLikelyToStage
+          roomName={roomName}
+          isHost={true}
+          participants={DEFAULT_PEOPLE}
+          onSendMessage={sendChatMessage}
+          onSendReaction={sendReaction}
+          onPromptChat={handlePromptChat}
+        />
+      )}
+
+      {template === 'truth_or_dare' && (
+        <TruthOrDareStage
+          roomName={roomName}
+          isHost={true}
+          participants={DEFAULT_PEOPLE}
+          onSendMessage={sendChatMessage}
+          onSendReaction={sendReaction}
+          onPromptChat={handlePromptChat}
+        />
+      )}
+
+      {template === 'guess_my_answer' && (
+        <GuessMyAnswerStage
+          roomName={roomName}
+          isHost={true}
+          participants={DEFAULT_PEOPLE}
+          onSendMessage={sendChatMessage}
+          onSendReaction={sendReaction}
+          onPromptChat={handlePromptChat}
+        />
+      )}
+
+      {template === 'word_battle' && (
+        <WordBattleStage
+          roomName={roomName}
+          isHost={true}
+          participants={DEFAULT_PEOPLE}
+          onSendMessage={sendChatMessage}
+          onSendReaction={sendReaction}
+          onPromptChat={handlePromptChat}
+        />
+      )}
+
+      {template === 'build_a_story' && (
+        <BuildStoryStage
+          roomName={roomName}
+          isHost={true}
+          participants={DEFAULT_PEOPLE}
+          onSendMessage={sendChatMessage}
+          onSendReaction={sendReaction}
+          onPromptChat={handlePromptChat}
+        />
+      )}
+
+      {/* Together Templates (2 People · Invite Only) */}
+      {template === 'plan_together' && (
+        <PlanTogetherStage
+          roomName={roomName}
+          isHost={true}
+          participants={roomParticipants}
+          onSendMessage={sendChatMessage}
+          onSendReaction={sendReaction}
+          onPromptChat={handlePromptChat}
+        />
+      )}
+
+      {template === 'shared_challenges' && (
+        <SharedChallengesStage
+          roomName={roomName}
+          isHost={true}
+          participants={roomParticipants}
+          onSendMessage={sendChatMessage}
+          onSendReaction={sendReaction}
+          onPromptChat={handlePromptChat}
+        />
+      )}
+
+      {template === 'date_night' && (
+        <DateNightAnywhereStage
+          roomName={roomName}
+          isHost={true}
+          participants={roomParticipants}
+          onSendMessage={sendChatMessage}
+          onSendReaction={sendReaction}
+          onPromptChat={handlePromptChat}
+        />
+      )}
+    </RoomShell>
+  );
 }
-
-function RoomRollParticipant({ person, label, active }: { person: { name: string; initial: string; color: string }; label: string; active: boolean }) { return <article className={`flex w-[136px] shrink-0 items-center gap-2 rounded-2xl border px-2.5 py-2 ${active ? 'border-spark-coral bg-white/14' : 'border-white/10 bg-white/6'}`}><span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl text-xs font-bold text-white" style={{ background: person.color }}>{person.initial}</span><span className="min-w-0"><span className="block truncate text-xs font-bold">{person.name}</span><span className={`block truncate text-[10px] ${active ? 'text-[#f7b8c7]' : 'text-white/50'}`}>{label}</span></span>{active && <Volume2 className="ml-auto h-3.5 w-3.5 shrink-0 text-[#f7b8c7]" />}</article>; }
-
-function StagePerson({ person, label, active }: { person: { name: string; initial: string; color: string }; label: string; active: boolean }) { return <article className={`relative min-h-[calc(50vh-42px)] overflow-hidden rounded-[18px] ${active ? 'ring-2 ring-spark-coral' : ''}`} style={{ background: `linear-gradient(145deg, ${person.color}, #241d30 70%)` }}><div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_35%,rgba(255,255,255,.14),transparent_28%)]" /><span className="absolute left-1/2 top-[40%] grid h-20 w-20 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-white/20 bg-white/10 text-2xl font-bold text-white/95 shadow-2xl sm:h-28 sm:w-28 sm:text-3xl">{person.initial}</span><div className="absolute bottom-3 left-3 flex items-center gap-2 rounded-full bg-black/25 px-2.5 py-1.5 text-xs font-bold backdrop-blur"><span className={`h-2 w-2 rounded-full ${active ? 'bg-[#8bd49f]' : 'bg-white/45'}`} />{person.name}<span className="hidden text-white/55 sm:inline">· {label}</span></div>{active && <Volume2 className="absolute right-3 top-3 h-4 w-4 text-white/80" />}</article>; }
-
-function Step({ number, title, copy }: { number: string; title: string; copy: string }) { return <li className="flex gap-4"><span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white text-xs font-bold text-spark-coral">{number}</span><p className="text-sm leading-6"><b>{title}</b><br />{copy}</p></li>; }
-function Avatar({ person }: { person: { name: string; initial: string; color: string } }) { return <span title={person.name} className="grid h-9 w-9 place-items-center rounded-full border-2 border-white text-xs font-bold text-white" style={{ background: person.color }}>{person.initial}</span>; }
-function LiveState({ connected }: { connected: boolean }) { return <span className={`mt-0.5 flex items-center justify-center gap-1 text-xs font-semibold ${connected ? 'text-[#4d8568]' : 'text-[#6F6470]'}`}><span className={`h-1.5 w-1.5 rounded-full ${connected ? 'bg-[#4d8568]' : 'bg-dark-950/25'}`} />{connected ? 'Live' : 'Connecting'}</span>; }
