@@ -9,6 +9,17 @@ from .models import RoomInvite
 
 
 PRIVATE_EXPERIENCES = {
+    'most-likely-to': ('Most Likely To', 'Funny group voting, surprising reveals, and lighthearted banter.', 12, 6),
+    'guess-my-answer': ('Guess My Answer', 'Test how well you know someone by predicting their answers.', 10, 4),
+    'word-battle': ('Word Battle', 'Fast-paced word associations, prompt battles, and live scores.', 8, 4),
+    'build-a-story': ('Build a Story', 'Collaborative storytelling where everyone adds one sentence.', 12, 6),
+    'open-conversation': ('Open Conversation', 'A calm topic discussion with no scores or timer pressure.', 15, 6),
+    'guided-conversation': ('Guided Conversation', 'A question journey with subtle progress and simultaneous reveals.', 15, 4),
+    'debate': ('Debate', 'Private stance voting and group reveals for exploring different views.', 12, 6),
+    'quick-takes': ('Quick Takes', 'Rapid-fire opinions on bold statements.', 8, 6),
+    'plan-something-together': ('Plan Something Together', 'Compare time, budget, and mood to find overlapping ideas.', 10, 2),
+    'shared-challenges': ('Shared Challenges', 'Complete small shared goals and track joint progress.', 15, 2),
+    'date-night-anywhere': ('Date Night Anywhere', 'A curated date for two people, in person or remote.', 20, 2),
     'predict-my-answer': ('Predict My Answer', 'A playful way to see what you notice about each other.', 8, 2),
     'better-question': ('The Better Question', 'Prompts that take the pressure off the first real conversation.', 15, 4),
     'make-a-plan': ('Make a Plan', 'Turn shared taste into something you could actually do together.', 10, 2),
@@ -18,6 +29,17 @@ PRIVATE_EXPERIENCES = {
 }
 
 EXPERIENCE_MODES = {
+    'most-likely-to': Room.Mode.PLAY,
+    'guess-my-answer': Room.Mode.PLAY,
+    'word-battle': Room.Mode.PLAY,
+    'build-a-story': Room.Mode.CREATE,
+    'open-conversation': Room.Mode.TALK,
+    'guided-conversation': Room.Mode.TALK,
+    'debate': Room.Mode.TALK,
+    'quick-takes': Room.Mode.TALK,
+    'plan-something-together': Room.Mode.PLAN,
+    'shared-challenges': Room.Mode.PLAN,
+    'date-night-anywhere': Room.Mode.PLAN,
     'predict-my-answer': Room.Mode.PLAY,
     'better-question': Room.Mode.TALK,
     'make-a-plan': Room.Mode.PLAN,

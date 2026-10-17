@@ -5,6 +5,8 @@ from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.viewsets import ReadOnlyModelViewSet
 from rest_framework.views import APIView
+from django.utils.dateparse import parse_datetime
+from rest_framework.exceptions import ValidationError
 from .models import Room
 from .serializers import PublicRoomCreateSerializer, RoomSerializer
 from .services import create_private_room, create_public_room, join_room
@@ -39,7 +41,12 @@ class CreatePrivateRoomView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        room, invite = create_private_room(user=request.user, experience=request.data.get('experience', ''), topic=request.data.get('topic', ''), discussion_description=request.data.get('discussion_description', ''))
+        starts_at = request.data.get('starts_at') or None
+        if starts_at:
+            starts_at = parse_datetime(starts_at)
+            if starts_at is None:
+                raise ValidationError({'starts_at': 'Use a valid ISO-8601 datetime.'})
+        room, invite = create_private_room(user=request.user, experience=request.data.get('experience', ''), topic=request.data.get('topic', ''), discussion_description=request.data.get('discussion_description', ''), starts_at=starts_at)
         return Response({'data': {
             'room': {'id': str(room.id), 'code': room.code, 'title': room.title},
             'invite': {'token': str(invite.token), 'expires_at': invite.expires_at},

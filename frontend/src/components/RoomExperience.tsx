@@ -32,7 +32,7 @@ const DEFAULT_PEOPLE: RoomParticipant[] = [
   { id: '4', name: 'Sam', initial: 'S', color: '#d7953d', statusLabel: 'Here' },
 ];
 
-type ExperienceMode = 'talk' | 'play' | 'together' | 'plan';
+type ExperienceMode = 'talk' | 'play' | 'flirt' | 'create' | 'together' | 'plan';
 
 interface RoomExperienceProps {
   roomId: string;
@@ -59,7 +59,7 @@ export default function RoomExperience({
   const seenChatCount = useRef(0);
 
   const isTalk = mode === 'talk';
-  const isPlay = mode === 'play';
+  const isPlay = mode === 'play' || mode === 'flirt' || mode === 'create';
   const isTogether = mode === 'together' || mode === 'plan';
 
   // Initialize template based on mode
