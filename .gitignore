@@ -1,0 +1,22 @@
+# JavaScript / Next.js
+node_modules/
+.next/
+dist/
+
+# Python / Django
+__pycache__/
+*.py[cod]
+*.sqlite3
+.venv/
+venv/
+
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+!.env.local.example
+
+# Tooling
+*.log
+*.tsbuildinfo
+.DS_Store

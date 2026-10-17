@@ -1,0 +1,53 @@
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+  content: [
+    "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
+  ],
+  theme: {
+    extend: {
+      colors: {
+        dark: {
+          950: '#281D32',
+          900: '#352541',
+          850: '#43314f',
+          800: '#55405f',
+          700: '#6f6470',
+          600: '#887b8a',
+        },
+        spark: {
+          coral: '#F05A78',
+          flame: '#ec765c',
+          rose: '#F7B8C7',
+          amber: '#F4C96B',
+          blush: '#FFF0F3',
+        },
+        cream: {
+          50: '#fdfbf7',
+          100: '#f8f4ec',
+          200: '#eee6d8',
+        }
+      },
+      fontFamily: {
+        sans: ['var(--font-inter)', 'system-ui', 'sans-serif'],
+        display: ['var(--font-display)', 'system-ui', 'sans-serif'],
+      },
+      animation: {
+        'pulse-glow': 'pulseGlow 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        'float-slow': 'float 6s ease-in-out infinite',
+      },
+      keyframes: {
+        pulseGlow: {
+          '0%, 100%': { opacity: '0.4', transform: 'scale(1)' },
+          '50%': { opacity: '0.8', transform: 'scale(1.05)' },
+        },
+        float: {
+          '0%, 100%': { transform: 'translateY(0px)' },
+          '50%': { transform: 'translateY(-8px)' },
+        }
+      }
+    },
+  },
+  plugins: [],
+};
