@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -150,6 +150,14 @@ const experiences = [
 ] as const;
 
 export default function CreateExperiencePage() {
+  return (
+    <Suspense fallback={<CreateExperienceLoading />}>
+      <CreateExperienceFlow />
+    </Suspense>
+  );
+}
+
+function CreateExperienceFlow() {
   const router = useRouter();
   const search = useSearchParams();
   const selectedByUrl = experiences.find(
@@ -642,6 +650,19 @@ export default function CreateExperiencePage() {
             )}
           </footer>
         </section>
+      </main>
+    </div>
+  );
+}
+
+function CreateExperienceLoading() {
+  return (
+    <div className="min-h-screen bg-[#fffdfc] text-dark-950 md:pl-[244px]">
+      <AppNav />
+      <main className="mx-auto max-w-3xl px-5 pb-28 pt-8 sm:px-8 sm:pt-12 md:pb-14">
+        <div className="h-4 w-24 animate-pulse rounded bg-dark-950/10" />
+        <div className="mt-10 h-12 max-w-md animate-pulse rounded-2xl bg-dark-950/10" />
+        <div className="mt-8 h-72 animate-pulse rounded-[30px] bg-dark-950/5" />
       </main>
     </div>
   );
