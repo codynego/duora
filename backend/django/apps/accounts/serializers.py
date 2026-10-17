@@ -5,6 +5,46 @@ from rest_framework import serializers
 User = get_user_model()
 
 
+class MeSerializer(serializers.ModelSerializer):
+    """The small, private account record used by Duora's signed-in surfaces."""
+
+    display_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = ('id', 'username', 'display_name', 'email', 'date_joined')
+        read_only_fields = ('id', 'date_joined')
+
+    def get_display_name(self, user):
+        return user.get_full_name().strip() or user.username
+
+
+class MeUpdateSerializer(serializers.ModelSerializer):
+    display_name = serializers.CharField(max_length=150, required=False, allow_blank=False, write_only=True)
+
+    class Meta:
+        model = User
+        fields = ('username', 'email', 'display_name')
+
+    def validate_username(self, value):
+        username = value.strip()
+        if not username:
+            raise serializers.ValidationError('Choose a username.')
+        other_users = User.objects.filter(username__iexact=username).exclude(pk=self.instance.pk)
+        if other_users.exists():
+            raise serializers.ValidationError('This username is already in use.')
+        return username
+
+    def update(self, instance, validated_data):
+        display_name = validated_data.pop('display_name', None)
+        for field, value in validated_data.items():
+            setattr(instance, field, value.strip() if isinstance(value, str) else value)
+        if display_name is not None:
+            instance.first_name = display_name.strip()
+        instance.save()
+        return instance
+
+
 class RegisterSerializer(serializers.Serializer):
     username = serializers.CharField(max_length=150)
     password = serializers.CharField(write_only=True, min_length=10)

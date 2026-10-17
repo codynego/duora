@@ -5,6 +5,7 @@ from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.viewsets import ReadOnlyModelViewSet
 from rest_framework.views import APIView
+from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from rest_framework.exceptions import ValidationError
 from .models import Room
@@ -46,6 +47,10 @@ class CreatePrivateRoomView(APIView):
             starts_at = parse_datetime(starts_at)
             if starts_at is None:
                 raise ValidationError({'starts_at': 'Use a valid ISO-8601 datetime.'})
+            if timezone.is_naive(starts_at):
+                starts_at = timezone.make_aware(starts_at, timezone.get_current_timezone())
+            if starts_at <= timezone.now():
+                raise ValidationError({'starts_at': 'Choose a time in the future, or start the experience now.'})
         room, invite = create_private_room(user=request.user, experience=request.data.get('experience', ''), topic=request.data.get('topic', ''), discussion_description=request.data.get('discussion_description', ''), starts_at=starts_at)
         return Response({'data': {
             'room': {'id': str(room.id), 'code': room.code, 'title': room.title},

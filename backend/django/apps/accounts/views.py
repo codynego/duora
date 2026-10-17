@@ -6,7 +6,7 @@ from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework_simplejwt.tokens import RefreshToken
-from .serializers import RegisterSerializer
+from .serializers import MeSerializer, MeUpdateSerializer, RegisterSerializer
 
 User = get_user_model()
 
@@ -35,8 +35,15 @@ class RegisterView(APIView):
 
 class MeView(APIView):
     permission_classes = [IsAuthenticated]
+
     def get(self, request):
-        return Response({'id': request.user.pk, 'username': request.user.username})
+        return Response({'data': MeSerializer(request.user).data})
+
+    def patch(self, request):
+        serializer = MeUpdateSerializer(request.user, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response({'data': MeSerializer(request.user).data})
 
 
 class PasswordResetRequestView(APIView):
