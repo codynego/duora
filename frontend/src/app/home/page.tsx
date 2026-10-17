@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { ArrowRight, CalendarDays, Clock3, HeartHandshake, LockKeyhole, Sparkles, UsersRound } from 'lucide-react';
 import AppNav from '@/components/AppNav';
 import { getAccessToken } from '@/lib/auth';
@@ -17,11 +18,13 @@ function timeLabel(value: string) {
 
 export default function Home() {
   const { user, ready } = useCurrentUser();
+  const router = useRouter();
   const [rooms, setRooms] = useState<Room[]>([]);
   const [myRooms, setMyRooms] = useState<Room[]>([]);
   const [roomsReady, setRoomsReady] = useState(false);
 
   useEffect(() => {
+    if (!ready || !user) return;
     async function load() {
       try {
         const publicResponse = await fetch(`${api}/api/v1/rooms/`, { headers: { Accept: 'application/json' } });
@@ -35,16 +38,22 @@ export default function Home() {
       } finally { setRoomsReady(true); }
     }
     void load();
-  }, []);
+  }, [ready, user]);
 
-  const greeting = user ? `Welcome back, ${user.display_name}.` : 'Make room for a real moment.';
+  useEffect(() => {
+    if (ready && !user) router.replace('/login');
+  }, [ready, router, user]);
+
+  if (!ready || !user) return <div className="min-h-screen bg-[#fffdfc]" aria-busy="true" />;
+
+  const greeting = `Good evening, ${user.display_name}.`;
   return <div className="min-h-screen bg-[#fffdfc] text-dark-950 md:pl-[244px]"><AppNav />
     <main className="mx-auto max-w-7xl px-5 pb-28 pt-10 sm:px-8 sm:pt-14 md:pb-14">
-      <section className="grid items-end gap-5 md:grid-cols-[1fr_auto]"><div><p className="section-label">{user ? 'Home' : 'Duora'}</p><h1 className="mt-3 text-4xl font-bold tracking-[-.06em] sm:text-5xl">{ready ? greeting : 'Welcome to Duora.'}</h1><p className="mt-3 max-w-xl text-base leading-7 text-[#6F6470]">{user ? 'Choose a shared experience, find a small room, or pick up where you left off.' : 'Shared experiences give people an easier way to meet, talk, play, and make plans together.'}</p></div>{user ? <Link href="/onboarding" className="inline-flex items-center gap-2 text-sm font-semibold text-spark-coral hover:text-[#d94767]">Refine your preferences <ArrowRight className="h-4 w-4" /></Link> : <Link href="/signup" className="inline-flex items-center gap-2 rounded-full bg-dark-950 px-5 py-3 text-sm font-semibold text-white">Create your account <ArrowRight className="h-4 w-4" /></Link>}</section>
+      <section className="grid items-end gap-5 md:grid-cols-[1fr_auto]"><div><p className="section-label">Home</p><h1 className="mt-3 text-4xl font-bold tracking-[-.06em] sm:text-5xl">{greeting}</h1><p className="mt-3 max-w-xl text-base leading-7 text-[#6F6470]">Choose a shared experience, find a small room, or pick up where you left off.</p></div><Link href="/onboarding" className="inline-flex items-center gap-2 text-sm font-semibold text-spark-coral hover:text-[#d94767]">Refine your preferences <ArrowRight className="h-4 w-4" /></Link></section>
 
       <section className="mt-10 grid gap-5 lg:grid-cols-2">
-        <Link href={user ? '/experiences/create' : '/signup'} className="group rounded-[28px] bg-dark-950 p-7 text-white transition hover:-translate-y-1 hover:shadow-xl sm:p-9"><div className="flex items-start justify-between"><span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10"><HeartHandshake className="h-5 w-5 text-spark-rose" /></span><ArrowRight className="h-5 w-5 text-spark-rose transition group-hover:translate-x-1" /></div><p className="mt-12 text-sm font-semibold text-spark-rose">WITH SOMEONE YOU KNOW</p><h2 className="mt-2 text-3xl font-bold tracking-[-.055em]">Invite someone in.</h2><p className="mt-3 max-w-sm text-sm leading-6 text-[#d7cfda]">Choose a shared experience, then send one private link to a friend, date, partner, or someone you want to know better.</p><span className="mt-7 inline-flex rounded-full bg-spark-coral px-4 py-2.5 text-sm font-semibold">Choose an experience</span></Link>
-        <Link href={user ? '/discover' : '/signup'} className="group rounded-[28px] border border-[#281D32]/10 bg-[#FFF7F2] p-7 transition hover:-translate-y-1 hover:shadow-xl sm:p-9"><div className="flex items-start justify-between"><span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white"><UsersRound className="h-5 w-5 text-spark-coral" /></span><ArrowRight className="h-5 w-5 text-spark-coral transition group-hover:translate-x-1" /></div><p className="mt-12 text-sm font-semibold text-spark-coral">MEET THROUGH SOMETHING SHARED</p><h2 className="mt-2 text-3xl font-bold tracking-[-.055em]">Find a room.</h2><p className="mt-3 max-w-sm text-sm leading-6 text-[#6F6470]">Browse a small, guided experience. You decide whether it feels right before joining.</p><span className="mt-7 inline-flex rounded-full border border-[#281D32]/15 bg-white px-4 py-2.5 text-sm font-semibold">Browse rooms</span></Link>
+        <Link href="/experiences/create" className="group rounded-[28px] bg-dark-950 p-7 text-white transition hover:-translate-y-1 hover:shadow-xl sm:p-9"><div className="flex items-start justify-between"><span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10"><HeartHandshake className="h-5 w-5 text-spark-rose" /></span><ArrowRight className="h-5 w-5 text-spark-rose transition group-hover:translate-x-1" /></div><p className="mt-12 text-sm font-semibold text-spark-rose">WITH SOMEONE YOU KNOW</p><h2 className="mt-2 text-3xl font-bold tracking-[-.055em]">Invite someone in.</h2><p className="mt-3 max-w-sm text-sm leading-6 text-[#d7cfda]">Choose a shared experience, then send one private link to a friend, date, partner, or someone you want to know better.</p><span className="mt-7 inline-flex rounded-full bg-spark-coral px-4 py-2.5 text-sm font-semibold">Choose an experience</span></Link>
+        <Link href="/discover" className="group rounded-[28px] border border-[#281D32]/10 bg-[#FFF7F2] p-7 transition hover:-translate-y-1 hover:shadow-xl sm:p-9"><div className="flex items-start justify-between"><span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white"><UsersRound className="h-5 w-5 text-spark-coral" /></span><ArrowRight className="h-5 w-5 text-spark-coral transition group-hover:translate-x-1" /></div><p className="mt-12 text-sm font-semibold text-spark-coral">MEET THROUGH SOMETHING SHARED</p><h2 className="mt-2 text-3xl font-bold tracking-[-.055em]">Find a room.</h2><p className="mt-3 max-w-sm text-sm leading-6 text-[#6F6470]">Browse a small, guided experience. You decide whether it feels right before joining.</p><span className="mt-7 inline-flex rounded-full border border-[#281D32]/15 bg-white px-4 py-2.5 text-sm font-semibold">Browse rooms</span></Link>
       </section>
 
       {user && <section className="mt-16"><div className="flex items-end justify-between gap-4"><div><p className="section-label">Your rooms</p><h2 className="mt-3 text-3xl font-bold tracking-[-.055em]">Continue something you started.</h2></div><Link href="/experiences" className="text-sm font-semibold text-spark-coral">All experiences</Link></div>{myRooms.length ? <RoomList rooms={myRooms.slice(0, 3)} mine /> : <div className="mt-6 rounded-[28px] border border-dashed border-dark-950/15 bg-white px-6 py-8"><p className="font-bold">You have not created a room yet.</p><p className="mt-2 text-sm text-[#6F6470]">Start with a private invitation or publish a small room for others to discover.</p></div>}</section>}
