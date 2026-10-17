@@ -5,7 +5,7 @@ from .models import DiscoveryProfile
 class DiscoveryProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = DiscoveryProfile
-        fields = ('id', 'intents', 'languages', 'interests', 'city', 'is_discoverable', 'updated_at')
+        fields = ('id', 'intents', 'languages', 'interests', 'city', 'is_discoverable', 'onboarding_completed', 'updated_at')
         read_only_fields = ('id', 'updated_at')
 
     def validate_intents(self, value):

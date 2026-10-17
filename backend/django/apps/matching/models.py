@@ -17,6 +17,7 @@ class DiscoveryProfile(models.Model):
     interests = models.JSONField(default=list)
     city = models.CharField(max_length=100, blank=True)
     is_discoverable = models.BooleanField(default=False)
+    onboarding_completed = models.BooleanField(default=False)
     updated_at = models.DateTimeField(auto_now=True)
 
     def clean(self):
