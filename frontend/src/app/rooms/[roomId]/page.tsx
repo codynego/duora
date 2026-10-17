@@ -1,6 +1,7 @@
 import RoomExperience from '@/components/RoomExperience';
+import { getRoom } from '@/lib/duora-api';
 
-export default function RoomPage({ params }: { params: { roomId: string } }) {
-  const names: Record<string, string> = { 'common-ground': 'Common Ground', 'weekend-energy': 'Weekend Energy', 'quiet-company': 'Quiet Company', 'good-questions': 'Good Questions' };
-  return <RoomExperience roomName={names[params.roomId] ?? 'Connection Room'} />;
+export default async function RoomPage({ params }: { params: { roomId: string } }) {
+  const room = await getRoom(params.roomId);
+  return <RoomExperience roomId={room?.id ?? ''} roomCode={params.roomId} roomName={room?.title ?? 'Connection Room'} />;
 }

@@ -1,4 +1,5 @@
 export type RoomSummary = {
+  id: string;
   code: string;
   slug: string;
   title: string;
@@ -24,5 +25,18 @@ export async function getDiscoverRooms(): Promise<RoomSummary[]> {
     return Array.isArray(body) ? body as RoomSummary[] : [];
   } catch {
     return [];
+  }
+}
+
+export async function getRoom(code: string): Promise<RoomSummary | null> {
+  try {
+    const response = await fetch(`${apiBaseUrl}/api/v1/rooms/${encodeURIComponent(code)}/`, {
+      next: { revalidate: 30 },
+      headers: { Accept: 'application/json' },
+    });
+    if (!response.ok) return null;
+    return await response.json() as RoomSummary;
+  } catch {
+    return null;
   }
 }

@@ -27,6 +27,18 @@ Not:
 - Make the product useful for singles, people dating, and couples without turning it into three unrelated products.
 - Never rely on endless swiping, fake urgency, or manipulative streaks.
 
+## Launch scope decision
+
+Duora launches for adults aged **18+** with three separate discovery intents:
+
+- **Meet new friends**
+- **Light conversation**
+- **Dating**
+
+These intents never mix by default. Discovery starts with small, group-first rooms (normally 3–5 people); Duora will not launch with unsolicited one-to-one stranger matching. Private invite experiences remain available for a friend, crush, date, or partner.
+
+Dating requires explicit, controllable age range, location, language, and preference settings. Every discovery path requires block, report, and no-rematch safeguards before public launch.
+
 ## Primary user paths
 
 ### A. Invite someone already known
@@ -193,22 +205,24 @@ Home adapts to context. A new single user sees a path into discovery; a user wit
 
 ## Delivery plan / TODO
 
+Status legend: `[x]` implemented, `[~]` implemented as UI/prototype or partially connected, `[ ]` not started.
+
 ### Phase 0 — Product decisions
 
-- [ ] Confirm initial audience: dating only, friendship plus dating, or all connection types.
-- [ ] Define age policy, identity preferences, geography, language, and moderation requirements.
-- [ ] Decide whether launch starts with live rooms, scheduled rooms, asynchronous rooms, or a limited combination.
-- [ ] Define brand voice and final UX copy for consent, boundaries, and room closure.
+- [x] Confirm initial audience: adults 18+; separate friendship, light-conversation, and dating intents; group-first discovery.
+- [~] Define age policy, identity preferences, geography, language, and moderation requirements. *(18+ and explicit intent separation are decided; detailed preference schema, launch geography, and moderation operations remain.)*
+- [x] Decide whether launch starts with live rooms, scheduled rooms, asynchronous rooms, or a limited combination. *(Start with scheduled and live small-group rooms; asynchronous rooms come later.)*
+- [~] Define brand voice and final UX copy for consent, boundaries, and room closure. *(Visual voice and core consent copy are in the UI; final product copy is not approved.)*
 
 ### Phase 1 — Private invite MVP
 
-- [ ] Host account creation and sign-in.
+- [x] Host account creation and sign-in. *(Django JWT register/login/refresh/logout APIs plus web screens.)*
 - [ ] Guest join through a shareable private link.
-- [ ] Experience catalog with tone and comfort selection.
-- [ ] Create and join private rooms.
-- [ ] Independent answers and synchronized reveals.
+- [~] Experience catalog with tone and comfort selection. *(Experience selection UI exists; tone/comfort is not persisted.)*
+- [~] Create and join private rooms. *(The private-invite screen creates a Django room and share link; the recipient can preview, sign in, accept, and enter. Guest access and room-specific metadata on entry still need work.)*
+- [~] Independent answers and synchronized reveals. *(Room events travel over an authenticated WebSocket and are recorded; synchronized reveal rules and persisted answer bodies are still to come.)*
 - [ ] Predict My Answer, Choose Your Move, and Plan Our Date.
-- [ ] End-of-experience actions: follow-up prompt, save moment, next experience.
+- [~] End-of-experience actions: follow-up prompt, save moment, next experience. *(UI prototype exists; actions are not persisted.)*
 - [ ] Skip, leave, block, report, and basic privacy controls.
 
 ### Phase 2 — Shared spaces
@@ -220,13 +234,13 @@ Home adapts to context. A new single user sees a path into discovery; a user wit
 
 ### Phase 3 — Discovery rooms
 
-- [ ] Intent, room-tone, interests, language, and availability onboarding.
-- [ ] Room lobby: live, scheduled, and asynchronous experiences.
-- [ ] Matching service with safety exclusions and clear eligibility rules.
-- [ ] Timed small-group Connection Room experience.
-- [ ] Prompt pacing, shared reveals, and closing flow.
-- [ ] Mutual Continue Chatting and Open to Reconnect choices.
-- [ ] No-rematch, reporting, moderation, and abuse-review workflows.
+- [~] Intent, room-tone, interests, language, and availability onboarding. *(Onboarding UI exists; data is not yet stored.)*
+- [~] Room lobby: live, scheduled, and asynchronous experiences. *(Discover UI and public Django room-list endpoint exist; room publishing and filtering are incomplete.)*
+- [~] Matching service with safety exclusions and clear eligibility rules. *(Django stores discovery preferences, excludes blocked users, and recommends compatible rooms; the Match screen is not connected to it yet.)*
+- [~] Timed small-group Connection Room experience. *(A signed-in member joins through Django, then receives authenticated WebSocket events. The participant roster and reveal coordinator are still prototype state.)*
+- [~] Prompt pacing, shared reveals, and closing flow. *(Activity, reactions, chat, ready state, and prompt skips are broadcast and recorded; the experience rules are not yet server-authoritative.)*
+- [~] Mutual Continue Chatting and Open to Reconnect choices. *(Closing UI exists; mutual consent and threads are not persisted.)*
+- [~] No-rematch, reporting, moderation, and abuse-review workflows. *(Safety-exclusion and report APIs plus Django admin are present; participant-facing controls and review operations are still to come.)*
 
 ### Phase 4 — Improve and extend
 

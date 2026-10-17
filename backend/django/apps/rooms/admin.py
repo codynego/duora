@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Room, RoomMembership
+from .models import Room, RoomActivity, RoomInvite, RoomMembership
 
 
 class RoomMembershipInline(admin.TabularInline):
@@ -11,8 +11,8 @@ class RoomMembershipInline(admin.TabularInline):
 
 @admin.register(Room)
 class RoomAdmin(admin.ModelAdmin):
-    list_display = ('title', 'code', 'tone', 'status', 'starts_at', 'member_count', 'max_members', 'duration_minutes')
-    list_filter = ('status', 'tone')
+    list_display = ('title', 'code', 'intent', 'city', 'tone', 'status', 'starts_at', 'member_count', 'max_members', 'duration_minutes')
+    list_filter = ('status', 'intent', 'tone', 'is_discovery_room')
     search_fields = ('title', 'code', 'description')
     readonly_fields = ('created_at',)
     date_hierarchy = 'starts_at'
@@ -30,3 +30,19 @@ class RoomMembershipAdmin(admin.ModelAdmin):
     search_fields = ('room__title', 'room__code', 'user__username')
     autocomplete_fields = ('room', 'user')
     readonly_fields = ('joined_at',)
+
+
+@admin.register(RoomInvite)
+class RoomInviteAdmin(admin.ModelAdmin):
+    list_display = ('room', 'created_by', 'token', 'expires_at', 'accepted_by', 'accepted_at', 'revoked_at')
+    search_fields = ('room__title', 'created_by__username', 'token')
+    readonly_fields = ('token', 'accepted_at')
+
+
+@admin.register(RoomActivity)
+class RoomActivityAdmin(admin.ModelAdmin):
+    list_display = ('event', 'room', 'actor', 'created_at')
+    list_filter = ('event',)
+    search_fields = ('room__title', 'room__code', 'actor__username')
+    autocomplete_fields = ('room', 'actor')
+    readonly_fields = ('created_at',)
