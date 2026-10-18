@@ -8,7 +8,7 @@ import {
   ShieldCheck,
   UsersRound,
 } from 'lucide-react';
-import { useRoomSocket } from '@/lib/use-room-socket';
+import { useRoomActivity } from '@/lib/use-room-activity';
 import { getAccessToken } from '@/lib/auth';
 import RoomShell from './room/RoomShell';
 import { ExperienceTemplate, RoomParticipant, ReactionKind, RoomEvent } from './room/types';
@@ -56,6 +56,11 @@ export default function RoomExperience({
   const [joinError, setJoinError] = useState('');
   const [chatOpen, setChatOpen] = useState(false);
   const [unreadMessages, setUnreadMessages] = useState(0);
+  const [wrapPeople, setWrapPeople] = useState<{ id: string; name: string; initial: string; is_you?: boolean }[]>([]);
+  const [nextStepStatus, setNextStepStatus] = useState('');
+  const [nextStepThreadId, setNextStepThreadId] = useState('');
+  const [momentText, setMomentText] = useState('');
+  const [momentStatus, setMomentStatus] = useState('');
   const seenChatCount = useRef(0);
 
   const isTalk = mode === 'talk';
@@ -67,12 +72,12 @@ export default function RoomExperience({
     isPlay ? 'most_likely_to' : isTogether ? 'plan_together' : 'open_talk'
   );
 
-  const { connected, events, send } = useRoomSocket(roomId, joined);
+  const { connected, events, send } = useRoomActivity(roomId, joined);
   const [previewEvents, setPreviewEvents] = useState<RoomEvent[]>([]);
   const roomEvents = roomId ? events : previewEvents;
 
   // Together is strictly 2 people (You + 1 Partner)
-  const roomParticipants = isTogether ? [DEFAULT_PEOPLE[1]] : DEFAULT_PEOPLE;
+  const roomParticipants: RoomParticipant[] = wrapPeople.length ? wrapPeople.map((person, index) => ({ id: person.id, name: person.is_you ? 'You' : person.name, initial: person.initial, color: ['#281D32', '#c94f70', '#8770a0', '#d7953d'][index % 4], statusLabel: person.is_you ? 'You' : 'Here' })) : (isTogether ? [DEFAULT_PEOPLE[1]] : DEFAULT_PEOPLE);
 
   const roomSummary = isTalk
     ? 'A small room for people who want an easier way into an honest conversation.'
@@ -85,6 +90,8 @@ export default function RoomExperience({
     const timer = window.setInterval(() => setSeconds((cur) => Math.max(0, cur - 1)), 1000);
     return () => window.clearInterval(timer);
   }, [view]);
+
+  useEffect(() => { if (view === 'live' && seconds === 0) setView('wrap'); }, [seconds, view]);
 
   const formattedTime = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
 
@@ -147,6 +154,36 @@ export default function RoomExperience({
   function handlePromptChat(promptText: string) {
     setChatOpen(true);
     sendChatMessage(promptText);
+  }
+
+  useEffect(() => {
+    if ((!joined && !alreadyJoined) || !roomId) return;
+    async function loadPeople() {
+      const token = await getAccessToken();
+      if (!token) return;
+      const response = await fetch(`${process.env.NEXT_PUBLIC_DUORA_API_URL ?? 'http://127.0.0.1:8000'}/api/v1/rooms/${roomId}/participants/`, { headers: { Authorization: `Bearer ${token}` } });
+      const body = await response.json();
+      if (response.ok && Array.isArray(body.data)) setWrapPeople(body.data);
+    }
+    void loadPeople();
+  }, [roomId, view, joined, alreadyJoined]);
+
+  async function chooseNextStep(participantId: string, choice: 'continue_chat' | 'reconnect' | 'end') {
+    const token = await getAccessToken();
+    if (!token || !roomId) return;
+    const response = await fetch(`${process.env.NEXT_PUBLIC_DUORA_API_URL ?? 'http://127.0.0.1:8000'}/api/v1/rooms/${roomId}/next-steps/`, { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ participant_id: participantId, choice }) });
+    const body = await response.json();
+    if (!response.ok) { setNextStepStatus(body.detail ?? 'Your choice could not be saved.'); return; }
+    if (body.data.thread_id) setNextStepThreadId(body.data.thread_id);
+    setNextStepStatus(body.data.thread_id ? 'You both chose to continue. Your private thread is ready.' : choice === 'reconnect' && body.data.mutual ? 'You are both open to reconnecting in another small room.' : 'Your choice is private and saved.');
+  }
+
+  async function saveMoment() {
+    const content = momentText.trim(); const token = await getAccessToken();
+    if (!content || !token || !roomId) return;
+    const response = await fetch(`${process.env.NEXT_PUBLIC_DUORA_API_URL ?? 'http://127.0.0.1:8000'}/api/v1/rooms/moments/`, { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ room_id: roomId, title: roomName, content, kind: 'room_note' }) });
+    setMomentStatus(response.ok ? 'Saved privately to Moments.' : 'Could not save that moment.');
+    if (response.ok) setMomentText('');
   }
 
   // --- 1. OVERVIEW VIEW ---
@@ -376,7 +413,7 @@ export default function RoomExperience({
               </span>
             </div>
             <div className="mt-5 flex -space-x-2">
-              {DEFAULT_PEOPLE.map((p) => (
+              {roomParticipants.map((p) => (
                 <span
                   key={p.id}
                   className="grid h-9 w-9 place-items-center rounded-full border-2 border-white text-xs font-bold text-white shadow-sm"
@@ -412,6 +449,10 @@ export default function RoomExperience({
           <p className="mx-auto mt-4 max-w-lg text-base leading-7 text-[#6F6470]">
             You shared a small moment. What happens next is entirely up to you.
           </p>
+          {wrapPeople.length > 1 && <div className="mx-auto mt-8 max-w-xl space-y-3 text-left">{wrapPeople.filter((person) => !person.is_you).map((person) => <div key={person.id} className="rounded-2xl border border-dark-950/10 bg-white p-4"><div className="flex items-center gap-3"><span className="grid h-9 w-9 place-items-center rounded-full bg-dark-950 text-xs font-bold text-white">{person.initial}</span><p className="flex-1 text-sm font-bold">{person.name}</p></div><div className="mt-4 flex flex-wrap gap-2"><button onClick={() => chooseNextStep(person.id, 'continue_chat')} className="rounded-full bg-dark-950 px-3 py-2 text-xs font-bold text-white">Continue chatting</button><button onClick={() => chooseNextStep(person.id, 'reconnect')} className="rounded-full border border-dark-950/15 px-3 py-2 text-xs font-bold">Reconnect later</button><button onClick={() => chooseNextStep(person.id, 'end')} className="rounded-full px-3 py-2 text-xs font-bold text-[#6F6470]">End here</button></div></div>)}</div>}
+          {nextStepStatus && <p className="mx-auto mt-5 max-w-xl rounded-2xl bg-[#fff0f3] p-4 text-sm text-dark-950">{nextStepStatus}</p>}
+          {nextStepThreadId && <Link href={`/connections/${nextStepThreadId}`} className="mt-4 inline-flex rounded-full border border-dark-950/15 px-4 py-2.5 text-sm font-bold">Open private thread</Link>}
+          {roomId && <div className="mx-auto mt-7 max-w-xl rounded-2xl border border-dark-950/10 bg-white p-4 text-left"><label className="text-sm font-bold">Save a private note from this room<textarea value={momentText} onChange={(event) => setMomentText(event.target.value)} maxLength={2000} placeholder="A thought you want to keep…" className="mt-2 min-h-20 w-full rounded-xl border border-dark-950/10 p-3 text-sm font-normal outline-none focus:border-spark-coral" /></label><div className="mt-3 flex items-center justify-between gap-3"><button onClick={saveMoment} disabled={!momentText.trim()} className="rounded-full bg-dark-950 px-4 py-2 text-xs font-bold text-white disabled:opacity-50">Save to Moments</button>{momentStatus && <p className="text-xs text-[#6F6470]">{momentStatus}</p>}</div></div>}
           <Link
             href="/discover"
             className="mt-8 inline-flex items-center gap-2 rounded-full bg-dark-950 px-6 py-3 text-sm font-bold text-white transition hover:bg-dark-900"
@@ -429,7 +470,7 @@ export default function RoomExperience({
       roomName={roomName}
       timeRemaining={formattedTime}
       connected={connected}
-      participants={DEFAULT_PEOPLE}
+      participants={roomParticipants}
       currentTemplate={template}
       onSelectTemplate={setTemplate}
       onReaction={sendReaction}
@@ -445,7 +486,7 @@ export default function RoomExperience({
         <OpenConversationStage
           roomName={roomName}
           isHost={true}
-          participants={DEFAULT_PEOPLE}
+          participants={roomParticipants}
           onSendMessage={sendChatMessage}
           onSendReaction={sendReaction}
           onPromptChat={handlePromptChat}
@@ -456,7 +497,7 @@ export default function RoomExperience({
         <GuidedConversationStage
           roomName={roomName}
           isHost={true}
-          participants={DEFAULT_PEOPLE}
+          participants={roomParticipants}
           onSendMessage={sendChatMessage}
           onSendReaction={sendReaction}
           onPromptChat={handlePromptChat}
@@ -467,7 +508,7 @@ export default function RoomExperience({
         <DebateStage
           roomName={roomName}
           isHost={true}
-          participants={DEFAULT_PEOPLE}
+          participants={roomParticipants}
           onSendMessage={sendChatMessage}
           onSendReaction={sendReaction}
           onPromptChat={handlePromptChat}
@@ -478,7 +519,7 @@ export default function RoomExperience({
         <QuickTakesStage
           roomName={roomName}
           isHost={true}
-          participants={DEFAULT_PEOPLE}
+          participants={roomParticipants}
           onSendMessage={sendChatMessage}
           onSendReaction={sendReaction}
           onPromptChat={handlePromptChat}
@@ -490,7 +531,7 @@ export default function RoomExperience({
         <MostLikelyToStage
           roomName={roomName}
           isHost={true}
-          participants={DEFAULT_PEOPLE}
+          participants={roomParticipants}
           onSendMessage={sendChatMessage}
           onSendReaction={sendReaction}
           onPromptChat={handlePromptChat}
@@ -501,7 +542,7 @@ export default function RoomExperience({
         <TruthOrDareStage
           roomName={roomName}
           isHost={true}
-          participants={DEFAULT_PEOPLE}
+          participants={roomParticipants}
           onSendMessage={sendChatMessage}
           onSendReaction={sendReaction}
           onPromptChat={handlePromptChat}
@@ -512,7 +553,7 @@ export default function RoomExperience({
         <GuessMyAnswerStage
           roomName={roomName}
           isHost={true}
-          participants={DEFAULT_PEOPLE}
+          participants={roomParticipants}
           onSendMessage={sendChatMessage}
           onSendReaction={sendReaction}
           onPromptChat={handlePromptChat}
@@ -523,7 +564,7 @@ export default function RoomExperience({
         <WordBattleStage
           roomName={roomName}
           isHost={true}
-          participants={DEFAULT_PEOPLE}
+          participants={roomParticipants}
           onSendMessage={sendChatMessage}
           onSendReaction={sendReaction}
           onPromptChat={handlePromptChat}
@@ -534,7 +575,7 @@ export default function RoomExperience({
         <BuildStoryStage
           roomName={roomName}
           isHost={true}
-          participants={DEFAULT_PEOPLE}
+          participants={roomParticipants}
           onSendMessage={sendChatMessage}
           onSendReaction={sendReaction}
           onPromptChat={handlePromptChat}

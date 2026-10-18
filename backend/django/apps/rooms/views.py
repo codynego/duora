@@ -8,7 +8,9 @@ from rest_framework.views import APIView
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from rest_framework.exceptions import ValidationError
-from .models import Room
+from django.db import transaction
+from django.db.models import Q
+from .models import Moment, Room, RoomActivity, RoomAnswer, RoomMembership, RoomNextStep
 from .serializers import PublicRoomCreateSerializer, RoomSerializer
 from .services import create_private_room, create_public_room, join_room
 
@@ -68,3 +70,145 @@ class CreatePublicRoomView(APIView):
         serializer.is_valid(raise_exception=True)
         room = create_public_room(user=request.user, **serializer.validated_data)
         return Response({'data': RoomSerializer(room).data}, status=status.HTTP_201_CREATED)
+
+
+def _member_room(room_id, user):
+    room = Room.objects.filter(id=room_id).first()
+    if not room or not RoomMembership.objects.filter(room=room, user=user, disposition=RoomMembership.Disposition.PRESENT).exists():
+        raise ValidationError({'room': 'You do not have access to this room.'})
+    return room
+
+
+class RoomActivityView(APIView):
+    """Request-driven room updates, designed for serverless deployments."""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, room_id):
+        room = _member_room(room_id, request.user)
+        activities = room.activity.select_related('actor').order_by('-created_at')[:100]
+        data = []
+        for activity in reversed(activities):
+            data.append({'id': str(activity.id), 'event': activity.event, 'payload': activity.payload, 'user_id': activity.actor_id, 'created_at': activity.created_at})
+        return Response({'data': data})
+
+    def post(self, request, room_id):
+        room = _member_room(room_id, request.user)
+        event = request.data.get('event')
+        payload = request.data.get('payload', {})
+        if event not in RoomActivity.Event.values or not isinstance(payload, dict):
+            raise ValidationError({'event': 'Unsupported room action.'})
+        if event == RoomActivity.Event.ANSWER_SAVED:
+            payload = {'has_answer': bool(payload.get('answer'))}
+        elif event == RoomActivity.Event.CHAT_SENT:
+            message = str(payload.get('message', '')).strip()
+            if not message or len(message) > 500:
+                raise ValidationError({'message': 'Messages must be between 1 and 500 characters.'})
+            payload = {'message': message, 'actor_name': request.user.get_full_name().strip() or request.user.username}
+        elif event == RoomActivity.Event.REACTION_SENT:
+            kind = str(payload.get('kind', '')).strip().lower()
+            if kind not in {'heart', 'laugh', 'support', 'cheer'}:
+                raise ValidationError({'kind': 'That reaction is not available.'})
+            payload = {'kind': kind, 'actor_name': request.user.get_full_name().strip() or request.user.username}
+        activity = RoomActivity.objects.create(room=room, actor=request.user, event=event, payload=payload)
+        return Response({'data': {'id': str(activity.id), 'event': activity.event, 'payload': activity.payload, 'user_id': activity.actor_id, 'created_at': activity.created_at}}, status=status.HTTP_201_CREATED)
+
+
+class RoomAnswerView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, room_id):
+        room = _member_room(room_id, request.user)
+        answers = RoomAnswer.objects.filter(room=room).select_related('user')
+        data = []
+        for answer in answers:
+            data.append({'id': str(answer.id), 'prompt_key': answer.prompt_key, 'author_id': answer.user_id, 'author_name': answer.user.get_full_name().strip() or answer.user.username, 'body': answer.body if answer.user_id == request.user.id or answer.revealed_at else None, 'revealed': bool(answer.revealed_at), 'updated_at': answer.updated_at})
+        return Response({'data': data})
+
+    def post(self, request, room_id):
+        room = _member_room(room_id, request.user)
+        prompt_key = str(request.data.get('prompt_key', 'round-1')).strip()[:80]
+        body = str(request.data.get('body', '')).strip()
+        if not body or len(body) > 2_000:
+            raise ValidationError({'body': 'Your response must be between 1 and 2,000 characters.'})
+        answer, _ = RoomAnswer.objects.update_or_create(room=room, user=request.user, prompt_key=prompt_key, defaults={'body': body, 'revealed_at': None})
+        return Response({'data': {'id': str(answer.id), 'prompt_key': answer.prompt_key, 'saved': True, 'revealed': False}}, status=status.HTTP_201_CREATED)
+
+
+class RoomParticipantsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, room_id):
+        room = _member_room(room_id, request.user)
+        memberships = room.memberships.filter(disposition=RoomMembership.Disposition.PRESENT).select_related('user')
+        return Response({'data': [{'id': str(item.user_id), 'name': item.user.get_full_name().strip() or item.user.username, 'initial': (item.user.get_full_name().strip() or item.user.username)[:1].upper(), 'is_you': item.user_id == request.user.id} for item in memberships]})
+
+
+class RoomRevealView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @transaction.atomic
+    def post(self, request, room_id):
+        room = _member_room(room_id, request.user)
+        prompt_key = str(request.data.get('prompt_key', 'round-1')).strip()[:80]
+        members = room.memberships.filter(disposition=RoomMembership.Disposition.PRESENT).count()
+        answers = RoomAnswer.objects.select_for_update().filter(room=room, prompt_key=prompt_key)
+        if answers.count() < members:
+            raise ValidationError({'reveal': 'Everyone needs to save an answer before the reveal.'})
+        answers.update(revealed_at=timezone.now())
+        return Response({'data': [{'author_id': answer.user_id, 'author_name': answer.user.get_full_name().strip() or answer.user.username, 'body': answer.body} for answer in answers.select_related('user')]})
+
+
+class RoomNextStepView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @transaction.atomic
+    def post(self, request, room_id):
+        room = _member_room(room_id, request.user)
+        target_id = request.data.get('participant_id')
+        choice = request.data.get('choice')
+        if choice not in RoomNextStep.Choice.values:
+            raise ValidationError({'choice': 'Choose continue_chat, reconnect, or end.'})
+        if target_id is None:
+            raise ValidationError({'participant_id': 'Choose a participant.'})
+        target = RoomMembership.objects.select_related('user').filter(room=room, user_id=target_id, disposition=RoomMembership.Disposition.PRESENT).first()
+        if not target or target.user_id == request.user.id:
+            raise ValidationError({'participant_id': 'Choose another participant in this room.'})
+        from apps.moderation.models import SafetyExclusion
+        if SafetyExclusion.objects.filter(user=request.user, excluded_user=target.user).exists() or SafetyExclusion.objects.filter(user=target.user, excluded_user=request.user).exists():
+            raise ValidationError({'participant_id': 'This person is not available for a future connection.'})
+        step, _ = RoomNextStep.objects.update_or_create(room=room, user=request.user, participant_id=target.user_id, defaults={'choice': choice})
+        mutual = RoomNextStep.objects.filter(room=room, user_id=target.user_id, participant=request.user, choice=choice).exists()
+        thread_id = None
+        if mutual and choice == RoomNextStep.Choice.CONTINUE_CHAT:
+            from apps.connections.models import ConnectionRequest, ConnectionThread
+            one, two = sorted((request.user.id, target.user_id))
+            thread, _ = ConnectionThread.objects.get_or_create(room=room, user_one_id=one, user_two_id=two)
+            existing_connection = ConnectionRequest.objects.filter(
+                (Q(requester_id=one, recipient_id=two) | Q(requester_id=two, recipient_id=one))
+            ).first()
+            if not existing_connection:
+                ConnectionRequest.objects.create(
+                    requester_id=one, recipient_id=two, status=ConnectionRequest.Status.ACCEPTED,
+                    source=ConnectionRequest.Source.PUBLIC_ROOM, room=room, last_experience=room.title,
+                    responded_at=timezone.now(),
+                )
+            thread_id = str(thread.id)
+        return Response({'data': {'id': str(step.id), 'choice': choice, 'mutual': mutual, 'thread_id': thread_id}})
+
+
+class MomentsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        moments = Moment.objects.filter(owner=request.user).select_related('room')[:50]
+        return Response({'data': [{'id': str(moment.id), 'kind': moment.kind, 'title': moment.title, 'content': moment.content, 'room_code': moment.room.code if moment.room else None, 'created_at': moment.created_at} for moment in moments]})
+
+    def post(self, request):
+        room_id = request.data.get('room_id')
+        room = _member_room(room_id, request.user) if room_id else None
+        title = str(request.data.get('title', '')).strip()
+        content = str(request.data.get('content', '')).strip()
+        if not title or len(title) > 120 or len(content) > 2_000:
+            raise ValidationError({'moment': 'Add a title under 120 characters and content under 2,000 characters.'})
+        moment = Moment.objects.create(owner=request.user, room=room, kind=str(request.data.get('kind', 'shared_note'))[:32], title=title, content=content)
+        return Response({'data': {'id': str(moment.id), 'title': moment.title}}, status=status.HTTP_201_CREATED)

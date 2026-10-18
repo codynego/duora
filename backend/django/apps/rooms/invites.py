@@ -1,10 +1,14 @@
 from datetime import timedelta
+import secrets
+from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.exceptions import ValidationError
+from rest_framework_simplejwt.tokens import RefreshToken
 from .models import Room, RoomInvite
 from .services import accept_invite
 
@@ -26,8 +30,24 @@ class InvitePreviewView(APIView):
 
 
 class AcceptInviteView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
     def post(self, request, token):
         invite = get_object_or_404(RoomInvite, token=token)
-        membership = accept_invite(invite=invite, user=request.user)
-        return Response({'data': {'room_id': str(membership.room_id), 'membership_id': str(membership.id)}})
+        guest_tokens = None
+        user = request.user
+        if not user.is_authenticated:
+            guest_name = str(request.data.get('guest_name', '')).strip()
+            if not 2 <= len(guest_name) <= 60:
+                raise ValidationError({'guest_name': 'Enter a name between 2 and 60 characters to join as a guest.'})
+            User = get_user_model()
+            username = f'guest_{secrets.token_urlsafe(9).replace("-", "").replace("_", "").lower()}'
+            user = User.objects.create_user(username=username, password=None, first_name=guest_name)
+            user.set_unusable_password()
+            user.save(update_fields=('password',))
+            refresh = RefreshToken.for_user(user)
+            guest_tokens = {'access': str(refresh.access_token), 'refresh': str(refresh)}
+        membership = accept_invite(invite=invite, user=user)
+        data = {'room_id': str(membership.room_id), 'membership_id': str(membership.id)}
+        if guest_tokens:
+            data['guest_session'] = guest_tokens
+        return Response({'data': data})

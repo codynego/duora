@@ -217,18 +217,18 @@ Status legend: `[x]` implemented, `[~]` implemented as UI/prototype or partially
 ### Phase 1 — Private invite MVP
 
 - [x] Host account creation and sign-in. *(Django JWT register/login/refresh/logout APIs plus web screens.)*
-- [ ] Guest join through a shareable private link.
+- [x] Guest join through a shareable private link. *(Guests provide a chosen name and receive a restricted session only after accepting a valid private invite.)*
 - [~] Experience catalog with tone and comfort selection. *(Experience selection UI exists; tone/comfort is not persisted.)*
-- [~] Create and join private rooms. *(The private-invite screen creates a Django room and share link; the recipient can preview, sign in, accept, and enter. Guest access and room-specific metadata on entry still need work.)*
-- [~] Independent answers and synchronized reveals. *(Room events travel over an authenticated WebSocket and are recorded; synchronized reveal rules and persisted answer bodies are still to come.)*
+- [x] Create and join private rooms. *(Hosts create a private room and expiring link; an authenticated recipient or guest can preview and join it.)*
+- [~] Independent answers and synchronized reveals. *(Private persisted answers and an all-participants reveal guard now exist in the API; each activity still needs to adopt the shared answer UI.)*
 - [ ] Predict My Answer, Choose Your Move, and Plan Our Date.
-- [~] End-of-experience actions: follow-up prompt, save moment, next experience. *(UI prototype exists; actions are not persisted.)*
-- [ ] Skip, leave, block, report, and basic privacy controls.
+- [x] End-of-experience actions: follow-up prompt, save moment, next experience. *(Private Moments persist; mutual next-step choices create the appropriate connection outcome.)*
+- [~] Skip, leave, block, report, and basic privacy controls. *(Block/no-rematch is available in Connections and the APIs support reporting; dedicated leave/report UI remains.)*
 
 ### Phase 2 — Shared spaces
 
-- [ ] Connection Threads for mutually connected people.
-- [ ] Shared Moments: saved answers, date ideas, and memories.
+- [x] Connection Threads for mutually connected people. *(A thread is created only when both participants choose Continue Chatting.)*
+- [x] Shared Moments: saved answers, date ideas, and memories. *(Private room notes can be saved and revisited in Moments.)*
 - [ ] Couple-oriented home experience and recurring rituals.
 - [ ] Better experience recommendations based on relationship stage and past participation.
 
@@ -236,11 +236,11 @@ Status legend: `[x]` implemented, `[~]` implemented as UI/prototype or partially
 
 - [~] Intent, room-tone, interests, language, and availability onboarding. *(Onboarding UI exists; data is not yet stored.)*
 - [~] Room lobby: live, scheduled, and asynchronous experiences. *(Discover UI and public Django room-list endpoint exist; room publishing and filtering are incomplete.)*
-- [~] Matching service with safety exclusions and clear eligibility rules. *(Django stores discovery preferences, excludes blocked users, and recommends compatible rooms; the Match screen is not connected to it yet.)*
-- [~] Timed small-group Connection Room experience. *(A signed-in member joins through Django, then receives authenticated WebSocket events. The participant roster and reveal coordinator are still prototype state.)*
+- [x] Matching service with safety exclusions and clear eligibility rules. *(Match uses Django recommendations, declared intent, room capacity, city, and safety exclusions.)*
+- [~] Timed small-group Connection Room experience. *(A signed-in member joins through Django, sees the real participant roster, receives authenticated WebSocket events, and transitions to closure at the timer.)*
 - [~] Prompt pacing, shared reveals, and closing flow. *(Activity, reactions, chat, ready state, and prompt skips are broadcast and recorded; the experience rules are not yet server-authoritative.)*
-- [~] Mutual Continue Chatting and Open to Reconnect choices. *(Closing UI exists; mutual consent and threads are not persisted.)*
-- [~] No-rematch, reporting, moderation, and abuse-review workflows. *(Safety-exclusion and report APIs plus Django admin are present; participant-facing controls and review operations are still to come.)*
+- [x] Mutual Continue Chatting and Open to Reconnect choices. *(Choices are private and persisted; a mutual continue creates a connection and private thread.)*
+- [~] No-rematch, reporting, moderation, and abuse-review workflows. *(No-rematch/block controls, report APIs, and Django admin are present; dedicated report UI and operational review policy remain.)*
 
 ### Phase 4 — Improve and extend
 

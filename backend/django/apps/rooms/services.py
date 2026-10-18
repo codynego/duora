@@ -48,6 +48,21 @@ EXPERIENCE_MODES = {
     'story-thread': Room.Mode.CREATE,
 }
 
+# A discovery room is deliberately aligned to one of the intentions a person
+# chose during onboarding.  This keeps matching useful without presenting a
+# dating room to someone who only opted into friendship, for example.
+EXPERIENCE_INTENTS = {
+    'most-likely-to': 'friendship', 'guess-my-answer': 'friendship',
+    'word-battle': 'friendship', 'build-a-story': 'friendship',
+    'open-conversation': 'conversation', 'guided-conversation': 'conversation',
+    'debate': 'conversation', 'quick-takes': 'conversation',
+    'plan-something-together': 'friendship', 'shared-challenges': 'friendship',
+    'date-night-anywhere': 'dating', 'predict-my-answer': 'dating',
+    'better-question': 'conversation', 'make-a-plan': 'friendship',
+    'truth-or-dare': 'friendship', 'first-spark': 'dating',
+    'story-thread': 'friendship',
+}
+
 
 @transaction.atomic
 def create_private_room(*, user, experience: str, topic: str = '', discussion_description: str = '', starts_at=None):
@@ -65,7 +80,7 @@ def create_private_room(*, user, experience: str, topic: str = '', discussion_de
         title=topic.strip() if topic.strip() else title,
         description=discussion_description.strip() if discussion_description.strip() else description,
         tone='Private',
-        intent='connection',
+        intent=EXPERIENCE_INTENTS[experience],
         mode=EXPERIENCE_MODES[experience],
         is_discovery_room=False,
         status=Room.Status.SCHEDULED if is_scheduled else Room.Status.OPEN,

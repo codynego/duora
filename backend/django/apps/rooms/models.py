@@ -97,3 +97,49 @@ class RoomActivity(models.Model):
 
     def __str__(self) -> str:
         return f'{self.room.code} · {self.event}'
+
+
+class RoomAnswer(models.Model):
+    """Private participant input, revealed only after the room agrees to reveal."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    room = models.ForeignKey(Room, on_delete=models.CASCADE, related_name='answers')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='room_answers')
+    prompt_key = models.CharField(max_length=80, default='round-1')
+    body = models.TextField(max_length=2_000)
+    revealed_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=('room', 'user', 'prompt_key'), name='unique_room_answer')]
+
+
+class RoomNextStep(models.Model):
+    class Choice(models.TextChoices):
+        CONTINUE_CHAT = 'continue_chat', 'Continue chatting'
+        RECONNECT = 'reconnect', 'Open to reconnect'
+        END = 'end', 'End here'
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    room = models.ForeignKey(Room, on_delete=models.CASCADE, related_name='next_steps')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='room_next_steps')
+    participant = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.CASCADE, related_name='room_next_step_choices')
+    choice = models.CharField(max_length=18, choices=Choice)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=('room', 'user', 'participant'), name='unique_room_next_step')]
+
+
+class Moment(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='moments')
+    room = models.ForeignKey(Room, null=True, blank=True, on_delete=models.SET_NULL, related_name='moments')
+    kind = models.CharField(max_length=32, default='shared_note')
+    title = models.CharField(max_length=120)
+    content = models.TextField(max_length=2_000, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ('-created_at',)

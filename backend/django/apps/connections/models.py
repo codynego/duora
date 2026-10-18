@@ -32,3 +32,29 @@ class ConnectionRequest(models.Model):
 
     def __str__(self):
         return f'{self.requester} → {self.recipient} ({self.status})'
+
+
+class ConnectionThread(models.Model):
+    """A quiet private space created only after a mutual room choice."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user_one = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='connection_threads_started')
+    user_two = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='connection_threads_received')
+    room = models.ForeignKey('rooms.Room', null=True, blank=True, on_delete=models.SET_NULL, related_name='connection_threads')
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_message_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=('user_one', 'user_two', 'room'), name='unique_connection_thread_room')]
+        ordering = ('-last_message_at', '-created_at')
+
+
+class ThreadMessage(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    thread = models.ForeignKey(ConnectionThread, on_delete=models.CASCADE, related_name='messages')
+    sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='thread_messages')
+    body = models.TextField(max_length=1_000)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ('created_at',)

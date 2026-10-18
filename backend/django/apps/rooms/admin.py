@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Room, RoomActivity, RoomInvite, RoomMembership
+from .models import Moment, Room, RoomActivity, RoomAnswer, RoomInvite, RoomMembership, RoomNextStep
 
 
 class RoomMembershipInline(admin.TabularInline):
@@ -46,3 +46,24 @@ class RoomActivityAdmin(admin.ModelAdmin):
     search_fields = ('room__title', 'room__code', 'actor__username')
     autocomplete_fields = ('room', 'actor')
     readonly_fields = ('created_at',)
+
+
+@admin.register(RoomAnswer)
+class RoomAnswerAdmin(admin.ModelAdmin):
+    list_display = ('room', 'user', 'prompt_key', 'revealed_at', 'updated_at')
+    search_fields = ('room__code', 'user__username', 'body')
+    autocomplete_fields = ('room', 'user')
+
+
+@admin.register(RoomNextStep)
+class RoomNextStepAdmin(admin.ModelAdmin):
+    list_display = ('room', 'user', 'participant', 'choice', 'created_at')
+    list_filter = ('choice',)
+    autocomplete_fields = ('room', 'user', 'participant')
+
+
+@admin.register(Moment)
+class MomentAdmin(admin.ModelAdmin):
+    list_display = ('title', 'owner', 'room', 'kind', 'created_at')
+    search_fields = ('title', 'owner__username', 'room__code')
+    autocomplete_fields = ('owner', 'room')

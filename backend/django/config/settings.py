@@ -1,17 +1,17 @@
 import os
 from datetime import timedelta
 from pathlib import Path
+import dj_database_url
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'unsafe-development-key-replace-before-production')
 DEBUG = os.environ.get('DJANGO_DEBUG', 'true').lower() == 'true'
-ALLOWED_HOSTS = [host.strip() for host in os.environ.get('DJANGO_ALLOWED_HOSTS', '127.0.0.1,localhost').split(',') if host.strip()]
+ALLOWED_HOSTS = [host.strip() for host in os.environ.get('DJANGO_ALLOWED_HOSTS', '127.0.0.1,localhost,.vercel.app').split(',') if host.strip()]
 
 if not DEBUG and (SECRET_KEY.startswith('unsafe-') or len(SECRET_KEY) < 32):
     raise RuntimeError('DJANGO_SECRET_KEY must be a strong secret in production.')
 
 INSTALLED_APPS = [
-    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -45,15 +45,16 @@ TEMPLATES = [{'BACKEND': 'django.template.backends.django.DjangoTemplates', 'DIR
     'django.contrib.messages.context_processors.messages',
 ]}}]
 WSGI_APPLICATION = 'config.wsgi.application'
-ASGI_APPLICATION = 'config.asgi.application'
-CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': os.environ.get('CHANNEL_REDIS_URL') and 'channels_redis.core.RedisChannelLayer' or 'channels.layers.InMemoryChannelLayer',
-        **({'CONFIG': {'hosts': [os.environ['CHANNEL_REDIS_URL']]}} if os.environ.get('CHANNEL_REDIS_URL') else {}),
-    },
-}
 
-DATABASES = {'default': {'ENGINE': 'django.db.backends.sqlite3', 'NAME': BASE_DIR / 'db.sqlite3'}}
+DATABASES = {
+    'default': dj_database_url.config(
+        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
+        conn_max_age=0,
+        conn_health_checks=True,
+    )
+}
+if not DEBUG and DATABASES['default']['ENGINE'] == 'django.db.backends.sqlite3':
+    raise RuntimeError('DATABASE_URL must point to Postgres in production.')
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
