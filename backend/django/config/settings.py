@@ -67,6 +67,7 @@ TIME_ZONE = 'Africa/Lagos'
 USE_I18N = True
 USE_TZ = True
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CORS_ALLOWED_ORIGINS = [origin.strip() for origin in os.environ.get('DUORA_CORS_ORIGINS', 'http://127.0.0.1:3000,http://localhost:3000').split(',') if origin.strip()]
