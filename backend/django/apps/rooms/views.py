@@ -9,6 +9,7 @@ from rest_framework.viewsets import ReadOnlyModelViewSet
 from rest_framework.views import APIView
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
+from django.shortcuts import get_object_or_404
 from rest_framework.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import Q
@@ -33,12 +34,21 @@ class RoomViewSet(ReadOnlyModelViewSet):
             room.id for room in candidates
             if room.starts_at + timedelta(minutes=room.duration_minutes) > now
         ]
-        return self.queryset.filter(id__in=active_ids)
+        return self.queryset.filter(id__in=active_ids, archived_at__isnull=True)
 
     def get_permissions(self):
         if self.action in {'list', 'retrieve'}:
             return [AllowAny()]
         return [IsAuthenticated()]
+
+    @action(detail=True, methods=['delete'])
+    def archive(self, request, code=None):
+        room = get_object_or_404(Room, code=code, created_by=request.user)
+        room.archived_at = timezone.now()
+        room.status = Room.Status.ENDED
+        room.save(update_fields=('archived_at', 'status'))
+        room.invites.filter(revoked_at__isnull=True).update(revoked_at=timezone.now())
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=False, methods=['get'])
     def mine(self, request):

@@ -37,6 +37,7 @@ class Room(models.Model):
     duration_minutes = models.PositiveSmallIntegerField(default=12)
     starts_at = models.DateTimeField()
     created_at = models.DateTimeField(auto_now_add=True)
+    archived_at = models.DateTimeField(null=True, blank=True)
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name='created_rooms')
 
     def __str__(self) -> str:
