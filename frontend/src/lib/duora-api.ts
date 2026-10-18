@@ -7,6 +7,7 @@ export type RoomSummary = {
   experience: string;
   tone: string;
   mode: 'talk' | 'play' | 'flirt' | 'create' | 'plan';
+  audience: 'adults' | 'all';
   status: 'scheduled' | 'open' | 'active';
   max_members: number;
   members_count: number;

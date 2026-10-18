@@ -192,8 +192,8 @@ export default function RoomShell({
   return (
     <div className="relative flex h-[100dvh] flex-col overflow-hidden bg-[#16101c] text-white">
       {/* Top Header */}
-      <header className="z-20 flex shrink-0 items-center justify-between gap-3 border-b border-white/8 px-4 py-3 sm:px-6">
-        <div className="flex items-center gap-3">
+      <header className="z-20 grid shrink-0 grid-cols-[minmax(0,1fr)_auto] grid-rows-[auto_auto] items-center gap-x-2 gap-y-2 border-b border-white/8 px-3 py-2.5 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:grid-rows-1 sm:gap-3 sm:px-6 sm:py-3">
+        <div className="col-start-1 row-start-1 flex min-w-0 items-center gap-2 sm:col-auto sm:row-auto sm:gap-3">
           <Link
             href="/discover"
             className="inline-flex items-center gap-1.5 rounded-full bg-white/8 px-3 py-1.5 text-xs font-semibold text-white/80 transition hover:bg-white/15"
@@ -209,10 +209,10 @@ export default function RoomShell({
             <div className="relative">
               <button
                 onClick={() => setMenuOpen((o) => !o)}
-                className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/6 px-3 py-1 text-xs font-semibold text-white/90 hover:bg-white/12"
+                className="inline-flex min-w-0 max-w-[min(13rem,calc(100vw-9rem))] items-center gap-1.5 rounded-full border border-white/10 bg-white/6 px-3 py-1 text-xs font-semibold text-white/90 hover:bg-white/12 sm:max-w-none"
               >
                 <Layers className="h-3.5 w-3.5 text-spark-coral" />
-                <span>{currentTemplateMeta.title}</span>
+                <span className="min-w-0 truncate">{currentTemplateMeta.title}</span>
                 <ChevronDown className="h-3 w-3 text-white/50" />
               </button>
 
@@ -322,7 +322,7 @@ export default function RoomShell({
         </div>
 
         {/* Center Room Info */}
-        <div className="min-w-0 text-center">
+        <div className="col-span-2 row-start-2 min-w-0 border-t border-white/8 pt-2 text-center sm:col-auto sm:row-auto sm:border-t-0 sm:pt-0">
           <p className="truncate text-sm font-bold text-white">{roomName}</p>
           <div className="mt-0.5 flex items-center justify-center gap-1.5 text-[10px] text-white/60">
             <span
@@ -337,8 +337,8 @@ export default function RoomShell({
         </div>
 
         {/* Right Exit / More */}
-        <div className="flex items-center gap-2">
-          {isHost && onSetTopic && <button onClick={onSetTopic} className="inline-flex items-center gap-1.5 rounded-full border border-spark-coral/40 bg-spark-coral/10 px-3 py-1.5 text-xs font-semibold text-spark-rose transition hover:bg-spark-coral/20"><Pencil className="h-3.5 w-3.5" />Set topic</button>}
+        <div className="col-start-2 row-start-1 flex shrink-0 items-center justify-end gap-1.5 sm:col-auto sm:row-auto sm:gap-2">
+          {isHost && onSetTopic && <button aria-label="Set topic" onClick={onSetTopic} className="inline-flex items-center gap-1.5 rounded-full border border-spark-coral/40 bg-spark-coral/10 px-2.5 py-1.5 text-xs font-semibold text-spark-rose transition hover:bg-spark-coral/20 sm:px-3"><Pencil className="h-3.5 w-3.5" /><span className="hidden sm:inline">Set topic</span></button>}
           <button
             onClick={onEndRoom}
             className="rounded-full bg-white/8 px-3 py-1.5 text-xs font-semibold text-white/80 transition hover:bg-white/15"

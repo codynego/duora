@@ -35,13 +35,7 @@ export default function PlanTogetherStage({
   const [myTime, setMyTime] = useState<string | null>(null);
   const selectedActivity = typeof gameState.selectedActivity === 'string' ? gameState.selectedActivity : null;
 
-  // Partner's mock preferences for demonstration
-  const partnerName = participants[0]?.name ?? 'Partner';
-  const partnerPrefs: PlanPrefs = {
-    budget: '$$',
-    mood: 'Stay-in & cozy',
-    time: 'Full evening',
-  };
+  const partnerName = participants.find((person) => !person.isYou)?.name ?? 'your partner';
 
   const handleRevealMatches = () => {
     onGameStateChange?.({ ...gameState, phase: 'matched' });

@@ -86,6 +86,12 @@ export default function GuidedConversationStage({
   const currentQ = QUESTIONS[questionIndex % QUESTIONS.length];
   const customTopic = typeof gameState.customTopic === 'string' && gameState.customTopic.trim() ? gameState.customTopic : null;
   const totalQuestions = QUESTIONS.length;
+  const responseNames = participants.length ? participants.map((person) => person.isYou ? 'You' : person.name) : ['You'];
+  const sampleResponses = Object.values(currentQ.sampleResponses).reduce<Record<string, string>>((responses, answer, index) => {
+    const name = responseNames[index];
+    if (name) responses[name] = answer;
+    return responses;
+  }, {});
 
   const handleSubmitMyAnswer = () => {
     if (!myAnswer.trim()) return;
@@ -121,7 +127,7 @@ export default function GuidedConversationStage({
   return (
     <section className="flex min-h-full w-full flex-col overflow-y-auto rounded-[28px] bg-[#fffdfa] p-5 text-dark-950 shadow-[0_20px_60px_rgba(0,0,0,.2)] sm:rounded-[32px] sm:p-8 lg:p-10">
       {/* Top Progress & Context */}
-      <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-dark-950/8 pb-4">
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 pb-4">
         <div className="flex items-center gap-3">
           <span className="text-xs font-bold uppercase tracking-wider text-spark-coral">
             Question {questionIndex + 1} of {totalQuestions}
@@ -222,7 +228,7 @@ export default function GuidedConversationStage({
             </p>
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
               {Object.entries({
-                ...currentQ.sampleResponses,
+                ...sampleResponses,
                 ...(myAnswer ? { You: myAnswer } : {}),
               }).map(([name, ans]) => (
                 <div
@@ -257,7 +263,7 @@ export default function GuidedConversationStage({
       </div>
 
       {/* Bottom Stage Progression Controls */}
-      <div className="mt-auto flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-dark-950/8 pt-5">
+      <div className="mt-auto flex shrink-0 flex-wrap items-center justify-between gap-3 pt-5">
         <div className="flex items-center gap-2">
           {!showDeeperPrompt && (
             <button

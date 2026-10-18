@@ -15,7 +15,6 @@ import { BaseStageProps } from '../types';
 
 interface GuessQuestion {
   id: string;
-  targetName: string;
   question: string;
   options: string[];
   correctAnswer: string;
@@ -24,22 +23,19 @@ interface GuessQuestion {
 const GUESS_QUESTIONS: GuessQuestion[] = [
   {
     id: 'g1',
-    targetName: 'Alex',
-    question: 'What is Alex’s ideal holiday?',
+    question: 'What is {name}’s ideal holiday?',
     options: ['Beach escape', 'Mountain adventure', 'City exploration', 'Quiet countryside cabin'],
     correctAnswer: 'Mountain adventure',
   },
   {
     id: 'g2',
-    targetName: 'Maya',
-    question: 'What is Maya’s biggest pet peeve?',
+    question: 'What is {name}’s biggest pet peeve?',
     options: ['Loud chewers', 'People walking too slowly', 'Unread notifications badge', 'Passive-aggressive emails'],
     correctAnswer: 'People walking too slowly',
   },
   {
     id: 'g3',
-    targetName: 'You',
-    question: 'What is Your go-to comfort food when stressed?',
+    question: 'What is {name}’s go-to comfort food when stressed?',
     options: ['Spicy ramen', 'Warm chocolate chip cookies', 'Loaded pizza', 'Cheesy pasta'],
     correctAnswer: 'Spicy ramen',
   },
@@ -59,7 +55,11 @@ export default function GuessMyAnswerStage({
   const myPrediction = typeof gameState.myPrediction === 'string' ? gameState.myPrediction : null;
 
   const currentQ = GUESS_QUESTIONS[questionIndex % GUESS_QUESTIONS.length];
-  const isTarget = currentQ.targetName === 'You';
+  const targetPlayers = participants.filter((person) => !person.isYou);
+  const target = targetPlayers[questionIndex % Math.max(targetPlayers.length, 1)] ?? participants.find((person) => person.isYou) ?? { id: 'you', name: 'You', isYou: true };
+  const targetName = target.name;
+  const questionText = currentQ.question.replace('{name}', targetName);
+  const isTarget = Boolean(target.isYou);
 
   const handleSelectOption = (opt: string) => {
     onGameStateChange?.({ ...gameState, questionIndex, phase: 'predicting', myPrediction: opt, predictions: { ...(gameState.predictions as Record<string, string> | undefined), You: opt } });
@@ -67,6 +67,7 @@ export default function GuessMyAnswerStage({
 
   const handleReveal = () => {
     onGameStateChange?.({ ...gameState, questionIndex, phase: 'revealed' });
+    window.setTimeout(() => onGameStateChange?.({ ...gameState, questionIndex: (questionIndex + 1) % GUESS_QUESTIONS.length, phase: 'predicting', myPrediction: null, predictions: {} }), 900);
   };
 
   const handleNextRound = () => {
@@ -87,7 +88,7 @@ export default function GuessMyAnswerStage({
             GUESSING GAME · ROUND {questionIndex + 1}
           </span>
           <span className="hidden text-xs text-[#6F6470] sm:inline">
-            {currentQ.targetName} is in the spotlight
+            {targetName} is in the spotlight
           </span>
         </div>
 
@@ -109,17 +110,17 @@ export default function GuessMyAnswerStage({
       {/* Main Game Card */}
       <div className="my-auto flex min-h-0 flex-1 flex-col justify-center py-4 sm:py-6">
         <p className="text-[11px] font-bold tracking-[0.16em] text-dark-950/40">
-          PREDICT {currentQ.targetName.toUpperCase()}’S ANSWER
+          PREDICT {targetName.toUpperCase()}’S ANSWER
         </p>
 
         <h1 className="mt-2.5 max-w-4xl text-balance text-[clamp(1.5rem,4.6vw,2.75rem)] font-bold leading-[1.12] tracking-[-0.035em] text-dark-950">
-          “{currentQ.question}”
+          “{questionText}”
         </h1>
 
         <p className="mt-2 text-xs text-[#6F6470]">
           {isTarget
             ? 'You are in the spotlight! Choose your true answer below.'
-            : `Predict what ${currentQ.targetName} would choose before everyone reveals.`}
+            : `Predict what ${targetName} would choose before everyone reveals.`}
         </p>
 
         {/* Option Grid */}
@@ -186,7 +187,7 @@ export default function GuessMyAnswerStage({
         {phase === 'revealed' && (
           <div className="mt-6 rounded-2xl bg-[#fffdfc] border border-dark-950/10 p-4">
             <p className="text-xs font-bold uppercase tracking-wider text-dark-950/60">
-              Who knew {currentQ.targetName} best?
+              Who knew {targetName} best?
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
               {Object.entries(allPredictions).map(([player, guess]) => {

@@ -173,6 +173,8 @@ class RoomGameStateView(APIView):
     @transaction.atomic
     def patch(self, request, room_id):
         room = _member_room(room_id, request.user)
+        if timezone.now() < room.starts_at:
+            raise ValidationError({'room': 'This room has not started yet.'})
         state, _ = RoomGameState.objects.select_for_update().get_or_create(room=room)
         next_state = request.data.get('state')
         if not isinstance(next_state, dict):

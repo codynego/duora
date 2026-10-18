@@ -61,7 +61,7 @@ export default function SharedChallengesStage({
   onGameStateChange,
 }: BaseStageProps) {
   const tasks = Array.isArray(gameState.tasks) ? gameState.tasks as ChallengeTask[] : INITIAL_TASKS.map((task) => ({ ...task, completedByYou: false, completedByPartner: false }));
-  const partnerName = participants[0]?.name ?? 'Partner';
+  const partnerName = participants.find((person) => !person.isYou)?.name ?? 'your partner';
 
   const toggleMyTask = (taskId: string) => {
     onGameStateChange?.({ ...gameState, tasks: tasks.map((t) => {

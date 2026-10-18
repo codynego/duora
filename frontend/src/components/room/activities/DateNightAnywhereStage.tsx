@@ -26,7 +26,7 @@ export default function DateNightAnywhereStage({
   const [talkAnswer, setTalkAnswer] = useState('');
   const savedMemory = typeof gameState.savedMemory === 'string' ? gameState.savedMemory : null;
 
-  const partnerName = participants[0]?.name ?? 'Partner';
+  const partnerName = participants.find((person) => !person.isYou)?.name ?? 'your partner';
 
   const handleNextChapter = () => {
     if (chapter < 3) {

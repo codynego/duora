@@ -17,19 +17,6 @@ interface StoryContribution {
   color: string;
 }
 
-const INITIAL_STORY: StoryContribution[] = [
-  {
-    author: 'Host',
-    sentence: 'It was supposed to be an ordinary Friday until a mysterious handwritten letter slid beneath the door.',
-    color: '#281D32',
-  },
-  {
-    author: 'Maya',
-    sentence: 'The wax seal was stamped with an emblem nobody had seen in fifty years.',
-    color: '#c94f70',
-  },
-];
-
 export default function BuildStoryStage({
   roomName,
   isHost,
@@ -40,6 +27,10 @@ export default function BuildStoryStage({
   onGameStateChange,
 }: BaseStageProps) {
   const story = Array.isArray(gameState.story) ? gameState.story as StoryContribution[] : [];
+  const turnIndex = typeof gameState.turnIndex === 'number' ? gameState.turnIndex : 0;
+  const players = participants.length ? participants : [{ id: 'you', name: 'You', initial: 'Y', color: '#F05A78', isYou: true }];
+  const activePlayer = players[turnIndex % players.length];
+  const isMyTurn = Boolean(activePlayer.isYou);
   const [mySentence, setMySentence] = useState('');
   const finished = Boolean(gameState.finished);
 
@@ -51,11 +42,11 @@ export default function BuildStoryStage({
     onGameStateChange?.({ ...gameState, story: [
       ...story,
       {
-        author: 'You',
+        author: activePlayer.name,
         sentence: text,
-        color: '#F05A78',
+        color: activePlayer.color,
       },
-    ] });
+    ], turnIndex: (turnIndex + 1) % players.length });
     setMySentence('');
     onSendReaction('support');
     onSendMessage(`✍️ Added to story: “${text}”`);
@@ -123,11 +114,12 @@ export default function BuildStoryStage({
                 value={mySentence}
                 onChange={(e) => setMySentence(e.target.value)}
                 placeholder="What happens next? Write one sentence..."
+                disabled={!isMyTurn}
                 className="min-w-0 flex-1 rounded-2xl border border-dark-950/15 bg-white px-4 py-3 text-xs outline-none transition focus:border-spark-coral focus:ring-2 focus:ring-spark-coral/15 sm:text-sm"
               />
               <button
                 type="submit"
-                disabled={!mySentence.trim()}
+                disabled={!isMyTurn || !mySentence.trim()}
                 className="inline-flex items-center gap-1.5 rounded-2xl bg-dark-950 px-5 py-3 text-xs font-bold text-white transition hover:bg-dark-900 disabled:opacity-40"
               >
                 <span>Add</span>
@@ -145,7 +137,7 @@ export default function BuildStoryStage({
       {/* Bottom Controls */}
       <div className="flex shrink-0 items-center justify-between border-t border-dark-950/8 pt-5">
         <span className="text-xs text-[#6F6470]">
-          {story.length} sentences contributed by the room
+          {isMyTurn ? 'Your turn — add one sentence.' : `${activePlayer.name} is writing the next sentence.`}
         </span>
 
         <button

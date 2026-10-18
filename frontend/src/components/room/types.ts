@@ -49,6 +49,7 @@ export interface BaseStageProps {
   gameState?: Record<string, unknown>;
   onGameStateChange?: (state: Record<string, unknown>) => void;
   roomName: string;
+  audience?: 'adults' | 'all';
   isHost: boolean;
   participants: RoomParticipant[];
   onSendMessage: (text: string) => void;

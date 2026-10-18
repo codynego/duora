@@ -51,6 +51,7 @@ export default function MostLikelyToStage({
   const selectedTarget = votes.You ?? null;
 
   const currentPrompt = PROMPTS[roundIndex % PROMPTS.length];
+  const players = participants.length ? participants : [{ id: 'you', name: 'You', initial: 'Y', color: '#F05A78', isYou: true }];
   const totalRounds = PROMPTS.length;
 
   const handleVote = (name: string) => {
@@ -59,6 +60,7 @@ export default function MostLikelyToStage({
 
   const handleReveal = () => {
     onGameStateChange?.({ ...gameState, roundIndex, phase: 'revealed', votes });
+    window.setTimeout(() => onGameStateChange?.({ ...gameState, roundIndex: (roundIndex + 1) % totalRounds, phase: 'voting', votes: {} }), 900);
   };
 
   const handleNextRound = () => {
@@ -127,7 +129,7 @@ export default function MostLikelyToStage({
         {phase === 'voting' && (
           <div className="mt-6 max-w-2xl">
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              {[...participants, { id: 'you', name: 'You', initial: 'Y', color: '#F05A78' }].map((p) => {
+              {players.map((p) => {
                 const isSelected = selectedTarget === p.name;
                 return (
                   <button

@@ -81,7 +81,7 @@ export default function QuickTakesStage({
   return (
     <section className="flex min-h-full w-full flex-col overflow-y-auto rounded-[28px] bg-[#fffdfa] p-5 text-dark-950 shadow-[0_20px_60px_rgba(0,0,0,.2)] sm:rounded-[32px] sm:p-8 lg:p-10">
       {/* Header */}
-      <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-dark-950/8 pb-4">
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 pb-4">
         <span className="inline-flex items-center gap-1.5 rounded-full bg-[#fff0f3] px-3 py-1 text-xs font-bold tracking-wider text-spark-coral">
           <Zap className="h-3.5 w-3.5" />
           QUICK TAKES · {takeIndex + 1} OF {totalTakes}
@@ -173,7 +173,7 @@ export default function QuickTakesStage({
       </div>
 
       {/* Bottom Rapid Next Button */}
-      <div className="mt-auto flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-dark-950/8 pt-5">
+      <div className="mt-auto flex shrink-0 flex-wrap items-center justify-between gap-3 pt-5">
         <span className="text-xs text-[#6F6470]">
           Brief reactions. The game keeps moving.
         </span>
