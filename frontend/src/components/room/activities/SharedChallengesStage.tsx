@@ -57,13 +57,14 @@ export default function SharedChallengesStage({
   participants,
   onSendMessage,
   onSendReaction,
+  gameState = {},
+  onGameStateChange,
 }: BaseStageProps) {
-  const [tasks, setTasks] = useState<ChallengeTask[]>(INITIAL_TASKS);
+  const tasks = Array.isArray(gameState.tasks) ? gameState.tasks as ChallengeTask[] : INITIAL_TASKS.map((task) => ({ ...task, completedByYou: false, completedByPartner: false }));
   const partnerName = participants[0]?.name ?? 'Partner';
 
   const toggleMyTask = (taskId: string) => {
-    setTasks((prev) =>
-      prev.map((t) => {
+    onGameStateChange?.({ ...gameState, tasks: tasks.map((t) => {
         if (t.id === taskId) {
           const nextState = !t.completedByYou;
           if (nextState) {
@@ -73,8 +74,7 @@ export default function SharedChallengesStage({
           return { ...t, completedByYou: nextState };
         }
         return t;
-      })
-    );
+      }) });
   };
 
   const completedCount = tasks.filter((t) => t.completedByYou && t.completedByPartner).length;

@@ -19,7 +19,6 @@ interface DebateStatement {
   id: string;
   statement: string;
   context: string;
-  mockVotes: Record<string, Stance>;
 }
 
 const STATEMENTS: DebateStatement[] = [
@@ -27,45 +26,21 @@ const STATEMENTS: DebateStatement[] = [
     id: 'd1',
     statement: 'Couples should know each other’s phone passwords without hesitation.',
     context: 'Is complete transparency a sign of healthy trust, or does private personal space always matter?',
-    mockVotes: {
-      Ada: 'agree',
-      Maya: 'disagree',
-      Jon: 'depends',
-      Sam: 'disagree',
-    },
   },
   {
     id: 'd2',
     statement: 'Staying close friends with an ex is a green flag, not a red flag.',
     context: 'Does it prove emotional maturity and respect, or does it invite unresolved boundaries?',
-    mockVotes: {
-      Ada: 'depends',
-      Maya: 'agree',
-      Jon: 'agree',
-      Sam: 'disagree',
-    },
   },
   {
     id: 'd3',
     statement: 'The person who initiates the first date should always pick up the bill.',
     context: 'Classic etiquette vs. modern egalitarian dating norms.',
-    mockVotes: {
-      Ada: 'agree',
-      Maya: 'disagree',
-      Jon: 'depends',
-      Sam: 'agree',
-    },
   },
   {
     id: 'd4',
     statement: 'You can love someone deeply and still not be compatible long-term.',
     context: 'Can sheer love overcome mismatched life trajectories and daily friction?',
-    mockVotes: {
-      Ada: 'agree',
-      Maya: 'agree',
-      Jon: 'agree',
-      Sam: 'depends',
-    },
   },
 ];
 
@@ -75,30 +50,29 @@ export default function DebateStage({
   participants,
   onSendMessage,
   onPromptChat,
+  gameState = {},
+  onGameStateChange,
 }: BaseStageProps) {
-  const [statementIndex, setStatementIndex] = useState(0);
-  const [phase, setPhase] = useState<'voting' | 'revealed' | 'discussion'>('voting');
-  const [myStance, setMyStance] = useState<Stance | null>(null);
+  const statementIndex = typeof gameState.statementIndex === 'number' ? gameState.statementIndex : 0;
+  const phase = gameState.phase === 'revealed' || gameState.phase === 'discussion' ? gameState.phase : 'voting';
+  const myStance = gameState.myStance === 'agree' || gameState.myStance === 'disagree' || gameState.myStance === 'depends' ? gameState.myStance : null;
 
   const currentStatement = STATEMENTS[statementIndex % STATEMENTS.length];
 
   const handleSelectStance = (stance: Stance) => {
-    setMyStance(stance);
+    onGameStateChange?.({ ...gameState, statementIndex, phase: 'voting', votes: { ...(gameState.votes as Record<string, Stance> | undefined), You: stance }, myStance: stance });
   };
 
   const handleReveal = () => {
-    setPhase('revealed');
+    onGameStateChange?.({ ...gameState, statementIndex, phase: 'revealed', myStance });
   };
 
   const handleNextStatement = () => {
-    setStatementIndex((prev) => (prev + 1) % STATEMENTS.length);
-    setPhase('voting');
-    setMyStance(null);
+    onGameStateChange?.({ ...gameState, statementIndex: (statementIndex + 1) % STATEMENTS.length, phase: 'voting', myStance: null, votes: {} });
   };
 
   const allVotes: Record<string, Stance> = {
-    ...currentStatement.mockVotes,
-    ...(myStance ? { You: myStance } : {}),
+    ...((gameState.votes as Record<string, Stance> | undefined) ?? {}),
   };
 
   const voteCounts = Object.values(allVotes).reduce(

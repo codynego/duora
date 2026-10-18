@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Bell, Bookmark, Compass, House, MessageCircle, PlayCircle, UserRound, UsersRound } from 'lucide-react';
+import { Bell, Compass, House, MessageCircle, PlayCircle, UserRound, UsersRound } from 'lucide-react';
 import { useCurrentUser } from '@/lib/current-user';
 
 const navigation = [
@@ -10,7 +10,6 @@ const navigation = [
   { label: 'Discover', href: '/discover', icon: Compass },
   { label: 'Experiences', href: '/experiences', icon: PlayCircle },
   { label: 'Connections', href: '/connections', icon: MessageCircle },
-  { label: 'Moments', href: '/moments', icon: Bookmark },
 ];
 
 export default function AppNav() {

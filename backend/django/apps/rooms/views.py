@@ -10,7 +10,7 @@ from django.utils.dateparse import parse_datetime
 from rest_framework.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import Q
-from .models import Moment, Room, RoomActivity, RoomAnswer, RoomMembership, RoomNextStep
+from .models import Moment, Room, RoomActivity, RoomAnswer, RoomGameState, RoomMembership, RoomNextStep
 from .serializers import PublicRoomCreateSerializer, RoomSerializer
 from .services import create_private_room, create_public_room, join_room
 
@@ -140,7 +140,46 @@ class RoomParticipantsView(APIView):
     def get(self, request, room_id):
         room = _member_room(room_id, request.user)
         memberships = room.memberships.filter(disposition=RoomMembership.Disposition.PRESENT).select_related('user')
-        return Response({'data': [{'id': str(item.user_id), 'name': item.user.get_full_name().strip() or item.user.username, 'initial': (item.user.get_full_name().strip() or item.user.username)[:1].upper(), 'is_you': item.user_id == request.user.id} for item in memberships]})
+        members = [{'id': str(item.user_id), 'name': item.user.get_full_name().strip() or item.user.username, 'initial': (item.user.get_full_name().strip() or item.user.username)[:1].upper(), 'is_you': item.user_id == request.user.id, 'ready': item.ready_at is not None} for item in memberships]
+        return Response({'data': members, 'meta': {'members_count': len(members), 'max_members': room.max_members, 'ready_count': sum(member['ready'] for member in members), 'all_ready': bool(members) and all(member['ready'] for member in members)}})
+
+
+class RoomReadyView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @transaction.atomic
+    def post(self, request, room_id):
+        room = Room.objects.select_for_update().filter(id=room_id).first()
+        if not room:
+            raise ValidationError({'room': 'This room is unavailable.'})
+        membership = RoomMembership.objects.select_for_update().filter(room=room, user=request.user, disposition=RoomMembership.Disposition.PRESENT).first()
+        if not membership:
+            raise ValidationError({'room': 'You do not have access to this room.'})
+        if membership.ready_at is None:
+            membership.ready_at = timezone.now()
+            membership.save(update_fields=('ready_at',))
+        present = list(room.memberships.filter(disposition=RoomMembership.Disposition.PRESENT).values_list('ready_at', flat=True))
+        return Response({'data': {'ready': True, 'members_count': len(present), 'max_members': room.max_members, 'ready_count': sum(value is not None for value in present), 'all_ready': bool(present) and all(value is not None for value in present)}})
+
+
+class RoomGameStateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, room_id):
+        room = _member_room(room_id, request.user)
+        state, _ = RoomGameState.objects.get_or_create(room=room)
+        return Response({'data': state.state, 'updated_at': state.updated_at})
+
+    @transaction.atomic
+    def patch(self, request, room_id):
+        room = _member_room(room_id, request.user)
+        state, _ = RoomGameState.objects.select_for_update().get_or_create(room=room)
+        next_state = request.data.get('state')
+        if not isinstance(next_state, dict):
+            raise ValidationError({'state': 'Game state must be an object.'})
+        state.state = next_state
+        state.save(update_fields=('state', 'updated_at'))
+        return Response({'data': state.state, 'updated_at': state.updated_at})
 
 
 class RoomRevealView(APIView):

@@ -16,34 +16,28 @@ type TakeReaction = 'agree' | 'disagree' | 'depends';
 interface QuickTakeItem {
   id: string;
   statement: string;
-  mockReactions: Record<string, TakeReaction>;
 }
 
 const QUICK_TAKES: QuickTakeItem[] = [
   {
     id: 't1',
     statement: 'Voice notes are strictly superior to text messages.',
-    mockReactions: { Ada: 'agree', Maya: 'disagree', Jon: 'disagree', Sam: 'agree' },
   },
   {
     id: 't2',
     statement: 'Ordering dessert for the table is better than ordering individual desserts.',
-    mockReactions: { Ada: 'agree', Maya: 'agree', Jon: 'agree', Sam: 'depends' },
   },
   {
     id: 't3',
     statement: 'Leaving a party without saying goodbye (the Irish Exit) is respectful, not rude.',
-    mockReactions: { Ada: 'agree', Maya: 'disagree', Jon: 'agree', Sam: 'agree' },
   },
   {
     id: 't4',
     statement: 'Social media stalking before a first date ruins the organic chemistry.',
-    mockReactions: { Ada: 'disagree', Maya: 'agree', Jon: 'depends', Sam: 'disagree' },
   },
   {
     id: 't5',
     statement: 'Sunday afternoon anxiety can only be cured by an early dinner and no screens.',
-    mockReactions: { Ada: 'agree', Maya: 'agree', Jon: 'agree', Sam: 'agree' },
   },
 ];
 
@@ -52,25 +46,25 @@ export default function QuickTakesStage({
   isHost,
   participants,
   onSendMessage,
+  gameState = {},
+  onGameStateChange,
 }: BaseStageProps) {
-  const [takeIndex, setTakeIndex] = useState(0);
-  const [myReaction, setMyReaction] = useState<TakeReaction | null>(null);
+  const takeIndex = typeof gameState.takeIndex === 'number' ? gameState.takeIndex : 0;
+  const myReaction = gameState.myReaction === 'agree' || gameState.myReaction === 'disagree' || gameState.myReaction === 'depends' ? gameState.myReaction : null;
 
   const currentTake = QUICK_TAKES[takeIndex % QUICK_TAKES.length];
   const totalTakes = QUICK_TAKES.length;
 
   const handleReact = (reaction: TakeReaction) => {
-    setMyReaction(reaction);
+    onGameStateChange?.({ ...gameState, takeIndex, myReaction: reaction, reactions: { ...(gameState.reactions as Record<string, TakeReaction> | undefined), You: reaction } });
   };
 
   const handleNextTake = () => {
-    setTakeIndex((prev) => (prev + 1) % totalTakes);
-    setMyReaction(null);
+    onGameStateChange?.({ ...gameState, takeIndex: (takeIndex + 1) % totalTakes, myReaction: null, reactions: {} });
   };
 
   const allReactions: Record<string, TakeReaction> = {
-    ...currentTake.mockReactions,
-    ...(myReaction ? { You: myReaction } : {}),
+    ...((gameState.reactions as Record<string, TakeReaction> | undefined) ?? {}),
   };
 
   const counts = Object.values(allReactions).reduce(

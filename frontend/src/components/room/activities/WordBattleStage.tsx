@@ -49,11 +49,13 @@ export default function WordBattleStage({
   participants,
   onSendMessage,
   onSendReaction,
+  gameState = {},
+  onGameStateChange,
 }: BaseStageProps) {
-  const [round, setRound] = useState(0);
+  const round = typeof gameState.round === 'number' ? gameState.round : 0;
   const [myAnswer, setMyAnswer] = useState('');
-  const [myScore, setMyScore] = useState(120);
-  const [rivalScore, setRivalScore] = useState(100);
+  const myScore = typeof gameState.myScore === 'number' ? gameState.myScore : 0;
+  const rivalScore = typeof gameState.rivalScore === 'number' ? gameState.rivalScore : 0;
   const [feedback, setFeedback] = useState<string | null>(null);
 
   const current = WORD_CHALLENGES[round % WORD_CHALLENGES.length];
@@ -64,7 +66,7 @@ export default function WordBattleStage({
     if (!clean) return;
 
     if (clean.startsWith(current.letter.toLowerCase()) && clean.length > 2) {
-      setMyScore((s) => s + 30);
+      onGameStateChange?.({ ...gameState, round, myScore: myScore + 30, rivalScore, feedback: `+30 points for “${myAnswer}”! Excellent!` });
       setFeedback(`+30 points for “${myAnswer}”! Excellent!`);
       onSendReaction('cheer');
       onSendMessage(`⚡ Word Battle: Submitted “${myAnswer}” (+30 pts)`);
@@ -75,7 +77,7 @@ export default function WordBattleStage({
   };
 
   const handleNextRound = () => {
-    setRound((r) => r + 1);
+    onGameStateChange?.({ ...gameState, round: round + 1, myScore, rivalScore, feedback: null });
     setFeedback(null);
     setMyAnswer('');
   };

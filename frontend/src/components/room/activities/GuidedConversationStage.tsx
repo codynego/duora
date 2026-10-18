@@ -73,11 +73,13 @@ export default function GuidedConversationStage({
   participants,
   onSendMessage,
   onPromptChat,
+  gameState = {},
+  onGameStateChange,
 }: BaseStageProps) {
-  const [questionIndex, setQuestionIndex] = useState(0);
-  const [phase, setPhase] = useState<'responding' | 'revealed'>('responding');
+  const questionIndex = typeof gameState.questionIndex === 'number' ? gameState.questionIndex : 0;
+  const phase = gameState.phase === 'revealed' ? 'revealed' : 'responding';
   const [myAnswer, setMyAnswer] = useState('');
-  const [submitted, setSubmitted] = useState(false);
+  const submitted = Boolean(gameState.submitted);
   const [showDeeperPrompt, setShowDeeperPrompt] = useState(false);
   const [selectedResponseName, setSelectedResponseName] = useState<string | null>(null);
 
@@ -86,20 +88,18 @@ export default function GuidedConversationStage({
 
   const handleSubmitMyAnswer = () => {
     if (!myAnswer.trim()) return;
-    setSubmitted(true);
+    onGameStateChange?.({ ...gameState, questionIndex, phase: 'responding', submitted: true });
     // In real room socket, dispatch answer.saved.
     // When all are ready or host triggers reveal:
   };
 
   const handleRevealAll = () => {
-    setPhase('revealed');
+    onGameStateChange?.({ ...gameState, questionIndex, phase: 'revealed', submitted });
   };
 
   const handleNextQuestion = () => {
-    setQuestionIndex((prev) => (prev + 1) % totalQuestions);
-    setPhase('responding');
+    onGameStateChange?.({ ...gameState, questionIndex: (questionIndex + 1) % totalQuestions, phase: 'responding', submitted: false });
     setMyAnswer('');
-    setSubmitted(false);
     setShowDeeperPrompt(false);
     setSelectedResponseName(null);
   };

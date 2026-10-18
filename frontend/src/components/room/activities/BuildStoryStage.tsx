@@ -36,31 +36,33 @@ export default function BuildStoryStage({
   participants,
   onSendMessage,
   onSendReaction,
+  gameState = {},
+  onGameStateChange,
 }: BaseStageProps) {
-  const [story, setStory] = useState<StoryContribution[]>(INITIAL_STORY);
+  const story = Array.isArray(gameState.story) ? gameState.story as StoryContribution[] : [];
   const [mySentence, setMySentence] = useState('');
-  const [finished, setFinished] = useState(false);
+  const finished = Boolean(gameState.finished);
 
   const handleAddSentence = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     const text = mySentence.trim();
     if (!text) return;
 
-    setStory((prev) => [
-      ...prev,
+    onGameStateChange?.({ ...gameState, story: [
+      ...story,
       {
         author: 'You',
         sentence: text,
         color: '#F05A78',
       },
-    ]);
+    ] });
     setMySentence('');
     onSendReaction('support');
     onSendMessage(`✍️ Added to story: “${text}”`);
   };
 
   const handleFinish = () => {
-    setFinished(true);
+    onGameStateChange?.({ ...gameState, story, finished: true });
     onSendReaction('cheer');
   };
 
@@ -148,8 +150,7 @@ export default function BuildStoryStage({
 
         <button
           onClick={() => {
-            setStory(INITIAL_STORY);
-            setFinished(false);
+            onGameStateChange?.({ ...gameState, story: [], finished: false });
           }}
           className="inline-flex items-center gap-1.5 rounded-full border border-dark-950/15 bg-white px-3.5 py-2 text-xs font-bold text-dark-950 transition hover:bg-dark-950/5"
         >

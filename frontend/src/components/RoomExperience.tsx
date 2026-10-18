@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { useRoomActivity } from '@/lib/use-room-activity';
 import { getAccessToken } from '@/lib/auth';
+import { useRoomGameState } from '@/lib/use-room-game-state';
 import RoomShell from './room/RoomShell';
 import { ExperienceTemplate, RoomParticipant, ReactionKind, RoomEvent } from './room/types';
 import OpenConversationStage from './room/activities/OpenConversationStage';
@@ -40,6 +41,27 @@ interface RoomExperienceProps {
   roomName: string;
   mode?: ExperienceMode;
   alreadyJoined?: boolean;
+  experience?: string;
+  startsAt?: string;
+  durationMinutes?: number;
+}
+
+function templateForExperience(experience?: string): ExperienceTemplate {
+  const templates: Record<string, ExperienceTemplate> = {
+    'open-conversation': 'open_talk',
+    'guided-conversation': 'guided_journey',
+    debate: 'debate',
+    'quick-takes': 'quick_takes',
+    'most-likely-to': 'most_likely_to',
+    'truth-or-dare': 'truth_or_dare',
+    'guess-my-answer': 'guess_my_answer',
+    'word-battle': 'word_battle',
+    'build-a-story': 'build_a_story',
+    'plan-something-together': 'plan_together',
+    'shared-challenges': 'shared_challenges',
+    'date-night-anywhere': 'date_night',
+  };
+  return templates[experience ?? ''] ?? 'open_talk';
 }
 
 export default function RoomExperience({
@@ -48,15 +70,21 @@ export default function RoomExperience({
   roomName,
   mode = 'talk',
   alreadyJoined = false,
+  experience,
+  startsAt,
+  durationMinutes = 12,
 }: RoomExperienceProps) {
   const [view, setView] = useState<'overview' | 'arrival' | 'live' | 'wrap'>('overview');
-  const [seconds, setSeconds] = useState(720);
+  const [seconds, setSeconds] = useState(durationMinutes * 60);
   const [joined, setJoined] = useState(alreadyJoined);
   const [joining, setJoining] = useState(false);
   const [joinError, setJoinError] = useState('');
   const [chatOpen, setChatOpen] = useState(false);
   const [unreadMessages, setUnreadMessages] = useState(0);
-  const [wrapPeople, setWrapPeople] = useState<{ id: string; name: string; initial: string; is_you?: boolean }[]>([]);
+  const [wrapPeople, setWrapPeople] = useState<{ id: string; name: string; initial: string; is_you?: boolean; ready?: boolean }[]>([]);
+  const [lobbyMeta, setLobbyMeta] = useState({ membersCount: 0, maxMembers: 0, readyCount: 0, allReady: false });
+  const [selfReady, setSelfReady] = useState(false);
+  const [readySubmitting, setReadySubmitting] = useState(false);
   const [nextStepStatus, setNextStepStatus] = useState('');
   const [nextStepThreadId, setNextStepThreadId] = useState('');
   const [momentText, setMomentText] = useState('');
@@ -68,16 +96,25 @@ export default function RoomExperience({
   const isTogether = mode === 'together' || mode === 'plan';
 
   // Initialize template based on mode
-  const [template, setTemplate] = useState<ExperienceTemplate>(
-    isPlay ? 'most_likely_to' : isTogether ? 'plan_together' : 'open_talk'
-  );
+  const [template, setTemplate] = useState<ExperienceTemplate>(() => templateForExperience(experience) ?? (isPlay ? 'most_likely_to' : isTogether ? 'plan_together' : 'open_talk'));
 
   const { connected, events, send } = useRoomActivity(roomId, joined);
+  const { state: gameState, update: updateGameState } = useRoomGameState<Record<string, unknown>>(roomId, view === 'live', { template });
   const [previewEvents, setPreviewEvents] = useState<RoomEvent[]>([]);
   const roomEvents = roomId ? events : previewEvents;
 
+  useEffect(() => {
+    const latestTemplate = [...roomEvents].reverse().find((event) => event.event === 'prompt.skipped' && typeof event.payload?.template === 'string')?.payload?.template;
+    if (latestTemplate) setTemplate(latestTemplate as ExperienceTemplate);
+  }, [roomEvents]);
+
+  function selectTemplate(nextTemplate: ExperienceTemplate) {
+    setTemplate(nextTemplate);
+    void send('prompt.skipped', { template: nextTemplate });
+  }
+
   // Together is strictly 2 people (You + 1 Partner)
-  const roomParticipants: RoomParticipant[] = wrapPeople.length ? wrapPeople.map((person, index) => ({ id: person.id, name: person.is_you ? 'You' : person.name, initial: person.initial, color: ['#281D32', '#c94f70', '#8770a0', '#d7953d'][index % 4], statusLabel: person.is_you ? 'You' : 'Here' })) : (isTogether ? [DEFAULT_PEOPLE[1]] : DEFAULT_PEOPLE);
+  const roomParticipants: RoomParticipant[] = wrapPeople.length ? wrapPeople.map((person, index) => ({ id: person.id, name: person.is_you ? 'You' : person.name, initial: person.initial, color: ['#281D32', '#c94f70', '#8770a0', '#d7953d'][index % 4], statusLabel: person.is_you ? 'You' : 'Here' })) : (roomId ? [] : (isTogether ? [DEFAULT_PEOPLE[1]] : DEFAULT_PEOPLE));
 
   const roomSummary = isTalk
     ? 'A small room for people who want an easier way into an honest conversation.'
@@ -87,9 +124,12 @@ export default function RoomExperience({
 
   useEffect(() => {
     if (view !== 'live') return;
-    const timer = window.setInterval(() => setSeconds((cur) => Math.max(0, cur - 1)), 1000);
+    const startedAt = startsAt ? new Date(startsAt).getTime() : Date.now();
+    const update = () => setSeconds(Math.max(0, durationMinutes * 60 - Math.max(0, Math.floor((Date.now() - startedAt) / 1000))));
+    update();
+    const timer = window.setInterval(update, 1000);
     return () => window.clearInterval(timer);
-  }, [view]);
+  }, [view, startsAt, durationMinutes]);
 
   useEffect(() => { if (view === 'live' && seconds === 0) setView('wrap'); }, [seconds, view]);
 
@@ -163,10 +203,42 @@ export default function RoomExperience({
       if (!token) return;
       const response = await fetch(`${process.env.NEXT_PUBLIC_DUORA_API_URL ?? 'http://127.0.0.1:8000'}/api/v1/rooms/${roomId}/participants/`, { headers: { Authorization: `Bearer ${token}` } });
       const body = await response.json();
-      if (response.ok && Array.isArray(body.data)) setWrapPeople(body.data);
+      if (response.ok && Array.isArray(body.data)) {
+        setWrapPeople(body.data);
+        setSelfReady(Boolean(body.data.find((person: { is_you?: boolean; ready?: boolean }) => person.is_you)?.ready));
+        setLobbyMeta({ membersCount: body.meta?.members_count ?? body.data.length, maxMembers: body.meta?.max_members ?? 0, readyCount: body.meta?.ready_count ?? 0, allReady: Boolean(body.meta?.all_ready) });
+      }
     }
     void loadPeople();
+    if (view !== 'arrival') return;
+    const refresh = window.setInterval(() => void loadPeople(), 4000);
+    return () => window.clearInterval(refresh);
   }, [roomId, view, joined, alreadyJoined]);
+
+  async function enterRoom() {
+    if (selfReady && lobbyMeta.allReady) {
+      send('room.ready');
+      setView('live');
+      return;
+    }
+    const token = await getAccessToken();
+    if (!token || !roomId || readySubmitting) return;
+    setReadySubmitting(true);
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_DUORA_API_URL ?? 'http://127.0.0.1:8000'}/api/v1/rooms/${roomId}/ready/`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.detail ?? 'Your ready state could not be saved.');
+      setSelfReady(true);
+      const nextMeta = { membersCount: body.data.members_count, maxMembers: body.data.max_members, readyCount: body.data.ready_count, allReady: body.data.all_ready };
+      setLobbyMeta(nextMeta);
+      if (nextMeta.allReady) {
+        send('room.ready');
+        setView('live');
+      }
+    } finally {
+      setReadySubmitting(false);
+    }
+  }
 
   async function chooseNextStep(participantId: string, choice: 'continue_chat' | 'reconnect' | 'end') {
     const token = await getAccessToken();
@@ -407,7 +479,7 @@ export default function RoomExperience({
 
           <div className="mt-8 rounded-[28px] border border-dark-950/10 bg-white p-6 text-left shadow-sm">
             <div className="flex items-center justify-between">
-              <p className="text-sm font-bold">4 of 4 people are here</p>
+              <p className="text-sm font-bold">{lobbyMeta.membersCount} of {lobbyMeta.maxMembers || '…'} people are here</p>
               <span className={`text-xs font-semibold ${connected ? 'text-[#4d8568]' : 'text-[#6F6470]'}`}>
                 {connected ? '● Live' : '○ Connecting'}
               </span>
@@ -426,14 +498,13 @@ export default function RoomExperience({
           </div>
 
           <button
-            onClick={() => {
-              send('room.ready');
-              setView('live');
-            }}
+            disabled={readySubmitting || (selfReady && !lobbyMeta.allReady)}
+            onClick={() => void enterRoom()}
             className="mt-7 inline-flex items-center gap-2 rounded-full bg-dark-950 px-6 py-3 text-sm font-bold text-white transition hover:bg-dark-900"
           >
-            Enter the room <ArrowRight className="h-4 w-4" />
+            {selfReady ? (lobbyMeta.allReady ? 'Enter the room' : `Ready · ${lobbyMeta.readyCount}/${lobbyMeta.membersCount} ready`) : readySubmitting ? 'Saving…' : 'I’m ready'} <ArrowRight className="h-4 w-4" />
           </button>
+          {selfReady && !lobbyMeta.allReady && <p className="mt-3 text-xs text-[#6F6470]">Waiting for the other people currently in the room.</p>}
         </section>
       </main>
     );
@@ -468,11 +539,14 @@ export default function RoomExperience({
   return (
     <RoomShell
       roomName={roomName}
+      roomId={roomId}
+      gameState={gameState}
+      onGameStateChange={updateGameState}
       timeRemaining={formattedTime}
       connected={connected}
       participants={roomParticipants}
       currentTemplate={template}
-      onSelectTemplate={setTemplate}
+      onSelectTemplate={selectTemplate}
       onReaction={sendReaction}
       onSendMessage={sendChatMessage}
       onEndRoom={() => setView('wrap')}
@@ -485,6 +559,9 @@ export default function RoomExperience({
       {template === 'open_talk' && (
         <OpenConversationStage
           roomName={roomName}
+          roomId={roomId}
+          gameState={gameState}
+          onGameStateChange={updateGameState}
           isHost={true}
           participants={roomParticipants}
           onSendMessage={sendChatMessage}
@@ -496,6 +573,9 @@ export default function RoomExperience({
       {template === 'guided_journey' && (
         <GuidedConversationStage
           roomName={roomName}
+          roomId={roomId}
+          gameState={gameState}
+          onGameStateChange={updateGameState}
           isHost={true}
           participants={roomParticipants}
           onSendMessage={sendChatMessage}
@@ -507,6 +587,9 @@ export default function RoomExperience({
       {template === 'debate' && (
         <DebateStage
           roomName={roomName}
+          roomId={roomId}
+          gameState={gameState}
+          onGameStateChange={updateGameState}
           isHost={true}
           participants={roomParticipants}
           onSendMessage={sendChatMessage}
@@ -518,6 +601,9 @@ export default function RoomExperience({
       {template === 'quick_takes' && (
         <QuickTakesStage
           roomName={roomName}
+          roomId={roomId}
+          gameState={gameState}
+          onGameStateChange={updateGameState}
           isHost={true}
           participants={roomParticipants}
           onSendMessage={sendChatMessage}
@@ -530,6 +616,9 @@ export default function RoomExperience({
       {template === 'most_likely_to' && (
         <MostLikelyToStage
           roomName={roomName}
+          roomId={roomId}
+          gameState={gameState}
+          onGameStateChange={updateGameState}
           isHost={true}
           participants={roomParticipants}
           onSendMessage={sendChatMessage}
@@ -541,6 +630,9 @@ export default function RoomExperience({
       {template === 'truth_or_dare' && (
         <TruthOrDareStage
           roomName={roomName}
+          roomId={roomId}
+          gameState={gameState}
+          onGameStateChange={updateGameState}
           isHost={true}
           participants={roomParticipants}
           onSendMessage={sendChatMessage}
@@ -552,6 +644,9 @@ export default function RoomExperience({
       {template === 'guess_my_answer' && (
         <GuessMyAnswerStage
           roomName={roomName}
+          roomId={roomId}
+          gameState={gameState}
+          onGameStateChange={updateGameState}
           isHost={true}
           participants={roomParticipants}
           onSendMessage={sendChatMessage}
@@ -563,6 +658,9 @@ export default function RoomExperience({
       {template === 'word_battle' && (
         <WordBattleStage
           roomName={roomName}
+          roomId={roomId}
+          gameState={gameState}
+          onGameStateChange={updateGameState}
           isHost={true}
           participants={roomParticipants}
           onSendMessage={sendChatMessage}
@@ -574,6 +672,9 @@ export default function RoomExperience({
       {template === 'build_a_story' && (
         <BuildStoryStage
           roomName={roomName}
+          roomId={roomId}
+          gameState={gameState}
+          onGameStateChange={updateGameState}
           isHost={true}
           participants={roomParticipants}
           onSendMessage={sendChatMessage}
@@ -586,6 +687,9 @@ export default function RoomExperience({
       {template === 'plan_together' && (
         <PlanTogetherStage
           roomName={roomName}
+          roomId={roomId}
+          gameState={gameState}
+          onGameStateChange={updateGameState}
           isHost={true}
           participants={roomParticipants}
           onSendMessage={sendChatMessage}
@@ -597,6 +701,9 @@ export default function RoomExperience({
       {template === 'shared_challenges' && (
         <SharedChallengesStage
           roomName={roomName}
+          roomId={roomId}
+          gameState={gameState}
+          onGameStateChange={updateGameState}
           isHost={true}
           participants={roomParticipants}
           onSendMessage={sendChatMessage}
@@ -608,6 +715,9 @@ export default function RoomExperience({
       {template === 'date_night' && (
         <DateNightAnywhereStage
           roomName={roomName}
+          roomId={roomId}
+          gameState={gameState}
+          onGameStateChange={updateGameState}
           isHost={true}
           participants={roomParticipants}
           onSendMessage={sendChatMessage}

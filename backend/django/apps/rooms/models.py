@@ -25,6 +25,7 @@ class Room(models.Model):
     slug = models.SlugField(max_length=80, unique=True)
     title = models.CharField(max_length=120)
     description = models.CharField(max_length=280)
+    experience = models.CharField(max_length=40, default='open-conversation')
     tone = models.CharField(max_length=32, default='Easygoing')
     intent = models.CharField(max_length=20, default='conversation')
     mode = models.CharField(max_length=12, choices=Mode, default=Mode.TALK)
@@ -52,6 +53,7 @@ class RoomMembership(models.Model):
     room = models.ForeignKey(Room, on_delete=models.CASCADE, related_name='memberships')
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='room_memberships')
     disposition = models.CharField(max_length=10, choices=Disposition, default=Disposition.PRESENT)
+    ready_at = models.DateTimeField(null=True, blank=True)
     joined_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -97,6 +99,15 @@ class RoomActivity(models.Model):
 
     def __str__(self) -> str:
         return f'{self.room.code} · {self.event}'
+
+
+class RoomGameState(models.Model):
+    room = models.OneToOneField(Room, on_delete=models.CASCADE, related_name='game_state')
+    state = models.JSONField(default=dict)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self) -> str:
+        return f'{self.room.code} · game state'
 
 
 class RoomAnswer(models.Model):

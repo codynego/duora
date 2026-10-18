@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import {
   Users,
   Eye,
@@ -15,29 +15,24 @@ import { BaseStageProps } from '../types';
 interface MostLikelyPrompt {
   id: string;
   question: string;
-  mockVotes: Record<string, string>; // voterName -> targetName
 }
 
 const PROMPTS: MostLikelyPrompt[] = [
   {
     id: 'p1',
     question: 'Who is most likely to become famous by accident?',
-    mockVotes: { Ada: 'Maya', Maya: 'Maya', Jon: 'Maya', Sam: 'You' },
   },
   {
     id: 'p2',
     question: 'Who is most likely to survive a zombie apocalypse entirely on luck?',
-    mockVotes: { Ada: 'Jon', Maya: 'Jon', Jon: 'Sam', Sam: 'Jon' },
   },
   {
     id: 'p3',
     question: 'Who is most likely to start a cult unintentionally?',
-    mockVotes: { Ada: 'Ada', Maya: 'Ada', Jon: 'Ada', Sam: 'Ada' },
   },
   {
     id: 'p4',
     question: 'Who is most likely to buy something ridiculous after 2 AM?',
-    mockVotes: { Ada: 'Sam', Maya: 'Sam', Jon: 'Maya', Sam: 'Sam' },
   },
 ];
 
@@ -47,31 +42,31 @@ export default function MostLikelyToStage({
   participants,
   onSendMessage,
   onPromptChat,
+  gameState = {},
+  onGameStateChange,
 }: BaseStageProps) {
-  const [roundIndex, setRoundIndex] = useState(0);
-  const [phase, setPhase] = useState<'voting' | 'revealed'>('voting');
-  const [selectedTarget, setSelectedTarget] = useState<string | null>(null);
+  const roundIndex = typeof gameState.roundIndex === 'number' ? gameState.roundIndex : 0;
+  const phase = gameState.phase === 'revealed' ? 'revealed' : 'voting';
+  const votes = (gameState.votes && typeof gameState.votes === 'object' ? gameState.votes : {}) as Record<string, string>;
+  const selectedTarget = votes.You ?? null;
 
   const currentPrompt = PROMPTS[roundIndex % PROMPTS.length];
   const totalRounds = PROMPTS.length;
 
   const handleVote = (name: string) => {
-    setSelectedTarget(name);
+    onGameStateChange?.({ ...gameState, roundIndex, phase: 'voting', votes: { ...votes, You: name } });
   };
 
   const handleReveal = () => {
-    setPhase('revealed');
+    onGameStateChange?.({ ...gameState, roundIndex, phase: 'revealed', votes });
   };
 
   const handleNextRound = () => {
-    setRoundIndex((prev) => (prev + 1) % totalRounds);
-    setPhase('voting');
-    setSelectedTarget(null);
+    onGameStateChange?.({ ...gameState, roundIndex: (roundIndex + 1) % totalRounds, phase: 'voting', votes: {} });
   };
 
   const allVotes: Record<string, string> = {
-    ...currentPrompt.mockVotes,
-    ...(selectedTarget ? { You: selectedTarget } : {}),
+    ...votes,
   };
 
   // Tally votes for each candidate

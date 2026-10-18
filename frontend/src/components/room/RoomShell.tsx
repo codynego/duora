@@ -23,6 +23,9 @@ import { ExperienceTemplate, RoomParticipant, ReactionKind, RoomEvent } from './
 
 interface RoomShellProps {
   roomName: string;
+  roomId?: string;
+  gameState?: Record<string, unknown>;
+  onGameStateChange?: (state: Record<string, unknown>) => void;
   timeRemaining: string;
   connected: boolean;
   participants: RoomParticipant[];

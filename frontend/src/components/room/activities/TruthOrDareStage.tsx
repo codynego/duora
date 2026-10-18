@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import {
   Flame,
   ShieldAlert,
@@ -48,10 +48,12 @@ export default function TruthOrDareStage({
   participants,
   onSendMessage,
   onSendReaction,
+  gameState = {},
+  onGameStateChange,
 }: BaseStageProps) {
-  const [turnIndex, setTurnIndex] = useState(0);
-  const [choice, setChoice] = useState<'truth' | 'dare' | null>(null);
-  const [status, setStatus] = useState<'choosing' | 'active' | 'completed' | 'passed'>('choosing');
+  const turnIndex = typeof gameState.turnIndex === 'number' ? gameState.turnIndex : 0;
+  const choice = gameState.choice === 'truth' || gameState.choice === 'dare' ? gameState.choice : null;
+  const status = gameState.status === 'active' || gameState.status === 'completed' || gameState.status === 'passed' ? gameState.status : 'choosing';
 
   const allPlayers = [{ id: 'you', name: 'You', color: '#F05A78' }, ...participants];
   const activePlayer = allPlayers[turnIndex % allPlayers.length];
@@ -59,25 +61,22 @@ export default function TruthOrDareStage({
   const isMyTurn = activePlayer.name === 'You';
 
   const handleSelectChoice = (type: 'truth' | 'dare') => {
-    setChoice(type);
-    setStatus('active');
+    onGameStateChange?.({ ...gameState, turnIndex, choice: type, status: 'active' });
   };
 
   const handleComplete = () => {
-    setStatus('completed');
+    onGameStateChange?.({ ...gameState, turnIndex, choice, status: 'completed' });
     onSendReaction('cheer');
     onSendMessage(`🎉 ${activePlayer.name} completed their ${choice?.toUpperCase()}!`);
   };
 
   const handlePass = () => {
-    setStatus('passed');
+    onGameStateChange?.({ ...gameState, turnIndex, choice, status: 'passed' });
     onSendMessage(`🛡️ ${activePlayer.name} passed on this challenge. Respect!`);
   };
 
   const handleNextTurn = () => {
-    setTurnIndex((prev) => (prev + 1) % allPlayers.length);
-    setChoice(null);
-    setStatus('choosing');
+    onGameStateChange?.({ ...gameState, turnIndex: (turnIndex + 1) % allPlayers.length, choice: null, status: 'choosing' });
   };
 
   return (

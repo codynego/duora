@@ -19,7 +19,6 @@ interface GuessQuestion {
   question: string;
   options: string[];
   correctAnswer: string;
-  mockPredictions: Record<string, string>; // playerName -> predictedOption
 }
 
 const GUESS_QUESTIONS: GuessQuestion[] = [
@@ -29,11 +28,6 @@ const GUESS_QUESTIONS: GuessQuestion[] = [
     question: 'What is Alex’s ideal holiday?',
     options: ['Beach escape', 'Mountain adventure', 'City exploration', 'Quiet countryside cabin'],
     correctAnswer: 'Mountain adventure',
-    mockPredictions: {
-      Maya: 'Beach escape',
-      Jon: 'Mountain adventure',
-      Sam: 'Mountain adventure',
-    },
   },
   {
     id: 'g2',
@@ -41,11 +35,6 @@ const GUESS_QUESTIONS: GuessQuestion[] = [
     question: 'What is Maya’s biggest pet peeve?',
     options: ['Loud chewers', 'People walking too slowly', 'Unread notifications badge', 'Passive-aggressive emails'],
     correctAnswer: 'People walking too slowly',
-    mockPredictions: {
-      Alex: 'People walking too slowly',
-      Jon: 'Loud chewers',
-      Sam: 'People walking too slowly',
-    },
   },
   {
     id: 'g3',
@@ -53,12 +42,6 @@ const GUESS_QUESTIONS: GuessQuestion[] = [
     question: 'What is Your go-to comfort food when stressed?',
     options: ['Spicy ramen', 'Warm chocolate chip cookies', 'Loaded pizza', 'Cheesy pasta'],
     correctAnswer: 'Spicy ramen',
-    mockPredictions: {
-      Alex: 'Loaded pizza',
-      Maya: 'Spicy ramen',
-      Jon: 'Spicy ramen',
-      Sam: 'Cheesy pasta',
-    },
   },
 ];
 
@@ -68,31 +51,30 @@ export default function GuessMyAnswerStage({
   participants,
   onSendMessage,
   onPromptChat,
+  gameState = {},
+  onGameStateChange,
 }: BaseStageProps) {
-  const [questionIndex, setQuestionIndex] = useState(0);
-  const [phase, setPhase] = useState<'predicting' | 'revealed'>('predicting');
-  const [myPrediction, setMyPrediction] = useState<string | null>(null);
+  const questionIndex = typeof gameState.questionIndex === 'number' ? gameState.questionIndex : 0;
+  const phase = gameState.phase === 'revealed' ? 'revealed' : 'predicting';
+  const myPrediction = typeof gameState.myPrediction === 'string' ? gameState.myPrediction : null;
 
   const currentQ = GUESS_QUESTIONS[questionIndex % GUESS_QUESTIONS.length];
   const isTarget = currentQ.targetName === 'You';
 
   const handleSelectOption = (opt: string) => {
-    setMyPrediction(opt);
+    onGameStateChange?.({ ...gameState, questionIndex, phase: 'predicting', myPrediction: opt, predictions: { ...(gameState.predictions as Record<string, string> | undefined), You: opt } });
   };
 
   const handleReveal = () => {
-    setPhase('revealed');
+    onGameStateChange?.({ ...gameState, questionIndex, phase: 'revealed' });
   };
 
   const handleNextRound = () => {
-    setQuestionIndex((prev) => (prev + 1) % GUESS_QUESTIONS.length);
-    setPhase('predicting');
-    setMyPrediction(null);
+    onGameStateChange?.({ ...gameState, questionIndex: (questionIndex + 1) % GUESS_QUESTIONS.length, phase: 'predicting', myPrediction: null, predictions: {} });
   };
 
   const allPredictions: Record<string, string> = {
-    ...currentQ.mockPredictions,
-    ...(myPrediction && !isTarget ? { You: myPrediction } : {}),
+    ...((gameState.predictions as Record<string, string> | undefined) ?? {}),
   };
 
   return (

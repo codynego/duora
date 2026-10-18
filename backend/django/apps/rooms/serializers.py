@@ -7,7 +7,7 @@ class RoomSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Room
-        fields = ('id', 'code', 'slug', 'title', 'description', 'tone', 'intent', 'mode', 'audience', 'city', 'is_discovery_room', 'status', 'max_members', 'members_count', 'duration_minutes', 'starts_at')
+        fields = ('id', 'code', 'slug', 'title', 'description', 'experience', 'tone', 'intent', 'mode', 'audience', 'city', 'is_discovery_room', 'status', 'max_members', 'members_count', 'duration_minutes', 'starts_at')
 
 
 class PublicRoomCreateSerializer(serializers.Serializer):

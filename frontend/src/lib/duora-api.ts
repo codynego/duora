@@ -4,6 +4,7 @@ export type RoomSummary = {
   slug: string;
   title: string;
   description: string;
+  experience: string;
   tone: string;
   mode: 'talk' | 'play' | 'flirt' | 'create' | 'plan';
   status: 'scheduled' | 'open' | 'active';
@@ -13,12 +14,17 @@ export type RoomSummary = {
   starts_at: string;
 };
 
-const apiBaseUrl = process.env.DUORA_API_URL ?? 'http://127.0.0.1:8000';
+// Use the same API origin on the server and in the browser. The public
+// variable is configured for the deployed frontend; using DUORA_API_URL here
+// made room detail requests fall back to localhost and render an empty room.
+const apiBaseUrl = process.env.NEXT_PUBLIC_DUORA_API_URL ?? 'http://127.0.0.1:8000';
 
 export async function getDiscoverRooms(): Promise<RoomSummary[]> {
   try {
     const response = await fetch(`${apiBaseUrl}/api/v1/rooms/`, {
-      next: { revalidate: 30 },
+      // A newly published room redirects here immediately. Do not serve a
+      // stale empty list from the server cache in that flow.
+      cache: 'no-store',
       headers: { Accept: 'application/json' },
     });
     if (!response.ok) return [];
@@ -32,7 +38,7 @@ export async function getDiscoverRooms(): Promise<RoomSummary[]> {
 export async function getRoom(code: string): Promise<RoomSummary | null> {
   try {
     const response = await fetch(`${apiBaseUrl}/api/v1/rooms/${encodeURIComponent(code)}/`, {
-      next: { revalidate: 30 },
+      cache: 'no-store',
       headers: { Accept: 'application/json' },
     });
     if (!response.ok) return null;

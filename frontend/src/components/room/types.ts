@@ -44,6 +44,9 @@ export interface RoomEvent {
 }
 
 export interface BaseStageProps {
+  roomId?: string;
+  gameState?: Record<string, unknown>;
+  onGameStateChange?: (state: Record<string, unknown>) => void;
   roomName: string;
   isHost: boolean;
   participants: RoomParticipant[];

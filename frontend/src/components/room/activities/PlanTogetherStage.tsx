@@ -26,12 +26,14 @@ export default function PlanTogetherStage({
   participants,
   onSendMessage,
   onSendReaction,
+  gameState = {},
+  onGameStateChange,
 }: BaseStageProps) {
-  const [phase, setPhase] = useState<'choosing' | 'matched' | 'confirmed'>('choosing');
+  const phase = gameState.phase === 'matched' || gameState.phase === 'confirmed' ? gameState.phase : 'choosing';
   const [myBudget, setMyBudget] = useState<'$' | '$$' | '$$$' | null>(null);
   const [myMood, setMyMood] = useState<string | null>(null);
   const [myTime, setMyTime] = useState<string | null>(null);
-  const [selectedActivity, setSelectedActivity] = useState<string | null>(null);
+  const selectedActivity = typeof gameState.selectedActivity === 'string' ? gameState.selectedActivity : null;
 
   // Partner's mock preferences for demonstration
   const partnerName = participants[0]?.name ?? 'Partner';
@@ -42,14 +44,13 @@ export default function PlanTogetherStage({
   };
 
   const handleRevealMatches = () => {
-    setPhase('matched');
+    onGameStateChange?.({ ...gameState, phase: 'matched' });
     onSendReaction('support');
     onSendMessage(`✨ Plan matching revealed for ${partnerName} & You!`);
   };
 
   const handleSavePlan = (activity: string) => {
-    setSelectedActivity(activity);
-    setPhase('confirmed');
+    onGameStateChange?.({ ...gameState, selectedActivity: activity, phase: 'confirmed' });
     onSendReaction('cheer');
     onSendMessage(`🎉 Date plan agreed & saved: “${activity}”!`);
   };
@@ -234,7 +235,7 @@ export default function PlanTogetherStage({
 
         {phase === 'confirmed' && (
           <button
-            onClick={() => setPhase('choosing')}
+            onClick={() => onGameStateChange?.({ ...gameState, phase: 'choosing', selectedActivity: null })}
             className="inline-flex items-center gap-1.5 rounded-full border border-dark-950/15 bg-white px-4 py-2 text-xs font-bold text-dark-950 hover:bg-dark-950/5"
           >
             Plan another date

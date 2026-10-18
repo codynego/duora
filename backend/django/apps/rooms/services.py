@@ -79,6 +79,7 @@ def create_private_room(*, user, experience: str, topic: str = '', discussion_de
         slug=f'private-{code.lower()}',
         title=topic.strip() if topic.strip() else title,
         description=discussion_description.strip() if discussion_description.strip() else description,
+        experience=experience,
         tone='Private',
         intent=EXPERIENCE_INTENTS[experience],
         mode=EXPERIENCE_MODES[experience],
@@ -110,8 +111,13 @@ def create_public_room(*, user, experience: str, tone: str, audience: str, max_m
         slug=f'room-{code.lower()}',
         title=topic.strip() if topic.strip() else title,
         description=discussion_description.strip() if discussion_description.strip() else description,
+        experience=experience,
         tone=tone,
-        intent='connection',
+        # Keep public rooms in the same intent taxonomy used by discovery
+        # profiles.  The generic "connection" value is not one of the
+        # profile intents, so those rooms can never be returned by the
+        # personalized recommendation endpoint.
+        intent=EXPERIENCE_INTENTS[experience],
         mode=EXPERIENCE_MODES[experience],
         audience=audience,
         city=city.strip(),

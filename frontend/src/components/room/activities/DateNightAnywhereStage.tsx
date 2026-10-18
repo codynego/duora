@@ -18,23 +18,25 @@ export default function DateNightAnywhereStage({
   participants,
   onSendMessage,
   onSendReaction,
+  gameState = {},
+  onGameStateChange,
 }: BaseStageProps) {
-  const [chapter, setChapter] = useState<1 | 2 | 3>(1);
+  const chapter = gameState.chapter === 2 || gameState.chapter === 3 ? gameState.chapter : 1;
   const [playAnswer, setPlayAnswer] = useState<string | null>(null);
   const [talkAnswer, setTalkAnswer] = useState('');
-  const [savedMemory, setSavedMemory] = useState<string | null>(null);
+  const savedMemory = typeof gameState.savedMemory === 'string' ? gameState.savedMemory : null;
 
   const partnerName = participants[0]?.name ?? 'Partner';
 
   const handleNextChapter = () => {
     if (chapter < 3) {
-      setChapter((c) => (c + 1) as 1 | 2 | 3);
+      onGameStateChange?.({ ...gameState, chapter: chapter + 1 });
       onSendReaction('support');
     }
   };
 
   const handleFinish = (memory: string) => {
-    setSavedMemory(memory);
+    onGameStateChange?.({ ...gameState, chapter: 3, savedMemory: memory });
     onSendReaction('cheer');
     onSendMessage(`💌 Date Night takeaway saved: “${memory}”`);
   };

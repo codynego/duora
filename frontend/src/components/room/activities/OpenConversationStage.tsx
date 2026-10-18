@@ -65,15 +65,17 @@ export default function OpenConversationStage({
   participants,
   onSendMessage,
   onPromptChat,
+  gameState = {},
+  onGameStateChange,
 }: BaseStageProps) {
-  const [topicIndex, setTopicIndex] = useState(0);
+  const topicIndex = typeof gameState.topicIndex === 'number' ? gameState.topicIndex : 0;
   const [activeAngleIndex, setActiveAngleIndex] = useState<number | null>(null);
 
   const currentTopic = DEFAULT_TOPICS[topicIndex % DEFAULT_TOPICS.length];
 
   const handleNextTopic = () => {
     setActiveAngleIndex(null);
-    setTopicIndex((prev) => (prev + 1) % DEFAULT_TOPICS.length);
+    onGameStateChange?.({ ...gameState, topicIndex: (topicIndex + 1) % DEFAULT_TOPICS.length });
   };
 
   const handleAngleClick = (angle: string, index: number) => {

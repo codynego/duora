@@ -1,5 +1,5 @@
 from rest_framework.routers import SimpleRouter
-from .views import CreatePrivateRoomView, CreatePublicRoomView, MomentsView, RoomActivityView, RoomAnswerView, RoomNextStepView, RoomParticipantsView, RoomRevealView, RoomViewSet
+from .views import CreatePrivateRoomView, CreatePublicRoomView, MomentsView, RoomActivityView, RoomAnswerView, RoomGameStateView, RoomNextStepView, RoomParticipantsView, RoomReadyView, RoomRevealView, RoomViewSet
 from .invites import AcceptInviteView, CreateInviteView, InvitePreviewView
 from django.urls import path
 
@@ -12,6 +12,8 @@ urlpatterns = [
     path('<uuid:room_id>/invites/', CreateInviteView.as_view()),
     path('<uuid:room_id>/answers/', RoomAnswerView.as_view()),
     path('<uuid:room_id>/participants/', RoomParticipantsView.as_view()),
+    path('<uuid:room_id>/ready/', RoomReadyView.as_view()),
+    path('<uuid:room_id>/game-state/', RoomGameStateView.as_view()),
     path('<uuid:room_id>/activity/', RoomActivityView.as_view()),
     path('<uuid:room_id>/reveal/', RoomRevealView.as_view()),
     path('<uuid:room_id>/next-steps/', RoomNextStepView.as_view()),
