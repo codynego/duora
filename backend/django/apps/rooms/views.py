@@ -57,7 +57,14 @@ class RoomViewSet(ReadOnlyModelViewSet):
 
     @action(detail=True, methods=['post'], throttle_classes=[ScopedRateThrottle], throttle_scope='room_join')
     def join(self, request, code=None):
-        membership = join_room(room=self.get_object(), user=request.user)
+        room = Room.objects.filter(code=code).first()
+        if not room:
+            raise ValidationError({'room': 'We could not find that room. It may have been removed or the link may be incorrect.'})
+        if room.archived_at:
+            raise ValidationError({'room': 'This room was archived by its host, so it is no longer accepting participants.'})
+        if room.status == Room.Status.ENDED or room.starts_at + timedelta(minutes=room.duration_minutes) <= timezone.now():
+            raise ValidationError({'room': 'This room has already ended. Try another room from Discover.'})
+        membership = join_room(room=room, user=request.user)
         return Response({'data': {'room_code': membership.room.code, 'status': membership.disposition}}, status=status.HTTP_201_CREATED)
 
 

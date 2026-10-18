@@ -176,7 +176,17 @@ export default function RoomExperience({
         `${process.env.NEXT_PUBLIC_DUORA_API_URL ?? 'http://127.0.0.1:8000'}/api/v1/rooms/${encodeURIComponent(roomCode)}/join/`,
         { method: 'POST', headers: { Authorization: `Bearer ${token}` } }
       );
-      if (!response.ok) throw new Error('This room cannot be joined right now.');
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const detail = typeof body.detail === 'string'
+          ? body.detail
+          : Array.isArray(body.room) && typeof body.room[0] === 'string'
+            ? body.room[0]
+            : typeof body.room === 'string'
+              ? body.room
+              : 'This room is not available to join right now.';
+        throw new Error(detail);
+      }
       setJoined(true);
       setView('arrival');
     } catch (error) {
