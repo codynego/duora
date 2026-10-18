@@ -55,27 +55,31 @@ export default function TruthOrDareStage({
   const choice = gameState.choice === 'truth' || gameState.choice === 'dare' ? gameState.choice : null;
   const status = gameState.status === 'active' || gameState.status === 'completed' || gameState.status === 'passed' ? gameState.status : 'choosing';
 
-  const allPlayers = [{ id: 'you', name: 'You', color: '#F05A78' }, ...participants];
+  const allPlayers = participants.length ? participants : [{ id: 'you', name: 'You', color: '#F05A78', isYou: true }];
   const activePlayer = allPlayers[turnIndex % allPlayers.length];
   const currentCard = CHALLENGES[turnIndex % CHALLENGES.length];
-  const isMyTurn = activePlayer.name === 'You';
+  const isMyTurn = Boolean(activePlayer.isYou);
 
   const handleSelectChoice = (type: 'truth' | 'dare') => {
+    if (!isMyTurn) return;
     onGameStateChange?.({ ...gameState, turnIndex, choice: type, status: 'active' });
   };
 
   const handleComplete = () => {
+    if (!isMyTurn) return;
     onGameStateChange?.({ ...gameState, turnIndex, choice, status: 'completed' });
     onSendReaction('cheer');
     onSendMessage(`🎉 ${activePlayer.name} completed their ${choice?.toUpperCase()}!`);
   };
 
   const handlePass = () => {
+    if (!isMyTurn) return;
     onGameStateChange?.({ ...gameState, turnIndex, choice, status: 'passed' });
     onSendMessage(`🛡️ ${activePlayer.name} passed on this challenge. Respect!`);
   };
 
   const handleNextTurn = () => {
+    if (!isMyTurn || (status !== 'completed' && status !== 'passed')) return;
     onGameStateChange?.({ ...gameState, turnIndex: (turnIndex + 1) % allPlayers.length, choice: null, status: 'choosing' });
   };
 
@@ -115,6 +119,7 @@ export default function TruthOrDareStage({
 
             <div className="mx-auto mt-7 grid max-w-md grid-cols-2 gap-4">
               <button
+                disabled={!isMyTurn}
                 onClick={() => handleSelectChoice('truth')}
                 className="group flex flex-col items-center gap-3 rounded-3xl border border-dark-950/10 bg-white p-6 transition hover:border-[#3b7d56] hover:bg-[#f4faf6] hover:shadow-lg"
               >
@@ -126,6 +131,7 @@ export default function TruthOrDareStage({
               </button>
 
               <button
+                disabled={!isMyTurn}
                 onClick={() => handleSelectChoice('dare')}
                 className="group flex flex-col items-center gap-3 rounded-3xl border border-dark-950/10 bg-white p-6 transition hover:border-spark-coral hover:bg-[#fff0f3] hover:shadow-lg"
               >
@@ -155,6 +161,7 @@ export default function TruthOrDareStage({
             {status === 'active' && (
               <div className="mt-8 flex flex-wrap items-center gap-3">
                 <button
+                  disabled={!isMyTurn}
                   onClick={handleComplete}
                   className="inline-flex items-center gap-2 rounded-full bg-[#3b7d56] px-5 py-3 text-xs font-bold text-white transition hover:bg-[#2b6142]"
                 >
@@ -163,6 +170,7 @@ export default function TruthOrDareStage({
                 </button>
 
                 <button
+                  disabled={!isMyTurn}
                   onClick={handlePass}
                   className="inline-flex items-center gap-2 rounded-full border border-dark-950/15 bg-white px-5 py-3 text-xs font-bold text-dark-950 transition hover:bg-dark-950/5"
                 >
@@ -195,6 +203,7 @@ export default function TruthOrDareStage({
         </span>
 
         <button
+          disabled={!isMyTurn || (status !== 'completed' && status !== 'passed')}
           onClick={handleNextTurn}
           className="inline-flex items-center gap-2 rounded-full bg-dark-950 px-5 py-2.5 text-xs font-bold text-white transition hover:bg-dark-900"
         >

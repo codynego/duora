@@ -140,7 +140,7 @@ class RoomParticipantsView(APIView):
     def get(self, request, room_id):
         room = _member_room(room_id, request.user)
         memberships = room.memberships.filter(disposition=RoomMembership.Disposition.PRESENT).select_related('user')
-        members = [{'id': str(item.user_id), 'name': item.user.get_full_name().strip() or item.user.username, 'initial': (item.user.get_full_name().strip() or item.user.username)[:1].upper(), 'is_you': item.user_id == request.user.id, 'ready': item.ready_at is not None} for item in memberships]
+        members = [{'id': str(item.user_id), 'name': item.user.get_full_name().strip() or item.user.username, 'initial': (item.user.get_full_name().strip() or item.user.username)[:1].upper(), 'is_you': item.user_id == request.user.id, 'is_host': item.user_id == room.created_by_id, 'ready': item.ready_at is not None} for item in memberships]
         return Response({'data': members, 'meta': {'members_count': len(members), 'max_members': room.max_members, 'ready_count': sum(member['ready'] for member in members), 'all_ready': bool(members) and all(member['ready'] for member in members)}})
 
 

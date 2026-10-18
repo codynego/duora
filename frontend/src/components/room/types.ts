@@ -23,6 +23,7 @@ export interface RoomParticipant {
   initial: string;
   color: string;
   isHost?: boolean;
+  isYou?: boolean;
   isSpeaking?: boolean;
   statusLabel?: string;
   hasResponded?: boolean;

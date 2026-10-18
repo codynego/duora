@@ -84,6 +84,7 @@ export default function GuidedConversationStage({
   const [selectedResponseName, setSelectedResponseName] = useState<string | null>(null);
 
   const currentQ = QUESTIONS[questionIndex % QUESTIONS.length];
+  const customTopic = typeof gameState.customTopic === 'string' && gameState.customTopic.trim() ? gameState.customTopic : null;
   const totalQuestions = QUESTIONS.length;
 
   const handleSubmitMyAnswer = () => {
@@ -118,9 +119,9 @@ export default function GuidedConversationStage({
   };
 
   return (
-    <section className="flex h-full min-h-0 flex-1 flex-col justify-between overflow-hidden rounded-[32px] bg-[#fffdfa] p-6 text-dark-950 shadow-[0_20px_60px_rgba(0,0,0,.2)] sm:p-9 lg:p-11">
+    <section className="flex min-h-full w-full flex-col overflow-y-auto rounded-[28px] bg-[#fffdfa] p-5 text-dark-950 shadow-[0_20px_60px_rgba(0,0,0,.2)] sm:rounded-[32px] sm:p-8 lg:p-10">
       {/* Top Progress & Context */}
-      <div className="flex shrink-0 items-center justify-between gap-4 border-b border-dark-950/8 pb-4">
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-dark-950/8 pb-4">
         <div className="flex items-center gap-3">
           <span className="text-xs font-bold uppercase tracking-wider text-spark-coral">
             Question {questionIndex + 1} of {totalQuestions}
@@ -157,19 +158,19 @@ export default function GuidedConversationStage({
       </div>
 
       {/* Main Question Card Stage */}
-      <div className="my-auto flex min-h-0 flex-1 flex-col justify-center py-4 sm:py-6">
+      <div className="flex w-full max-w-4xl flex-none flex-col py-8 sm:py-12">
         <p className="text-[11px] font-bold tracking-[0.16em] text-dark-950/40">
           JOURNEY PROMPT
         </p>
 
-        <h1 className="mt-2.5 max-w-4xl text-balance text-[clamp(1.5rem,4.8vw,2.75rem)] font-bold leading-[1.12] tracking-[-0.035em] text-dark-950">
-          {currentQ.prompt}
+        <h1 className="mt-2.5 max-w-3xl break-words text-pretty text-[clamp(1.5rem,4.2vw,2.75rem)] font-bold leading-[1.14] tracking-[-0.035em] text-dark-950">
+          {customTopic ?? currentQ.prompt}
         </h1>
 
         {showDeeperPrompt && (
           <div className="mt-4 rounded-2xl border border-spark-coral/25 bg-[#fff6f2] p-4 text-xs leading-relaxed text-dark-950 sm:text-sm">
             <span className="font-bold text-spark-coral">Deeper reflection: </span>
-            {currentQ.deeperPrompt}
+            {customTopic ? 'Use the new host topic as the room’s next question.' : currentQ.deeperPrompt}
           </div>
         )}
 
@@ -256,7 +257,7 @@ export default function GuidedConversationStage({
       </div>
 
       {/* Bottom Stage Progression Controls */}
-      <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-dark-950/8 pt-5">
+      <div className="mt-auto flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-dark-950/8 pt-5">
         <div className="flex items-center gap-2">
           {!showDeeperPrompt && (
             <button

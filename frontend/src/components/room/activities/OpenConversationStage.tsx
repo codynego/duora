@@ -72,6 +72,7 @@ export default function OpenConversationStage({
   const [activeAngleIndex, setActiveAngleIndex] = useState<number | null>(null);
 
   const currentTopic = DEFAULT_TOPICS[topicIndex % DEFAULT_TOPICS.length];
+  const customTopic = typeof gameState.customTopic === 'string' && gameState.customTopic.trim() ? gameState.customTopic : null;
 
   const handleNextTopic = () => {
     setActiveAngleIndex(null);
@@ -95,9 +96,9 @@ export default function OpenConversationStage({
   };
 
   return (
-    <section className="flex h-full min-h-0 flex-1 flex-col justify-between overflow-hidden rounded-[32px] bg-[#fffdfa] p-6 text-dark-950 shadow-[0_20px_60px_rgba(0,0,0,.2)] sm:p-10 lg:p-12">
+    <section className="flex min-h-full w-full flex-col overflow-y-auto rounded-[28px] bg-[#fffdfa] p-5 text-dark-950 shadow-[0_20px_60px_rgba(0,0,0,.2)] sm:rounded-[32px] sm:p-8 lg:p-10">
       {/* Editorial Header */}
-      <div className="flex shrink-0 items-center justify-between gap-4 border-b border-dark-950/8 pb-4">
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-dark-950/8 pb-4">
         <div className="flex items-center gap-2">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-[#fff0f3] px-3 py-1 text-[11px] font-bold tracking-wider text-spark-coral">
             <Compass className="h-3.5 w-3.5" />
@@ -113,15 +114,15 @@ export default function OpenConversationStage({
       </div>
 
       {/* Main Topic Stage (The Hero) */}
-      <div className="my-auto flex min-h-0 flex-1 flex-col justify-center py-6 sm:py-8">
+      <div className="flex w-full max-w-4xl flex-none flex-col py-8 sm:py-12">
         <p className="text-[11px] font-bold tracking-[0.18em] text-dark-950/40">
           A TOPIC FOR THE ROOM
         </p>
-        <h1 className="mt-3 max-w-4xl text-balance text-[clamp(1.75rem,5.5vw,3.25rem)] font-bold leading-[1.1] tracking-[-0.04em] text-dark-950">
-          “{currentTopic.topic}”
+        <h1 className="mt-3 max-w-3xl break-words text-pretty text-[clamp(1.6rem,4.4vw,2.85rem)] font-bold leading-[1.12] tracking-[-0.04em] text-dark-950">
+          “{customTopic ?? currentTopic.topic}”
         </h1>
 
-        {currentTopic.context && (
+        {!customTopic && currentTopic.context && (
           <p className="mt-4 max-w-2xl text-sm leading-relaxed text-[#6F6470] sm:text-base">
             {currentTopic.context}
           </p>
@@ -156,7 +157,7 @@ export default function OpenConversationStage({
       </div>
 
       {/* Subtle Bottom Controls (No aggressive 'Next' button) */}
-      <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-dark-950/8 pt-5">
+      <div className="mt-auto flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-dark-950/8 pt-5">
         <div className="flex items-center gap-2">
           <button
             onClick={handleNextTopic}

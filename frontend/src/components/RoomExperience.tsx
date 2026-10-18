@@ -81,7 +81,7 @@ export default function RoomExperience({
   const [joinError, setJoinError] = useState('');
   const [chatOpen, setChatOpen] = useState(false);
   const [unreadMessages, setUnreadMessages] = useState(0);
-  const [wrapPeople, setWrapPeople] = useState<{ id: string; name: string; initial: string; is_you?: boolean; ready?: boolean }[]>([]);
+  const [wrapPeople, setWrapPeople] = useState<{ id: string; name: string; initial: string; is_you?: boolean; is_host?: boolean; ready?: boolean }[]>([]);
   const [lobbyMeta, setLobbyMeta] = useState({ membersCount: 0, maxMembers: 0, readyCount: 0, allReady: false });
   const [selfReady, setSelfReady] = useState(false);
   const [readySubmitting, setReadySubmitting] = useState(false);
@@ -113,8 +113,14 @@ export default function RoomExperience({
     void send('prompt.skipped', { template: nextTemplate });
   }
 
+  function setHostTopic() {
+    const nextTopic = window.prompt('Set a new topic for the room:', typeof gameState.customTopic === 'string' ? gameState.customTopic : '');
+    if (nextTopic?.trim()) void updateGameState({ ...gameState, customTopic: nextTopic.trim() });
+  }
+
   // Together is strictly 2 people (You + 1 Partner)
-  const roomParticipants: RoomParticipant[] = wrapPeople.length ? wrapPeople.map((person, index) => ({ id: person.id, name: person.is_you ? 'You' : person.name, initial: person.initial, color: ['#281D32', '#c94f70', '#8770a0', '#d7953d'][index % 4], statusLabel: person.is_you ? 'You' : 'Here' })) : (roomId ? [] : (isTogether ? [DEFAULT_PEOPLE[1]] : DEFAULT_PEOPLE));
+  const roomParticipants: RoomParticipant[] = wrapPeople.length ? wrapPeople.map((person, index) => ({ id: person.id, name: person.is_you ? 'You' : person.name, initial: person.initial, color: ['#281D32', '#c94f70', '#8770a0', '#d7953d'][index % 4], isYou: person.is_you, isHost: person.is_host, statusLabel: person.is_you ? 'You' : 'Here' })) : (roomId ? [] : (isTogether ? [DEFAULT_PEOPLE[1]] : DEFAULT_PEOPLE));
+  const isRoomHost = roomId ? Boolean(roomParticipants.find((person) => person.isYou)?.isHost) : true;
 
   const roomSummary = isTalk
     ? 'A small room for people who want an easier way into an honest conversation.'
@@ -339,7 +345,7 @@ export default function RoomExperience({
           <p className="mt-7 text-xs font-bold uppercase tracking-widest text-[#6F6470]">{roomName}</p>
           <h1 className="mt-3 text-3xl font-bold tracking-[-.055em]">You’re in.</h1>
           <p className="mx-auto mt-3 max-w-sm text-sm leading-6 text-[#6F6470]">
-            The room opens once everyone is ready. Choose your starting format below:
+            The room opens once everyone is ready. Your selected experience is ready below:
           </p>
 
           {/* Template Choice on Arrival */}
@@ -539,6 +545,8 @@ export default function RoomExperience({
   return (
     <RoomShell
       roomName={roomName}
+      isHost={isRoomHost}
+      onSetTopic={isTalk ? setHostTopic : undefined}
       roomId={roomId}
       gameState={gameState}
       onGameStateChange={updateGameState}

@@ -18,11 +18,14 @@ import {
   Compass,
   Layers,
   ChevronDown,
+  Pencil,
 } from 'lucide-react';
 import { ExperienceTemplate, RoomParticipant, ReactionKind, RoomEvent } from './types';
 
 interface RoomShellProps {
   roomName: string;
+  isHost?: boolean;
+  onSetTopic?: () => void;
   roomId?: string;
   gameState?: Record<string, unknown>;
   onGameStateChange?: (state: Record<string, unknown>) => void;
@@ -124,6 +127,8 @@ const TEMPLATE_LABELS: Record<
 
 export default function RoomShell({
   roomName,
+  isHost = false,
+  onSetTopic,
   timeRemaining,
   connected,
   participants,
@@ -333,6 +338,7 @@ export default function RoomShell({
 
         {/* Right Exit / More */}
         <div className="flex items-center gap-2">
+          {isHost && onSetTopic && <button onClick={onSetTopic} className="inline-flex items-center gap-1.5 rounded-full border border-spark-coral/40 bg-spark-coral/10 px-3 py-1.5 text-xs font-semibold text-spark-rose transition hover:bg-spark-coral/20"><Pencil className="h-3.5 w-3.5" />Set topic</button>}
           <button
             onClick={onEndRoom}
             className="rounded-full bg-white/8 px-3 py-1.5 text-xs font-semibold text-white/80 transition hover:bg-white/15"

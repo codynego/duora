@@ -53,6 +53,7 @@ export default function QuickTakesStage({
   const myReaction = gameState.myReaction === 'agree' || gameState.myReaction === 'disagree' || gameState.myReaction === 'depends' ? gameState.myReaction : null;
 
   const currentTake = QUICK_TAKES[takeIndex % QUICK_TAKES.length];
+  const customTopic = typeof gameState.customTopic === 'string' && gameState.customTopic.trim() ? gameState.customTopic : null;
   const totalTakes = QUICK_TAKES.length;
 
   const handleReact = (reaction: TakeReaction) => {
@@ -78,9 +79,9 @@ export default function QuickTakesStage({
   const total = Object.keys(allReactions).length;
 
   return (
-    <section className="flex h-full min-h-0 flex-1 flex-col justify-between overflow-hidden rounded-[32px] bg-[#fffdfa] p-6 text-dark-950 shadow-[0_20px_60px_rgba(0,0,0,.2)] sm:p-9 lg:p-11">
+    <section className="flex min-h-full w-full flex-col overflow-y-auto rounded-[28px] bg-[#fffdfa] p-5 text-dark-950 shadow-[0_20px_60px_rgba(0,0,0,.2)] sm:rounded-[32px] sm:p-8 lg:p-10">
       {/* Header */}
-      <div className="flex shrink-0 items-center justify-between gap-4 border-b border-dark-950/8 pb-4">
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-dark-950/8 pb-4">
         <span className="inline-flex items-center gap-1.5 rounded-full bg-[#fff0f3] px-3 py-1 text-xs font-bold tracking-wider text-spark-coral">
           <Zap className="h-3.5 w-3.5" />
           QUICK TAKES · {takeIndex + 1} OF {totalTakes}
@@ -89,12 +90,12 @@ export default function QuickTakesStage({
       </div>
 
       {/* Main Statement Stage */}
-      <div className="my-auto flex min-h-0 flex-1 flex-col justify-center py-4 text-center sm:py-6">
+      <div className="flex w-full max-w-4xl flex-none flex-col justify-center py-8 text-center sm:py-12">
         <p className="text-[11px] font-bold tracking-[0.16em] text-dark-950/40">
           HOT TAKE
         </p>
-        <h1 className="mx-auto mt-3 max-w-3xl text-balance text-[clamp(1.6rem,5vw,2.85rem)] font-bold leading-tight tracking-[-0.035em] text-dark-950">
-          “{currentTake.statement}”
+        <h1 className="mx-auto mt-3 max-w-3xl break-words text-pretty text-[clamp(1.6rem,4.4vw,2.85rem)] font-bold leading-[1.12] tracking-[-0.035em] text-dark-950">
+          “{customTopic ?? currentTake.statement}”
         </h1>
 
         {/* Reaction Action Buttons */}
@@ -172,7 +173,7 @@ export default function QuickTakesStage({
       </div>
 
       {/* Bottom Rapid Next Button */}
-      <div className="flex shrink-0 items-center justify-between border-t border-dark-950/8 pt-5">
+      <div className="mt-auto flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-dark-950/8 pt-5">
         <span className="text-xs text-[#6F6470]">
           Brief reactions. The game keeps moving.
         </span>
