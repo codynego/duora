@@ -175,7 +175,7 @@ function CreateExperienceFlow() {
       0,
       experiences.findIndex(
         (item) =>
-          item.key === selectedByUrl?.key || item.category === initialCategory,
+          selectedByUrl ? item.key === selectedByUrl.key : item.category === initialCategory,
       ),
     ),
   );
