@@ -16,8 +16,8 @@ async function request(path: string, body: Record<string, string>) {
   return data;
 }
 
-export async function signUp(username: string, password: string, passwordConfirm: string) {
-  const data = await request('register/', { username, password, password_confirm: passwordConfirm });
+export async function signUp(username: string, password: string, passwordConfirm: string, gender = '') {
+  const data = await request('register/', { username, password, password_confirm: passwordConfirm, gender });
   localStorage.setItem('duora_access', data.access); localStorage.setItem('duora_refresh', data.refresh);
 }
 export async function logIn(username: string, password: string) {

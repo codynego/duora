@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   ArrowLeft,
   ArrowRight,
@@ -92,9 +93,10 @@ export default function RoomExperience({
   const [readySubmitting, setReadySubmitting] = useState(false);
   const [nextStepStatus, setNextStepStatus] = useState('');
   const [nextStepThreadId, setNextStepThreadId] = useState('');
-  const [momentText, setMomentText] = useState('');
-  const [momentStatus, setMomentStatus] = useState('');
+  const [nextStepPending, setNextStepPending] = useState('');
+  const [nextStepChoices, setNextStepChoices] = useState<Record<string, 'continue_chat' | 'reconnect' | 'end'>>({});
   const seenChatCount = useRef(0);
+  const router = useRouter();
 
   const isTalk = mode === 'talk';
   const isPlay = mode === 'play' || mode === 'flirt' || mode === 'create';
@@ -270,19 +272,16 @@ export default function RoomExperience({
   async function chooseNextStep(participantId: string, choice: 'continue_chat' | 'reconnect' | 'end') {
     const token = await getAccessToken();
     if (!token || !roomId) return;
+    const pendingKey = `${participantId}:${choice}`;
+    setNextStepPending(pendingKey);
     const response = await fetch(`${process.env.NEXT_PUBLIC_DUORA_API_URL ?? 'http://127.0.0.1:8000'}/api/v1/rooms/${roomId}/next-steps/`, { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ participant_id: participantId, choice }) });
     const body = await response.json();
-    if (!response.ok) { setNextStepStatus(body.detail ?? 'Your choice could not be saved.'); return; }
+    if (!response.ok) { setNextStepPending(''); setNextStepStatus(body.detail ?? 'Your choice could not be saved.'); return; }
+    setNextStepPending('');
+    setNextStepChoices((current) => ({ ...current, [participantId]: choice }));
     if (body.data.thread_id) setNextStepThreadId(body.data.thread_id);
     setNextStepStatus(body.data.thread_id ? 'You both chose to continue. Your private thread is ready.' : choice === 'reconnect' && body.data.mutual ? 'You are both open to reconnecting in another small room.' : 'Your choice is private and saved.');
-  }
-
-  async function saveMoment() {
-    const content = momentText.trim(); const token = await getAccessToken();
-    if (!content || !token || !roomId) return;
-    const response = await fetch(`${process.env.NEXT_PUBLIC_DUORA_API_URL ?? 'http://127.0.0.1:8000'}/api/v1/rooms/moments/`, { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ room_id: roomId, title: roomName, content, kind: 'room_note' }) });
-    setMomentStatus(response.ok ? 'Saved privately to Moments.' : 'Could not save that moment.');
-    if (response.ok) setMomentText('');
+    if (choice === 'end') router.push('/discover');
   }
 
   // --- 1. OVERVIEW VIEW ---
@@ -549,10 +548,9 @@ export default function RoomExperience({
           <p className="mx-auto mt-4 max-w-lg text-base leading-7 text-[#6F6470]">
             You shared a small moment. What happens next is entirely up to you.
           </p>
-          {wrapPeople.length > 1 && <div className="mx-auto mt-8 max-w-xl space-y-3 text-left">{wrapPeople.filter((person) => !person.is_you).map((person) => <div key={person.id} className="rounded-2xl border border-dark-950/10 bg-white p-4"><div className="flex items-center gap-3"><span className="grid h-9 w-9 place-items-center rounded-full bg-dark-950 text-xs font-bold text-white">{person.initial}</span><p className="flex-1 text-sm font-bold">{person.name}</p></div><div className="mt-4 flex flex-wrap gap-2"><button onClick={() => chooseNextStep(person.id, 'continue_chat')} className="rounded-full bg-dark-950 px-3 py-2 text-xs font-bold text-white">Continue chatting</button><button onClick={() => chooseNextStep(person.id, 'reconnect')} className="rounded-full border border-dark-950/15 px-3 py-2 text-xs font-bold">Reconnect later</button><button onClick={() => chooseNextStep(person.id, 'end')} className="rounded-full px-3 py-2 text-xs font-bold text-[#6F6470]">End here</button></div></div>)}</div>}
+          {wrapPeople.length > 1 && <div className="mx-auto mt-8 max-w-xl space-y-3 text-left"><div className="rounded-2xl bg-[#fff6f2] p-4 text-sm leading-6 text-[#6F6470]"><p className="font-bold text-dark-950">Choose what happens next</p><p className="mt-1">A connection is created only when you and the other person both choose to continue chatting.</p></div>{wrapPeople.filter((person) => !person.is_you).map((person) => { const selectedChoice = nextStepChoices[person.id]; const isSaving = nextStepPending.startsWith(`${person.id}:`); return <div key={person.id} className="rounded-2xl border border-dark-950/10 bg-white p-4"><div className="flex items-center gap-3"><span className="grid h-9 w-9 place-items-center rounded-2xl bg-dark-950 text-xs font-bold text-white">{person.initial}</span><p className="flex-1 text-sm font-bold">{person.name}</p></div><div className="mt-4 grid gap-2 sm:grid-cols-3"><button disabled={isSaving} onClick={() => chooseNextStep(person.id, 'continue_chat')} className={`rounded-full px-3 py-2 text-xs font-bold ${selectedChoice === 'continue_chat' ? 'bg-[#4d8568] text-white' : 'bg-dark-950 text-white'} disabled:opacity-60`}>{nextStepPending === `${person.id}:continue_chat` ? 'Saving…' : selectedChoice === 'continue_chat' ? 'Selected ✓' : 'Continue & connect'}</button><button disabled={isSaving} onClick={() => chooseNextStep(person.id, 'reconnect')} className={`rounded-full border px-3 py-2 text-xs font-bold ${selectedChoice === 'reconnect' ? 'border-[#4d8568] bg-[#edf7f0] text-[#356447]' : 'border-dark-950/15'} disabled:opacity-60`}>{nextStepPending === `${person.id}:reconnect` ? 'Saving…' : selectedChoice === 'reconnect' ? 'Selected ✓' : 'Reconnect later'}</button><button disabled={isSaving} onClick={() => chooseNextStep(person.id, 'end')} className="rounded-full px-3 py-2 text-xs font-bold text-[#6F6470] disabled:opacity-60">{nextStepPending === `${person.id}:end` ? 'Saving…' : 'End here'}</button></div><p className="mt-3 text-xs leading-5 text-[#6F6470]">Continue & connect opens a private thread if {person.name} chooses it too. Reconnect later keeps the possibility open without adding them to Connections.</p></div>; })}</div>}
           {nextStepStatus && <p className="mx-auto mt-5 max-w-xl rounded-2xl bg-[#fff0f3] p-4 text-sm text-dark-950">{nextStepStatus}</p>}
           {nextStepThreadId && <Link href={`/connections/${nextStepThreadId}`} className="mt-4 inline-flex rounded-full border border-dark-950/15 px-4 py-2.5 text-sm font-bold">Open private thread</Link>}
-          {roomId && <div className="mx-auto mt-7 max-w-xl rounded-2xl border border-dark-950/10 bg-white p-4 text-left"><label className="text-sm font-bold">Save a private note from this room<textarea value={momentText} onChange={(event) => setMomentText(event.target.value)} maxLength={2000} placeholder="A thought you want to keep…" className="mt-2 min-h-20 w-full rounded-xl border border-dark-950/10 p-3 text-sm font-normal outline-none focus:border-spark-coral" /></label><div className="mt-3 flex items-center justify-between gap-3"><button onClick={saveMoment} disabled={!momentText.trim()} className="rounded-full bg-dark-950 px-4 py-2 text-xs font-bold text-white disabled:opacity-50">Save to Moments</button>{momentStatus && <p className="text-xs text-[#6F6470]">{momentStatus}</p>}</div></div>}
           <Link
             href="/discover"
             className="mt-8 inline-flex items-center gap-2 rounded-full bg-dark-950 px-6 py-3 text-sm font-bold text-white transition hover:bg-dark-900"

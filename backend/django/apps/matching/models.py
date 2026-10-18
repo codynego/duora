@@ -5,6 +5,12 @@ from django.db import models
 
 
 class DiscoveryProfile(models.Model):
+    class Gender(models.TextChoices):
+        WOMAN = 'woman', 'Woman'
+        MAN = 'man', 'Man'
+        NON_BINARY = 'non_binary', 'Non-binary'
+        PREFER_NOT_TO_SAY = 'prefer_not_to_say', 'Prefer not to say'
+
     class Intent(models.TextChoices):
         FRIENDSHIP = 'friendship', 'Meet new friends'
         CONVERSATION = 'conversation', 'Light conversation'
@@ -15,6 +21,7 @@ class DiscoveryProfile(models.Model):
     intents = models.JSONField(default=list)
     languages = models.JSONField(default=list)
     interests = models.JSONField(default=list)
+    gender = models.CharField(max_length=24, blank=True, choices=Gender.choices)
     city = models.CharField(max_length=100, blank=True)
     is_discoverable = models.BooleanField(default=False)
     onboarding_completed = models.BooleanField(default=False)

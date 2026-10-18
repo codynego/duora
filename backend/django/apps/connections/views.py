@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from django.utils import timezone
 from django.db.models import Q
 from rest_framework import status
@@ -7,6 +9,7 @@ from rest_framework.views import APIView
 from .models import ConnectionRequest, ConnectionThread, ThreadMessage
 from .serializers import ConnectionCreateSerializer, ConnectionRequestSerializer
 from apps.moderation.models import SafetyExclusion
+from apps.rooms.models import Room, RoomMembership, RoomNextStep
 
 
 class ConnectionsView(APIView):
@@ -20,7 +23,23 @@ class ConnectionsView(APIView):
         incoming = ConnectionRequest.objects.select_related('requester', 'recipient').filter(recipient=request.user, status=ConnectionRequest.Status.PENDING)
         invites = ConnectionRequest.objects.select_related('requester', 'recipient').filter(requester=request.user, status=ConnectionRequest.Status.PENDING)
         context = {'request': request}
-        return Response({'connections': ConnectionRequestSerializer(connections.distinct(), many=True, context=context).data, 'requests': ConnectionRequestSerializer(incoming, many=True, context=context).data, 'invites': ConnectionRequestSerializer(invites, many=True, context=context).data})
+        now = timezone.now()
+        completed_rooms = sum(
+            membership.room.status == Room.Status.ENDED
+            or membership.room.starts_at + timedelta(minutes=membership.room.duration_minutes) <= now
+            for membership in RoomMembership.objects.filter(user=request.user).select_related('room')
+        )
+        saved_for_later = RoomNextStep.objects.filter(user=request.user, choice=RoomNextStep.Choice.RECONNECT).values('participant_id').distinct().count()
+        return Response({
+            'connections': ConnectionRequestSerializer(connections.distinct(), many=True, context=context).data,
+            'requests': ConnectionRequestSerializer(incoming, many=True, context=context).data,
+            'invites': ConnectionRequestSerializer(invites, many=True, context=context).data,
+            'activity': {
+                'rooms_completed': completed_rooms,
+                'people_connected': connections.distinct().count(),
+                'saved_for_later': saved_for_later,
+            },
+        })
 
     def post(self, request):
         serializer = ConnectionCreateSerializer(data=request.data, context={'request': request})

@@ -1,6 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
+from apps.matching.models import DiscoveryProfile
 
 User = get_user_model()
 
@@ -49,6 +50,7 @@ class RegisterSerializer(serializers.Serializer):
     username = serializers.CharField(max_length=150)
     password = serializers.CharField(write_only=True, min_length=10)
     password_confirm = serializers.CharField(write_only=True)
+    gender = serializers.ChoiceField(choices=DiscoveryProfile.Gender.choices, required=False, allow_blank=True)
 
     def validate_username(self, value):
         value = value.strip()
@@ -69,4 +71,7 @@ class RegisterSerializer(serializers.Serializer):
         return attrs
 
     def create(self, validated_data):
-        return User.objects.create_user(username=validated_data['username'], password=validated_data['password'])
+        gender = validated_data.pop('gender', '')
+        user = User.objects.create_user(username=validated_data['username'], password=validated_data['password'])
+        DiscoveryProfile.objects.create(user=user, gender=gender)
+        return user
