@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -22,7 +24,16 @@ class RoomViewSet(ReadOnlyModelViewSet):
     queryset = Room.objects.prefetch_related('memberships').order_by('starts_at')
 
     def get_queryset(self):
-        return self.queryset.filter(is_discovery_room=True, status__in=[Room.Status.SCHEDULED, Room.Status.OPEN, Room.Status.ACTIVE])
+        candidates = self.queryset.filter(
+            is_discovery_room=True,
+            status__in=[Room.Status.SCHEDULED, Room.Status.OPEN, Room.Status.ACTIVE],
+        )
+        now = timezone.now()
+        active_ids = [
+            room.id for room in candidates
+            if room.starts_at + timedelta(minutes=room.duration_minutes) > now
+        ]
+        return self.queryset.filter(id__in=active_ids)
 
     def get_permissions(self):
         if self.action in {'list', 'retrieve'}:
