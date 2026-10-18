@@ -1,18 +1,9 @@
-import uuid
-
-from django.db import migrations, models
+from django.db import migrations
 
 
 class Migration(migrations.Migration):
     dependencies = [('rooms', '0001_initial')]
 
-    operations = [
-        migrations.AlterField(
-            model_name='room', name='id',
-            field=models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False),
-        ),
-        migrations.AlterField(
-            model_name='roommembership', name='id',
-            field=models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False),
-        ),
-    ]
+    # UUID primary keys were moved into the initial schema so a fresh
+    # PostgreSQL database never attempts an invalid bigint-to-UUID cast.
+    operations = []

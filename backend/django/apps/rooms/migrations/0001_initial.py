@@ -1,3 +1,5 @@
+import uuid
+
 from django.conf import settings
 from django.db import migrations, models
 import django.db.models.deletion
@@ -8,7 +10,7 @@ class Migration(migrations.Migration):
     dependencies = [migrations.swappable_dependency(settings.AUTH_USER_MODEL)]
     operations = [
         migrations.CreateModel(name='Room', fields=[
-            ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+            ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
             ('code', models.CharField(max_length=12, unique=True)),
             ('slug', models.SlugField(max_length=80, unique=True)),
             ('title', models.CharField(max_length=120)), ('description', models.CharField(max_length=280)), ('tone', models.CharField(default='Easygoing', max_length=32)),
@@ -18,7 +20,7 @@ class Migration(migrations.Migration):
             ('created_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='created_rooms', to=settings.AUTH_USER_MODEL)),
         ]),
         migrations.CreateModel(name='RoomMembership', fields=[
-            ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+            ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
             ('disposition', models.CharField(choices=[('present', 'Present'), ('left', 'Left'), ('removed', 'Removed')], default='present', max_length=10)),
             ('joined_at', models.DateTimeField(auto_now_add=True)),
             ('room', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='memberships', to='rooms.room')),
