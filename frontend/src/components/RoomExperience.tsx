@@ -48,6 +48,7 @@ interface RoomExperienceProps {
   experience?: string;
   startsAt?: string;
   durationMinutes?: number;
+  maxMembers?: number;
 }
 
 function templateForExperience(experience?: string): ExperienceTemplate {
@@ -78,6 +79,7 @@ export default function RoomExperience({
   experience,
   startsAt,
   durationMinutes = 12,
+  maxMembers = 4,
 }: RoomExperienceProps) {
   const [view, setView] = useState<'overview' | 'arrival' | 'live' | 'wrap'>('overview');
   const [clock, setClock] = useState(() => Date.now());
@@ -302,8 +304,8 @@ export default function RoomExperience({
                 <h1 className="mt-4 text-4xl font-bold tracking-[-.06em] sm:text-5xl">{roomName}</h1>
                 <p className="mt-5 max-w-lg text-base leading-7 text-white/68">{roomSummary}</p>
                 <div className="mt-9 flex flex-wrap gap-3 text-sm text-white/75">
-                  <span className="rounded-full border border-white/15 px-3 py-2">4 people</span>
-                  <span className="rounded-full border border-white/15 px-3 py-2">12 minutes</span>
+                  <span className="rounded-full border border-white/15 px-3 py-2">{maxMembers} people max</span>
+                  <span className="rounded-full border border-white/15 px-3 py-2">{durationMinutes} minutes</span>
                   <span className="rounded-full border border-white/15 px-3 py-2">
                     {isTalk ? 'Thoughtful conversation' : isPlay ? 'Playful game format' : 'Guided activity'}
                   </span>
@@ -370,6 +372,8 @@ export default function RoomExperience({
               : 'The room opens once everyone is ready. Your selected experience is ready below:'}
           </p>
 
+          {!experience && (
+            <>
           {/* Template Choice on Arrival */}
           <div className="mt-6 grid grid-cols-2 gap-2 text-left">
             {isTogether ? (
@@ -504,6 +508,8 @@ export default function RoomExperience({
               </>
             )}
           </div>
+            </>
+          )}
 
           <div className="mt-8 rounded-[28px] border border-dark-950/10 bg-white p-6 text-left shadow-sm">
             <div className="flex items-center justify-between">
