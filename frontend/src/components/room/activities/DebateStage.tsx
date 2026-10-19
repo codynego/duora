@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { BaseStageProps, currentPlayerId } from '../types';
 import { ADDITIONAL_DEBATE_STATEMENTS } from './additional-game-content';
+import { getSavedDeckIndex, saveDeckIndex, shuffledDeck } from './prompt-deck';
 
 type Stance = 'agree' | 'disagree' | 'depends';
 
@@ -61,9 +62,18 @@ export default function DebateStage({
   const playerId = currentPlayerId(participants);
   const allVotes: Record<string, Stance> = { ...((gameState.votes as Record<string, Stance> | undefined) ?? {}) };
   const myStance = allVotes[playerId] ?? null;
+  const deckInitialized = React.useRef(false);
 
-  const currentStatement = STATEMENTS[statementIndex % STATEMENTS.length];
+  const statementDeck = React.useMemo(() => shuffledDeck(STATEMENTS), []);
+  const currentStatement = statementDeck[statementIndex % statementDeck.length];
   const customTopic = statementIndex === 0 && typeof gameState.customTopic === 'string' && gameState.customTopic.trim() ? gameState.customTopic : null;
+
+  React.useEffect(() => {
+    if (!isHost || deckInitialized.current || typeof gameState.statementIndex === 'number') return;
+    deckInitialized.current = true;
+    const savedIndex = getSavedDeckIndex('debate', statementDeck.length);
+    if (savedIndex > 0) onGameStateChange?.({ ...gameState, statementIndex: savedIndex });
+  }, [gameState, isHost, onGameStateChange, statementDeck.length]);
 
   const handleSelectStance = (stance: Stance) => {
     onGameStateChange?.({ ...gameState, statementIndex, phase: 'voting', votes: { ...allVotes, [playerId]: stance } });
@@ -76,7 +86,9 @@ export default function DebateStage({
 
   const handleNextStatement = () => {
     if (!isHost) return;
-    onGameStateChange?.({ ...gameState, statementIndex: (statementIndex + 1) % STATEMENTS.length, phase: 'voting', votes: {}, customTopic: '' });
+    const nextIndex = (statementIndex + 1) % statementDeck.length;
+    saveDeckIndex('debate', nextIndex, statementDeck.length);
+    onGameStateChange?.({ ...gameState, statementIndex: nextIndex, phase: 'voting', votes: {}, customTopic: '' });
   };
 
   const voteCounts = Object.values(allVotes).reduce(

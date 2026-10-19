@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { BaseStageProps, currentPlayerId } from '../types';
 import { ADDITIONAL_QUICK_TAKES } from './additional-game-content';
+import { getSavedDeckIndex, saveDeckIndex, shuffledDeck } from './prompt-deck';
 
 type TakeReaction = 'agree' | 'disagree' | 'depends';
 
@@ -59,10 +60,19 @@ export default function QuickTakesStage({
   const playerId = currentPlayerId(participants);
   const allReactions: Record<string, TakeReaction> = { ...((gameState.reactions as Record<string, TakeReaction> | undefined) ?? {}) };
   const myReaction = allReactions[playerId] ?? null;
+  const deckInitialized = React.useRef(false);
 
-  const currentTake = QUICK_TAKES[takeIndex % QUICK_TAKES.length];
+  const takeDeck = React.useMemo(() => shuffledDeck(QUICK_TAKES), []);
+  const currentTake = takeDeck[takeIndex % takeDeck.length];
   const customTopic = takeIndex === 0 && typeof gameState.customTopic === 'string' && gameState.customTopic.trim() ? gameState.customTopic : null;
   const totalTakes = QUICK_TAKES.length;
+
+  React.useEffect(() => {
+    if (!isHost || deckInitialized.current || typeof gameState.takeIndex === 'number') return;
+    deckInitialized.current = true;
+    const savedIndex = getSavedDeckIndex('quick-takes', takeDeck.length);
+    if (savedIndex > 0) onGameStateChange?.({ ...gameState, takeIndex: savedIndex });
+  }, [gameState, isHost, onGameStateChange, takeDeck.length]);
 
   const handleReact = (reaction: TakeReaction) => {
     onGameStateChange?.({ ...gameState, takeIndex, reactions: { ...allReactions, [playerId]: reaction } });
@@ -70,7 +80,9 @@ export default function QuickTakesStage({
 
   const handleNextTake = () => {
     if (!isHost) return;
-    onGameStateChange?.({ ...gameState, takeIndex: (takeIndex + 1) % totalTakes, reactions: {}, customTopic: '' });
+    const nextIndex = (takeIndex + 1) % takeDeck.length;
+    saveDeckIndex('quick-takes', nextIndex, takeDeck.length);
+    onGameStateChange?.({ ...gameState, takeIndex: nextIndex, reactions: {}, customTopic: '' });
   };
 
   const counts = Object.values(allReactions).reduce(

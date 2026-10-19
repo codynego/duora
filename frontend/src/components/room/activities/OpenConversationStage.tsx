@@ -5,6 +5,7 @@ import { Sparkles, ArrowRight, Lightbulb, MessageSquarePlus, RefreshCw, Compass 
 import { BaseStageProps } from '../types';
 import { ADDITIONAL_OPEN_TOPICS } from './additional-game-content';
 import { interestPrompt } from './interest-prompts';
+import { getSavedDeckIndex, saveDeckIndex, shuffledDeck } from './prompt-deck';
 
 interface TopicItem {
   id: string;
@@ -84,16 +85,27 @@ export default function OpenConversationStage({
 }: BaseStageProps) {
   const topicIndex = typeof gameState.topicIndex === 'number' ? gameState.topicIndex : 0;
   const [activeAngleIndex, setActiveAngleIndex] = useState<number | null>(null);
+  const deckInitialized = React.useRef(false);
 
-  const defaultTopic = DEFAULT_TOPICS[topicIndex % DEFAULT_TOPICS.length];
+  const topicDeck = React.useMemo(() => shuffledDeck(DEFAULT_TOPICS), []);
+  const defaultTopic = topicDeck[topicIndex % topicDeck.length];
   const customTopic = topicIndex === 0 && typeof gameState.customTopic === 'string' && gameState.customTopic.trim() ? gameState.customTopic : null;
   const personalizedPrompt = topicIndex > 0 ? interestPrompt(interestTags, topicIndex - 1) : null;
   const currentTopic = personalizedPrompt ? { ...defaultTopic, topic: personalizedPrompt, category: `Based on your shared interests: ${interestTags?.[0] ?? 'Conversation'}` } : defaultTopic;
   const firstTopic = topicIndex === 0 ? (customTopic ?? initialTopic) : null;
 
+  React.useEffect(() => {
+    if (!isHost || deckInitialized.current || typeof gameState.topicIndex === 'number') return;
+    deckInitialized.current = true;
+    const savedIndex = getSavedDeckIndex('open-conversation', topicDeck.length);
+    if (savedIndex > 0) onGameStateChange?.({ ...gameState, topicIndex: savedIndex });
+  }, [gameState, isHost, onGameStateChange, topicDeck.length]);
+
   const handleNextTopic = () => {
     setActiveAngleIndex(null);
-    onGameStateChange?.({ ...gameState, topicIndex: (topicIndex + 1) % DEFAULT_TOPICS.length, customTopic: '' });
+    const nextIndex = (topicIndex + 1) % topicDeck.length;
+    saveDeckIndex('open-conversation', nextIndex, topicDeck.length);
+    onGameStateChange?.({ ...gameState, topicIndex: nextIndex, customTopic: '' });
   };
 
   const handleAngleClick = (angle: string, index: number) => {

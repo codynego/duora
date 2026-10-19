@@ -14,6 +14,7 @@ import {
 import { BaseStageProps, currentPlayerId } from '../types';
 import { ADDITIONAL_GUIDED_QUESTIONS } from './additional-game-content';
 import { interestPrompt } from './interest-prompts';
+import { getSavedDeckIndex, saveDeckIndex, shuffledDeck } from './prompt-deck';
 
 interface QuestionItem {
   id: string;
@@ -84,6 +85,7 @@ export default function GuidedConversationStage({
   initialTopic,
 }: BaseStageProps) {
   const questionIndex = typeof gameState.questionIndex === 'number' ? gameState.questionIndex : 0;
+  const deckInitialized = React.useRef(false);
   const phase = gameState.phase === 'revealed' ? 'revealed' : 'responding';
   const [myAnswer, setMyAnswer] = useState('');
   const playerId = currentPlayerId(participants);
@@ -93,12 +95,20 @@ export default function GuidedConversationStage({
   const [showDeeperPrompt, setShowDeeperPrompt] = useState(false);
   const [selectedResponseName, setSelectedResponseName] = useState<string | null>(null);
 
-  const baseQuestion = QUESTIONS[questionIndex % QUESTIONS.length];
+  const questionDeck = React.useMemo(() => shuffledDeck(QUESTIONS), []);
+  const baseQuestion = questionDeck[questionIndex % questionDeck.length];
   const customTopic = questionIndex === 0 && typeof gameState.customTopic === 'string' && gameState.customTopic.trim() ? gameState.customTopic : null;
   const personalizedPrompt = questionIndex > 0 ? interestPrompt(interestTags, questionIndex - 1) : null;
   const currentQ = personalizedPrompt ? { ...baseQuestion, prompt: personalizedPrompt } : baseQuestion;
   const firstQuestion = questionIndex === 0 ? (customTopic ?? initialTopic) : null;
   const totalQuestions = QUESTIONS.length;
+
+  React.useEffect(() => {
+    if (!isHost || deckInitialized.current || typeof gameState.questionIndex === 'number') return;
+    deckInitialized.current = true;
+    const savedIndex = getSavedDeckIndex('guided-conversation', questionDeck.length);
+    if (savedIndex > 0) onGameStateChange?.({ ...gameState, questionIndex: savedIndex });
+  }, [gameState, isHost, onGameStateChange, questionDeck.length]);
   const responseNames = participants.length ? participants.map((person) => person.isYou ? 'You' : person.name) : ['You'];
   const sampleResponses = Object.values(currentQ.sampleResponses).reduce<Record<string, string>>((responses, answer, index) => {
     const name = responseNames[index];
@@ -124,7 +134,9 @@ export default function GuidedConversationStage({
 
   const handleNextQuestion = () => {
     if (!isHost) return;
-    onGameStateChange?.({ ...gameState, questionIndex: (questionIndex + 1) % totalQuestions, phase: 'responding', submissions: {}, answers: {}, customTopic: '' });
+    const nextIndex = (questionIndex + 1) % questionDeck.length;
+    saveDeckIndex('guided-conversation', nextIndex, questionDeck.length);
+    onGameStateChange?.({ ...gameState, questionIndex: nextIndex, phase: 'responding', submissions: {}, answers: {}, customTopic: '' });
     setMyAnswer('');
     setShowDeeperPrompt(false);
     setSelectedResponseName(null);

@@ -26,6 +26,26 @@ export const ADDITIONAL_OPEN_TOPICS = [
   'Which tradition would you like to create for your future self?',
   'What is something you hope never becomes routine?',
   'What would your ideal unplanned afternoon include?',
+  'What is something you have learned to protect without explaining it?',
+  'Which ordinary task becomes enjoyable when you do it with the right person?',
+  'What kind of feedback helps you grow instead of making you defensive?',
+  'What is a part of adulthood nobody prepared you for?',
+  'When do you feel most at home in your own body?',
+  'What is a beautiful thing you almost missed because you were in a hurry?',
+  'Which opinion do you hold lightly enough to change?',
+  'What does a good day usually have in it for you?',
+  'What is something you would like to be remembered for by your friends?',
+  'Which conversation changed the direction of your life a little?',
+  'What kind of beauty do you notice that other people often overlook?',
+  'What do you want to make easier for the people you love?',
+  'What is a boundary that has made your life feel more spacious?',
+  'Which part of your routine would you keep if everything else changed?',
+  'What makes a new place feel worth returning to?',
+  'What is one thing you are currently practicing being patient with?',
+  'What is a small sign that tells you a friendship is becoming real?',
+  'Which feeling do you wish had a more specific word?',
+  'What is something you have outgrown but still feel grateful for?',
+  'What would you do more often if you were not worried about being bad at it?',
 ];
 
 export const ADDITIONAL_GUIDED_QUESTIONS = [
@@ -49,6 +69,26 @@ export const ADDITIONAL_GUIDED_QUESTIONS = [
   ['What does a good ending give you that a clean break cannot?', 'When has an ending helped you begin again?'],
   ['What is one part of your life that feels quietly abundant?', 'How could you share a little of that abundance?'],
   ['What do you hope people feel after spending time with you?', 'How do you know when you have created that feeling?'],
+  ['What is a promise you want to make to your future self?', 'What would keeping it look like on an ordinary Tuesday?'],
+  ['What is something you can forgive yourself for now?', 'What helped forgiveness become possible?'],
+  ['When do you feel the difference between being alone and being lonely?', 'What kind of company helps without asking anything of you?'],
+  ['What is a risk you would take if you knew embarrassment was temporary?', 'What might become possible after the awkward part?'],
+  ['What is a way you have become more honest with yourself?', 'What did that honesty ask you to change?'],
+  ['Which part of your life currently deserves a slower pace?', 'What would slowing down let you notice?'],
+  ['What is something you want to learn from someone younger than you?', 'Why does that lesson matter now?'],
+  ['What makes you feel invited rather than merely included?', 'How do you create that feeling for others?'],
+  ['What is a story you tell about yourself that may be ready to change?', 'What newer story might fit better?'],
+  ['What kind of courage do you admire most?', 'Where have you seen it quietly in real life?'],
+  ['What is one ordinary moment you would happily relive?', 'What detail makes it worth returning to?'],
+  ['What helps you stay soft after a disappointing experience?', 'Who or what reminds you not to close off completely?'],
+  ['What do you want your home to make possible?', 'Which object, habit, or person helps create that atmosphere?'],
+  ['What does enough look like in one area of your life?', 'What would change if you believed you already had enough?'],
+  ['What is something you understand better after failing at it?', 'What did the failure reveal that success hid?'],
+  ['When have you felt chosen in a meaningful way?', 'What made that choice feel specific to you?'],
+  ['What kind of memory do you hope to give someone else?', 'What small detail would make it stay with them?'],
+  ['What do you want to be more playful about?', 'What makes it hard to play in that area right now?'],
+  ['What is a question you are living before you can answer it?', 'What are you learning while you stay with it?'],
+  ['What is one thing you would tell your past self without trying to change them?', 'Why does that message feel important?'],
 ].map(([prompt, deeperPrompt], index) => ({ id: `extra-guided-${index + 1}`, prompt, deeperPrompt, sampleResponses: {} }));
 
 export const ADDITIONAL_DEBATE_STATEMENTS = [
@@ -76,6 +116,26 @@ export const ADDITIONAL_DEBATE_STATEMENTS = [
   ['You should not need a reason to decline an invitation.', 'What does courtesy require when access is not owed?'],
   ['Compatibility is visible in boring routines, not grand gestures.', 'Which ordinary habits tell you the most?'],
   ['People are allowed to outgrow a version of themselves others loved.', 'How should relationships adapt to personal change?'],
+  ['A good relationship should make honesty easier, not more dangerous.', 'What creates enough safety for difficult truths?'],
+  ['Being right is less valuable than being repairable.', 'What makes a disagreement worth repairing?'],
+  ['A partner should not be your only source of emotional support.', 'How much independence keeps intimacy healthy?'],
+  ['The best friendships leave room for different seasons of closeness.', 'What keeps distance from becoming disconnection?'],
+  ['A person can be kind and still be bad for your life.', 'How should we weigh good intentions against real impact?'],
+  ['People should talk about money before they talk about forever.', 'What financial truths are hardest to bring into the open?'],
+  ['A sincere boundary can feel unkind before it feels respectful.', 'How do you tell the difference between guilt and wrongdoing?'],
+  ['The most important relationship skill is noticing when the pattern has changed.', 'What signs tell you a familiar conflict needs a new response?'],
+  ['You can miss someone and still know leaving was right.', 'Why do those truths feel like they contradict each other?'],
+  ['A shared sense of direction matters more than shared interests.', 'What kind of future alignment is essential?'],
+  ['People should be allowed to have friendships their partner does not share.', 'Where do trust and inclusion meet?'],
+  ['An apology without curiosity is incomplete.', 'What should someone try to understand after causing harm?'],
+  ['The person who is less bothered by a problem should not automatically set the timeline.', 'How should urgency be negotiated?'],
+  ['Long-term love needs novelty on purpose.', 'Which kinds of newness keep connection alive?'],
+  ['A relationship can be loving and still need a hard limit.', 'What makes a limit protective rather than punitive?'],
+  ['People often ask for clarity when they are really asking for certainty.', 'Can any relationship offer certainty, and should it?'],
+  ['The best conflict conversations include a plan for the next time.', 'When does planning help, and when does it make connection feel procedural?'],
+  ['Being easy to love is not the same as being easy to live with.', 'What does everyday compatibility actually require?'],
+  ['A friendship should survive one honest disagreement.', 'What makes disagreement a test rather than a threat?'],
+  ['You can be grateful for a relationship and still choose a different future.', 'How do gratitude and goodbye coexist?'],
 ].map(([statement, context], index) => ({ id: `extra-debate-${index + 1}`, statement, context }));
 
 export const ADDITIONAL_QUICK_TAKES = [
@@ -103,6 +163,25 @@ export const ADDITIONAL_QUICK_TAKES = [
   'A good apology should not contain the word “but.”',
   'The best kind of confidence leaves room for curiosity.',
   'There is no such thing as a casual favor once it becomes a pattern.',
+  'A shared calendar is either deeply romantic or deeply unromantic.',
+  'The best way to know someone is to see how they handle an unplanned hour.',
+  'People should be allowed to leave a group chat without an explanation.',
+  'A good host notices who has not spoken yet.',
+  'The fastest way to improve a friendship is to make one specific plan.',
+  'A little mystery is healthier than total digital transparency.',
+  'The person who suggests the restaurant should not have to organize the whole evening.',
+  'A quiet morning is a better luxury than a late night out.',
+  'Being busy is not an impressive answer to every question.',
+  'The best souvenirs are stories you could not have planned.',
+  'Every apology should name the inconvenience it caused.',
+  'People should stop asking for honest opinions when they only want reassurance.',
+  'A shared snack tastes better when nobody is keeping score.',
+  'The best conversations start after the official conversation is over.',
+  'A person’s tabs say more about them than their bookshelf.',
+  'Changing your mind in public should earn respect.',
+  'The ideal weekend includes one plan and one escape route.',
+  'A friend who sends “thinking of you” is better than a friend who waits for news.',
+  'Some decisions deserve a deadline because endless options are exhausting.',
 ];
 
 export const ADDITIONAL_MOST_LIKELY_PROMPTS = [
@@ -171,7 +250,7 @@ const WORD_BATTLE_DECKS: Array<[string, string, string]> = [
 ];
 
 export const ADDITIONAL_WORD_CHALLENGES = WORD_BATTLE_DECKS.flatMap(([category, letters, prompt]) =>
-  letters.split(' ').map((letter) => ({ category, letter, prompt })),
+  letters.split(' ').map((letter) => ({ category, letter, prompt: `${prompt} ${letter}` })),
 ).map((challenge, index) => ({ id: `extra-word-${index + 1}`, ...challenge }));
 
 export const ADDITIONAL_TRUTH_CHALLENGES = [

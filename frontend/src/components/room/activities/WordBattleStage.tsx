@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowRight, Send, Timer, Zap } from 'lucide-react';
 import { BaseStageProps, RoomParticipant } from '../types';
 import { ADDITIONAL_WORD_CHALLENGES } from './additional-game-content';
+import { getSavedDeckIndex, getSavedDeckSeed, saveDeckIndex, saveDeckSeed, shuffledDeck } from './prompt-deck';
 
 interface WordChallenge {
   id: string;
@@ -20,17 +21,6 @@ const BASE_WORD_CHALLENGES: WordChallenge[] = [
 ];
 
 const WORD_CHALLENGES: WordChallenge[] = [...BASE_WORD_CHALLENGES, ...ADDITIONAL_WORD_CHALLENGES];
-
-function shuffledDeck(challenges: WordChallenge[], seed: number) {
-  const deck = [...challenges];
-  let value = seed || 1;
-  for (let index = deck.length - 1; index > 0; index -= 1) {
-    value = (value * 1_664_525 + 1_013_904_223) >>> 0;
-    const swapIndex = value % (index + 1);
-    [deck[index], deck[swapIndex]] = [deck[swapIndex], deck[index]];
-  }
-  return deck;
-}
 
 export default function WordBattleStage({
   isHost,
@@ -71,7 +61,10 @@ export default function WordBattleStage({
     // Only the host initializes the shared clock. If every browser initializes
     // it independently, the last poller wins and the turn/score state jumps.
     if (turnStartedAt || !onGameStateChange || (!isHost && roster.length > 1)) return;
-    onGameStateChange({ ...gameState, round, turnIndex: 0, turnStartedAt: Date.now(), wordBattleSeed: Date.now(), scores: {} });
+    const savedIndex = getSavedDeckIndex('word-battle', WORD_CHALLENGES.length);
+    const savedSeed = getSavedDeckSeed('word-battle') ?? Date.now();
+    saveDeckSeed('word-battle', savedSeed);
+    onGameStateChange({ ...gameState, round: savedIndex, turnIndex: 0, turnStartedAt: Date.now(), wordBattleSeed: savedSeed, scores: {} });
   }, [gameState, isHost, onGameStateChange, round, roster.length, turnStartedAt]);
 
   useEffect(() => {
@@ -82,6 +75,7 @@ export default function WordBattleStage({
       setNow(tick);
       if (tick - turnStartedAt >= TURN_SECONDS * 1000 && isHost && !advancedTurn.current) {
         advancedTurn.current = true;
+        saveDeckIndex('word-battle', (round + 1) % deck.length, deck.length);
         onGameStateChange?.({
           ...gameState,
           round: round + 1,
@@ -102,6 +96,7 @@ export default function WordBattleStage({
     // while the shared-state request is still travelling to the server.
     advancedTurn.current = true;
     const nextStartedAt = Date.now();
+    saveDeckIndex('word-battle', (round + 1) % deck.length, deck.length);
     onGameStateChange({ ...gameState, round: round + 1, turnIndex: (turnIndex + 1) % roster.length, turnStartedAt: nextStartedAt, feedback: `${activePlayer.name} passed the turn.` });
     setMyAnswer('');
     setLocalFeedback(null);
@@ -120,6 +115,7 @@ export default function WordBattleStage({
     // A correct answer ends the turn now. The clock is only a fallback for a
     // player who does not answer, rather than a delay before the next player.
     advancedTurn.current = true;
+    saveDeckIndex('word-battle', (round + 1) % deck.length, deck.length);
     onGameStateChange?.({
       ...gameState,
       scores: nextScores,
