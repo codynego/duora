@@ -46,6 +46,8 @@ export default function Home() {
   const router = useRouter();
   const [rooms, setRooms] = useState<Room[]>([]);
   const [myRooms, setMyRooms] = useState<Room[]>([]);
+  const [recommendedRoom, setRecommendedRoom] = useState<Room | null>(null);
+  const [recommendationReason, setRecommendationReason] = useState('');
   const [roomsReady, setRoomsReady] = useState(false);
 
   useEffect(() => {
@@ -64,6 +66,14 @@ export default function Home() {
           const body = await mineResponse.json();
           if (mineResponse.ok && Array.isArray(body.data))
             setMyRooms(body.data);
+          const recommendationResponse = await fetch(`${api}/api/v1/discovery/recommendation/`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          const recommendationBody = await recommendationResponse.json();
+          if (recommendationResponse.ok && recommendationBody.data) {
+            setRecommendedRoom(recommendationBody.data);
+            setRecommendationReason(recommendationBody.reason ?? 'Matches your saved preferences.');
+          }
         }
       } finally {
         setRoomsReady(true);
@@ -181,6 +191,26 @@ export default function Home() {
                 </p>
               </div>
             )}
+          </section>
+        )}
+
+        {recommendedRoom && (
+          <section className="mt-16 rounded-[28px] bg-dark-950 p-7 text-white sm:p-9">
+            <div className="flex flex-col justify-between gap-6 sm:flex-row sm:items-end">
+              <div>
+                <p className="section-label text-spark-rose">Picked for you</p>
+                <h2 className="mt-3 text-3xl font-bold tracking-[-.055em]">A room that fits your pace.</h2>
+                <p className="mt-2 max-w-xl text-sm leading-6 text-white/65">{recommendationReason}</p>
+              </div>
+              <Link href={`/rooms/${recommendedRoom.code}`} className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-spark-coral px-5 py-3 text-sm font-semibold text-white">
+                Review room <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+            <div className="mt-7 border-t border-white/10 pt-5">
+              <p className="text-xs font-bold uppercase tracking-[0.14em] text-spark-rose">{recommendedRoom.tone}</p>
+              <h3 className="mt-2 text-2xl font-bold tracking-[-.04em]">{recommendedRoom.title}</h3>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-white/65">{recommendedRoom.description}</p>
+            </div>
           </section>
         )}
 

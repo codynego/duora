@@ -27,4 +27,12 @@ class RoomRecommendationView(APIView):
         room = recommend_room(user=request.user, profile=profile)
         if room is None:
             return Response({'data': None, 'reason': 'No compatible room is available right now.'})
-        return Response({'data': RoomSerializer(room).data})
+        reasons = []
+        if profile.conversation_styles:
+            reasons.append(profile.conversation_styles[0].lower())
+        if profile.conversation_depth:
+            reasons.append(profile.conversation_depth.lower())
+        if profile.interests:
+            reasons.append(profile.interests[0].lower())
+        reason = 'Matches your saved preferences.' if not reasons else f"Picked for you because you like {' · '.join(reasons[:2])}."
+        return Response({'data': RoomSerializer(room).data, 'reason': reason})
