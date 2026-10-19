@@ -32,6 +32,7 @@ export default function BuildStoryStage({
   const activePlayer = players[turnIndex % players.length];
   const isMyTurn = Boolean(activePlayer.isYou);
   const [mySentence, setMySentence] = useState('');
+  const [reviewing, setReviewing] = useState(false);
   const finished = Boolean(gameState.finished);
 
   const handleAddSentence = (e?: React.FormEvent) => {
@@ -43,7 +44,7 @@ export default function BuildStoryStage({
     onGameStateChange?.({ ...gameState, story: [
       ...story,
       {
-        author: activePlayer.name,
+        author: activePlayer.accountName ?? activePlayer.name,
         sentence: text,
         color: activePlayer.color,
       },
@@ -74,13 +75,44 @@ export default function BuildStoryStage({
         </div>
 
         <button
-          onClick={handleFinish}
+          onClick={() => {
+            if (!finished) setReviewing(true);
+          }}
           disabled={!isHost || finished}
           className="text-xs font-bold text-spark-coral hover:underline"
         >
           {finished ? 'Finished story' : 'Review full story'}
         </button>
       </div>
+
+      {reviewing && !finished && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-[#fffdf9] px-5 py-8 text-dark-950 sm:px-10 sm:py-12">
+          <div className="mx-auto flex min-h-full w-full max-w-4xl flex-col">
+            <div className="flex items-start justify-between gap-4 border-b border-dark-950/10 pb-6">
+              <div>
+                <p className="text-xs font-bold tracking-[0.16em] text-spark-coral">FULL STORY</p>
+                <h2 className="mt-2 text-3xl font-bold tracking-[-.05em] sm:text-5xl">{roomName}</h2>
+              </div>
+              <button type="button" onClick={() => setReviewing(false)} className="rounded-full border border-dark-950/15 px-4 py-2 text-xs font-bold text-dark-950">
+                Keep writing
+              </button>
+            </div>
+            <article className="my-10 flex-1 rounded-[30px] border border-dark-950/10 bg-white p-6 text-lg leading-[1.9] shadow-[0_18px_55px_rgba(40,29,50,.08)] sm:p-10 sm:text-2xl">
+              {story.length ? story.map((chunk, idx) => (
+                <span key={`${chunk.author}-${idx}`} className="mr-2 inline">
+                  <span className="font-serif">{chunk.sentence}</span>{' '}
+                  <span className="inline-block rounded-full px-2.5 py-1 align-middle text-xs font-bold text-white" style={{ background: chunk.color }}>
+                    {chunk.author}
+                  </span>{' '}
+                </span>
+              )) : <p className="text-base text-[#6F6470] sm:text-lg">The story is still waiting for its first sentence.</p>}
+            </article>
+            <button type="button" onClick={() => { handleFinish(); setReviewing(false); }} className="mx-auto inline-flex items-center justify-center rounded-full bg-dark-950 px-6 py-3.5 text-sm font-bold text-white">
+              Finish and continue <ArrowRight className="ml-2 h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Main Canvas: The Story So Far */}
       <div className="my-auto flex min-h-0 flex-1 flex-col justify-center py-4 sm:py-6">
@@ -117,8 +149,8 @@ export default function BuildStoryStage({
                 value={mySentence}
                 onChange={(e) => setMySentence(e.target.value)}
                 placeholder="What happens next? Write one sentence..."
-                disabled={!isMyTurn}
-                className="min-w-0 flex-1 rounded-2xl border border-dark-950/15 bg-white px-4 py-3 text-xs outline-none transition focus:border-spark-coral focus:ring-2 focus:ring-spark-coral/15 sm:text-sm"
+                disabled={finished}
+                className="min-w-0 flex-1 rounded-2xl border border-dark-950/15 bg-white px-4 py-3 text-xs outline-none transition focus:border-spark-coral focus:ring-2 focus:ring-spark-coral/15 disabled:bg-dark-950/5 sm:text-sm"
               />
               <button
                 type="submit"
