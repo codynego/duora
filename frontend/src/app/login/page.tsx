@@ -43,7 +43,7 @@ export default function LoginPage() {
     <AuthShell
       title="Welcome back."
       description="Pick up where your last good conversation left off."
-      footer={<>New to Duora? <Link href="/signup" className="font-bold text-spark-coral">Create an account</Link></>}
+      footer={<>New to Duorah? <Link href="/signup" className="font-bold text-spark-coral">Create an account</Link></>}
     >
       <form onSubmit={submit} className="mt-8 space-y-4">
         <label className="block text-sm font-bold">

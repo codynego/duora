@@ -42,7 +42,7 @@ export default function StageSelector() {
       title: 'For The Talking Stage',
       tagline: 'Discover compatibility without turning dates into job interviews.',
       description:
-        'You like each other, but the conversation gets repetitive. Duora creates playful tension, unexpected revelations, and natural reasons to spend hours laughing together.',
+        'You like each other, but the conversation gets repetitive. Duorah creates playful tension, unexpected revelations, and natural reasons to spend hours laughing together.',
       features: [
         {
           title: 'How Well Do You Know Me?',
@@ -71,7 +71,7 @@ export default function StageSelector() {
       title: 'For Long-Term Couples',
       tagline: 'Break the routine. Reignite romantic intrigue and shared date nights.',
       description:
-        'Keep the spark alive after months or years. Duora gives couples fresh date-night challenges, relationship milestones, and surprise experiences to look forward to every week.',
+        'Keep the spark alive after months or years. Duorah gives couples fresh date-night challenges, relationship milestones, and surprise experiences to look forward to every week.',
       features: [
         {
           title: 'Weekly Couple Rituals',
@@ -92,7 +92,7 @@ export default function StageSelector() {
       ctaText: 'Explore Couple Packs',
       pillColor: 'bg-rose-500/10 text-rose-300 border-rose-500/20',
       actionGradient: 'from-rose-500 to-pink-600',
-      quote: '"Even after 3 years together, Duora gave us that early-relationship flutter again during our Saturday night in."'
+      quote: '"Even after 3 years together, Duorah gave us that early-relationship flutter again during our Saturday night in."'
     },
   };
 
@@ -110,7 +110,7 @@ export default function StageSelector() {
           Where is your heart right now?
         </h2>
         <p className="mt-4 text-base sm:text-lg text-slate-400">
-          Duora adapts to your relationship status. Pick where you are to experience tailored moments designed for you.
+          Duorah adapts to your relationship status. Pick where you are to experience tailored moments designed for you.
         </p>
 
         {/* Tab Switcher Pills */}
@@ -218,7 +218,7 @@ export default function StageSelector() {
                   <div className="w-8 h-8 rounded-full bg-spark-coral flex items-center justify-center text-xs font-display text-white border-2 border-dark-900">A</div>
                   <div className="w-8 h-8 rounded-full bg-slate-500 flex items-center justify-center text-xs font-display text-white border-2 border-dark-900">B</div>
                 </div>
-                <span className="text-xs font-semibold text-slate-300">From a Duora room</span>
+                <span className="text-xs font-semibold text-slate-300">From a Duorah room</span>
               </div>
 
               <blockquote className="text-sm sm:text-base text-slate-200 italic leading-relaxed">
@@ -227,7 +227,7 @@ export default function StageSelector() {
 
               <div className="mt-6 pt-4 border-t border-white/5 flex items-center justify-between text-xs text-slate-400">
                 <span>Verified Match Session</span>
-                <span className="text-spark-coral font-medium">Duora Live</span>
+                <span className="text-spark-coral font-medium">Duorah Live</span>
               </div>
             </div>
           </div>

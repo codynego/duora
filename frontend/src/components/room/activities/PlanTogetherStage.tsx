@@ -110,7 +110,7 @@ export default function PlanTogetherStage({
               What kind of date sounds right?
             </h1>
             <p className="mt-1 text-xs text-[#6F6470]">
-              Choose privately. Duora will highlight the overlapping sweet spots.
+              Choose privately. Duorah will highlight the overlapping sweet spots.
             </p>
 
             <div className="mt-6 space-y-4">

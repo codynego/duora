@@ -40,6 +40,7 @@ export default function SignupPage() {
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [gender, setGender] = useState('');
+  const [usernameError, setUsernameError] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -48,11 +49,17 @@ export default function SignupPage() {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setUsernameError('');
     try {
       await signUp(username, password, confirm, gender);
       router.push('/onboarding');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to create your account.');
+      const message = err instanceof Error ? err.message : 'Unable to create your account.';
+      if (/username.*already in use/i.test(message)) {
+        setUsernameError('That username is taken. Please choose another one.');
+      } else {
+        setError(message);
+      }
     } finally {
       setLoading(false);
     }
@@ -61,13 +68,14 @@ export default function SignupPage() {
   return (
     <AuthShell
       title="Start with a small hello."
-      description="Your preferences stay private and help Duora make better room recommendations."
+      description="Your preferences stay private and help Duorah make better room recommendations."
       footer={<>Already have an account? <Link href="/login" className="font-bold text-spark-coral">Sign in</Link></>}
     >
       <form onSubmit={submit} className="mt-8 space-y-4">
         <label className="block text-sm font-bold">
           Username
-          <input value={username} onChange={e => setUsername(e.target.value)} required minLength={3} autoComplete="username" className="mt-2 w-full rounded-xl border border-dark-950/15 px-4 py-3 font-normal outline-none focus:border-spark-coral" />
+          <input value={username} onChange={e => { setUsername(e.target.value); setUsernameError(''); }} required minLength={3} autoComplete="username" aria-invalid={Boolean(usernameError)} aria-describedby={usernameError ? 'username-error' : undefined} className={`mt-2 w-full rounded-xl border px-4 py-3 font-normal outline-none ${usernameError ? 'border-[#b23b58] focus:border-[#b23b58]' : 'border-dark-950/15 focus:border-spark-coral'}`} />
+          {usernameError && <span id="username-error" role="alert" className="mt-2 block text-sm font-normal text-[#b23b58]">{usernameError}</span>}
         </label>
         <PasswordField label="Password" value={password} onChange={setPassword} autoComplete="new-password" minLength={10} />
         <PasswordField label="Confirm password" value={confirm} onChange={setConfirm} autoComplete="new-password" />

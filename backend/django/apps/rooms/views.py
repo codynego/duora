@@ -15,7 +15,7 @@ from django.db import transaction
 from django.db.models import Q
 from .models import Moment, Room, RoomActivity, RoomAnswer, RoomGameState, RoomMembership, RoomNextStep
 from .serializers import PublicRoomCreateSerializer, RoomSerializer
-from .services import create_private_room, create_public_room, join_room
+from .services import create_private_room, create_public_room, join_room, start_public_room_if_ready
 
 
 class RoomViewSet(ReadOnlyModelViewSet):
@@ -25,16 +25,20 @@ class RoomViewSet(ReadOnlyModelViewSet):
     queryset = Room.objects.prefetch_related('memberships').order_by('starts_at')
 
     def get_queryset(self):
+        # An open room is a lobby, not a running experience.  It must stay
+        # discoverable until it fills, even if its host created it a while ago.
         candidates = self.queryset.filter(
             is_discovery_room=True,
             status__in=[Room.Status.SCHEDULED, Room.Status.OPEN, Room.Status.ACTIVE],
+            archived_at__isnull=True,
         )
         now = timezone.now()
-        active_ids = [
+        available_ids = [
             room.id for room in candidates
-            if room.starts_at + timedelta(minutes=room.duration_minutes) > now
+            if room.status != Room.Status.ACTIVE
+            or room.starts_at + timedelta(minutes=room.duration_minutes) > now
         ]
-        return self.queryset.filter(id__in=active_ids, archived_at__isnull=True)
+        return self.queryset.filter(id__in=available_ids, archived_at__isnull=True)
 
     def get_permissions(self):
         if self.action in {'list', 'retrieve'}:
@@ -64,7 +68,11 @@ class RoomViewSet(ReadOnlyModelViewSet):
             memberships__disposition=RoomMembership.Disposition.PRESENT,
             archived_at__isnull=True,
         ).exclude(status=Room.Status.ENDED).prefetch_related('memberships').distinct()
-        rooms = [room for room in candidates if room.starts_at <= now < room.starts_at + timedelta(minutes=room.duration_minutes)]
+        rooms = [
+            room for room in candidates
+            if room.status in {Room.Status.OPEN, Room.Status.SCHEDULED}
+            or room.starts_at <= now < room.starts_at + timedelta(minutes=room.duration_minutes)
+        ]
         return Response({'data': RoomSerializer(rooms, many=True).data})
 
     @action(detail=True, methods=['post'], throttle_classes=[ScopedRateThrottle], throttle_scope='room_join')
@@ -74,10 +82,21 @@ class RoomViewSet(ReadOnlyModelViewSet):
             raise ValidationError({'room': 'We could not find that room. It may have been removed or the link may be incorrect.'})
         if room.archived_at:
             raise ValidationError({'room': 'This room was archived by its host, so it is no longer accepting participants.'})
-        if room.status == Room.Status.ENDED or room.starts_at + timedelta(minutes=room.duration_minutes) <= timezone.now():
+        if room.status == Room.Status.ENDED:
+            raise ValidationError({'room': 'This room has already ended. Try another room from Discover.'})
+        if room.status == Room.Status.ACTIVE and room.starts_at + timedelta(minutes=room.duration_minutes) <= timezone.now():
             raise ValidationError({'room': 'This room has already ended. Try another room from Discover.'})
         membership = join_room(room=room, user=request.user)
-        return Response({'data': {'room_code': membership.room.code, 'status': membership.disposition}}, status=status.HTTP_201_CREATED)
+        current_room = membership.room
+        members_count = current_room.memberships.filter(disposition=RoomMembership.Disposition.PRESENT).count()
+        return Response({'data': {
+            'room_code': current_room.code,
+            'status': membership.disposition,
+            'room_status': current_room.status,
+            'starts_at': current_room.starts_at,
+            'members_count': members_count,
+            'max_members': current_room.max_members,
+        }}, status=status.HTTP_201_CREATED)
 
 
 class PrivateRoomDetailView(APIView):
@@ -236,13 +255,26 @@ class RoomAnswerView(APIView):
 class RoomParticipantsView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @transaction.atomic
     def get(self, request, room_id):
-        room = _member_room(room_id, request.user)
+        room = Room.objects.select_for_update().filter(id=room_id).first()
+        if not room or not RoomMembership.objects.filter(room=room, user=request.user, disposition=RoomMembership.Disposition.PRESENT).exists():
+            raise ValidationError({'room': 'You do not have access to this room.'})
+        # A scheduled public room that filled before its start time is moved
+        # into play by the normal lobby refresh as soon as both conditions hold.
+        start_public_room_if_ready(room)
         # Turn indexes are shared game state, so every participant must receive
         # the roster in precisely the same order.
         memberships = room.memberships.filter(disposition=RoomMembership.Disposition.PRESENT).select_related('user').order_by('joined_at', 'user_id')
         members = [{'id': str(item.user_id), 'name': item.user.get_full_name().strip() or item.user.username, 'initial': (item.user.get_full_name().strip() or item.user.username)[:1].upper(), 'is_you': item.user_id == request.user.id, 'is_host': item.user_id == room.created_by_id, 'ready': item.ready_at is not None} for item in memberships]
-        return Response({'data': members, 'meta': {'members_count': len(members), 'max_members': room.max_members, 'ready_count': sum(member['ready'] for member in members), 'all_ready': bool(members) and all(member['ready'] for member in members)}})
+        return Response({'data': members, 'meta': {
+            'members_count': len(members),
+            'max_members': room.max_members,
+            'ready_count': sum(member['ready'] for member in members),
+            'all_ready': bool(members) and all(member['ready'] for member in members),
+            'room_status': room.status,
+            'starts_at': room.starts_at,
+        }})
 
 
 class RoomReadyView(APIView):
@@ -283,6 +315,8 @@ class RoomGameStateView(APIView):
     @transaction.atomic
     def patch(self, request, room_id):
         room = _member_room(room_id, request.user)
+        if room.is_discovery_room and room.status != Room.Status.ACTIVE:
+            raise ValidationError({'room': 'This public room is waiting for everyone to arrive.'})
         if timezone.now() < room.starts_at:
             raise ValidationError({'room': 'This room has not started yet.'})
         state, _ = RoomGameState.objects.select_for_update().get_or_create(room=room)

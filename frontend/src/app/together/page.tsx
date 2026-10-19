@@ -20,7 +20,7 @@ const TOGETHER_ACTIVITIES = [
     key: 'plan-something-together',
     title: 'Plan a Date',
     subtitle: 'Find something you’ll both enjoy.',
-    detail: 'Compare budget, mood, and availability privately. Duora highlights your overlap and locks in a date plan.',
+    detail: 'Compare budget, mood, and availability privately. Duorah highlights your overlap and locks in a date plan.',
     tag: 'LAUNCH FIRST',
     meta: '2 people · 10 min · Invite only',
     icon: CalendarHeart,

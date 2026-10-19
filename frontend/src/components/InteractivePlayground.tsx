@@ -40,7 +40,7 @@ export default function InteractivePlayground() {
   const isMatch = selected === SAMPLE_QUESTION.partnerChoice;
 
   const handleCopyLink = () => {
-    navigator.clipboard?.writeText('https://duora.app/play/DEMO77');
+    navigator.clipboard?.writeText('https://duorah.vercel.app/play/DEMO77');
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
   };

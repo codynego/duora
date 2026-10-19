@@ -20,7 +20,7 @@ export default function AppNav() {
   return (
     <>
       <header className="sticky top-0 z-40 flex h-[68px] items-center justify-between border-b border-dark-950/8 bg-white/95 px-5 backdrop-blur md:hidden">
-        <Link href="/home" className="text-xl font-bold tracking-[-0.06em] text-dark-950">duora<span className="text-spark-coral">.</span></Link>
+        <Link href="/home" className="text-xl font-bold tracking-[-0.06em] text-dark-950">duorah<span className="text-spark-coral">.</span></Link>
         <div className="flex items-center gap-3">
           <button type="button" aria-label="Notifications" className="grid h-9 w-9 place-items-center rounded-full text-dark-950 transition hover:bg-spark-blush"><Bell className="h-[19px] w-[19px]" strokeWidth={1.8} /></button>
           <Link href={user ? '/profile' : '/login'} aria-label={user ? 'Your profile' : 'Sign in'} className="grid h-9 min-w-9 place-items-center rounded-full bg-dark-950 px-2 text-xs font-bold text-white">{ready && user ? initial : ready ? '→' : '·'}</Link>
@@ -28,7 +28,7 @@ export default function AppNav() {
       </header>
 
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-[244px] flex-col border-r border-dark-950/8 bg-white px-4 py-7 md:flex">
-        <Link href="/home" className="px-3 text-2xl font-bold tracking-[-0.065em] text-dark-950">duora<span className="text-spark-coral">.</span></Link>
+        <Link href="/home" className="px-3 text-2xl font-bold tracking-[-0.065em] text-dark-950">duorah<span className="text-spark-coral">.</span></Link>
         <nav className="mt-12 space-y-1" aria-label="Primary navigation">
           {navigation.map(({ label, href, icon: Icon }) => {
             const active = pathname === href;

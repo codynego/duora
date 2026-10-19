@@ -43,10 +43,10 @@ export default function HowItWorks() {
           <span>The Frictionless Loop</span>
         </div>
         <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-white font-display">
-          How Duora turns experiences into real connection.
+          How Duorah turns experiences into real connection.
         </h2>
         <p className="mt-4 text-base sm:text-lg text-slate-400">
-          Not another endless swipe catalog. Duora is designed for shared experiences that bridge digital play into authentic connection.
+          Not another endless swipe catalog. Duorah is designed for shared experiences that bridge digital play into authentic connection.
         </p>
       </div>
 

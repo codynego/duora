@@ -132,18 +132,54 @@ def create_public_room(*, user, experience: str, tone: str, audience: str, max_m
     return room
 
 
+def start_public_room_if_ready(room: Room, *, now=None) -> bool:
+    """Start a public room once it is full (and its scheduled time has arrived).
+
+    ``starts_at`` is the beginning of the experience, not the moment a host
+    opened its lobby.  Replacing it when the last participant arrives keeps
+    the full duration available to everyone.
+    """
+    if not room.is_discovery_room or room.status not in {Room.Status.OPEN, Room.Status.SCHEDULED}:
+        return False
+
+    now = now or timezone.now()
+    if room.status == Room.Status.SCHEDULED and room.starts_at > now:
+        return False
+
+    present_members = room.memberships.filter(
+        disposition=RoomMembership.Disposition.PRESENT,
+    ).count()
+    if present_members < room.max_members:
+        return False
+
+    room.status = Room.Status.ACTIVE
+    room.starts_at = now
+    room.save(update_fields=('status', 'starts_at'))
+    return True
+
+
 @transaction.atomic
 def join_room(*, room: Room, user) -> RoomMembership:
     locked_room = Room.objects.select_for_update().get(pk=room.pk)
+    membership = RoomMembership.objects.filter(room=locked_room, user=user).first()
+    if membership and membership.disposition == RoomMembership.Disposition.PRESENT:
+        start_public_room_if_ready(locked_room)
+        membership.room = locked_room
+        return membership
     if locked_room.status not in {Room.Status.OPEN, Room.Status.SCHEDULED}:
         raise PermissionDenied('This room is no longer available to join.')
-    membership = RoomMembership.objects.filter(room=locked_room, user=user).first()
-    if membership:
-        return membership
     active_members = locked_room.memberships.filter(disposition=RoomMembership.Disposition.PRESENT).count()
     if active_members >= locked_room.max_members:
         raise ValidationError({'room': 'This room is full.'})
-    return RoomMembership.objects.create(room=locked_room, user=user)
+    if membership:
+        membership.disposition = RoomMembership.Disposition.PRESENT
+        membership.ready_at = None
+        membership.save(update_fields=('disposition', 'ready_at'))
+    else:
+        membership = RoomMembership.objects.create(room=locked_room, user=user)
+    start_public_room_if_ready(locked_room)
+    membership.room = locked_room
+    return membership
 
 
 @transaction.atomic

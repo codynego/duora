@@ -125,7 +125,7 @@ const experiences = [
     title: "Plan Something Together",
     category: "together",
     detail: "Compare time, budget, and mood to find overlapping date ideas.",
-    flow: "Both choose privately, Duora highlights overlap, and saves your date.",
+    flow: "Both choose privately, Duorah highlights overlap, and saves your date.",
     limit: 2,
     duration: "10 minutes",
   },

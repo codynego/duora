@@ -8,6 +8,7 @@ export type RoomSummary = {
   tone: string;
   mode: 'talk' | 'play' | 'flirt' | 'create' | 'plan';
   audience: 'adults' | 'all';
+  is_discovery_room: boolean;
   status: 'scheduled' | 'open' | 'active';
   max_members: number;
   members_count: number;

@@ -49,6 +49,8 @@ interface RoomExperienceProps {
   startsAt?: string;
   durationMinutes?: number;
   maxMembers?: number;
+  roomStatus?: 'scheduled' | 'open' | 'active';
+  isDiscoveryRoom?: boolean;
 }
 
 function templateForExperience(experience?: string): ExperienceTemplate {
@@ -80,10 +82,14 @@ export default function RoomExperience({
   startsAt,
   durationMinutes = 12,
   maxMembers = 4,
+  roomStatus: initialRoomStatus = 'active',
+  isDiscoveryRoom = false,
 }: RoomExperienceProps) {
   const [view, setView] = useState<'overview' | 'arrival' | 'live' | 'wrap'>('overview');
   const [clock, setClock] = useState(() => Date.now());
   const [seconds, setSeconds] = useState(durationMinutes * 60);
+  const [roomStatus, setRoomStatus] = useState(initialRoomStatus);
+  const [activeStartsAt, setActiveStartsAt] = useState(startsAt);
   const [joined, setJoined] = useState(alreadyJoined);
   const [joining, setJoining] = useState(false);
   const [joinError, setJoinError] = useState('');
@@ -154,31 +160,34 @@ export default function RoomExperience({
 
   useEffect(() => {
     if (view !== 'live') return;
-    const startedAt = startsAt ? new Date(startsAt).getTime() : Date.now();
+    const startedAt = activeStartsAt ? new Date(activeStartsAt).getTime() : Date.now();
     const update = () => setSeconds(Math.max(0, durationMinutes * 60 - Math.max(0, Math.floor((Date.now() - startedAt) / 1000))));
     update();
     const timer = window.setInterval(update, 1000);
     return () => window.clearInterval(timer);
-  }, [view, startsAt, durationMinutes]);
+  }, [view, activeStartsAt, durationMinutes]);
 
   useEffect(() => { if (view === 'live' && seconds === 0) setView('wrap'); }, [seconds, view]);
 
   const formattedTime = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
   const scheduledStart = startsAt ? new Date(startsAt).getTime() : 0;
   const waitingForSchedule = Boolean(scheduledStart && scheduledStart > clock);
+  const roomIsFull = lobbyMeta.maxMembers > 0 && lobbyMeta.membersCount >= lobbyMeta.maxMembers;
+  const waitingForMembers = isDiscoveryRoom && roomStatus !== 'active' && !roomIsFull;
+  const waitingInLobby = waitingForMembers || waitingForSchedule;
   const scheduledStartLabel = scheduledStart
     ? new Date(scheduledStart).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })
     : '';
 
   useEffect(() => {
     if (view !== 'arrival') return;
-    if (!waitingForSchedule) {
+    if (!waitingInLobby) {
       setView('live');
       return;
     }
     const timer = window.setInterval(() => setClock(Date.now()), 1000);
     return () => window.clearInterval(timer);
-  }, [view, waitingForSchedule]);
+  }, [view, waitingInLobby]);
 
   async function joinRoom() {
     const token = await getAccessToken();
@@ -203,7 +212,12 @@ export default function RoomExperience({
         throw new Error(detail);
       }
       setJoined(true);
-      setView(waitingForSchedule ? 'arrival' : 'live');
+      const joinedRoomStatus = body.data?.room_status;
+      const joinedStartsAt = body.data?.starts_at;
+      if (joinedRoomStatus === 'scheduled' || joinedRoomStatus === 'open' || joinedRoomStatus === 'active') setRoomStatus(joinedRoomStatus);
+      if (typeof joinedStartsAt === 'string') setActiveStartsAt(joinedStartsAt);
+      setLobbyMeta((current) => ({ ...current, membersCount: body.data?.members_count ?? current.membersCount, maxMembers: body.data?.max_members ?? current.maxMembers }));
+      setView(isDiscoveryRoom && joinedRoomStatus !== 'active' ? 'arrival' : waitingForSchedule ? 'arrival' : 'live');
     } catch (error) {
       setJoinError(error instanceof Error ? error.message : 'This room cannot be joined right now.');
     } finally {
@@ -290,6 +304,10 @@ export default function RoomExperience({
         setWrapPeople(body.data);
         setSelfReady(Boolean(body.data.find((person: { is_you?: boolean; ready?: boolean }) => person.is_you)?.ready));
         setLobbyMeta({ membersCount: body.meta?.members_count ?? body.data.length, maxMembers: body.meta?.max_members ?? 0, readyCount: body.meta?.ready_count ?? 0, allReady: Boolean(body.meta?.all_ready) });
+        const nextStatus = body.meta?.room_status;
+        if (nextStatus === 'scheduled' || nextStatus === 'open' || nextStatus === 'active') setRoomStatus(nextStatus);
+        if (typeof body.meta?.starts_at === 'string') setActiveStartsAt(body.meta.starts_at);
+        if (nextStatus === 'active') setView('live');
       }
     }
     void loadPeople();
@@ -299,7 +317,7 @@ export default function RoomExperience({
   }, [roomId, view, joined, alreadyJoined]);
 
   async function enterRoom() {
-    if (waitingForSchedule) return;
+    if (waitingInLobby) return;
     if (selfReady && lobbyMeta.allReady) {
       send('room.ready');
       setView('live');
@@ -365,7 +383,7 @@ export default function RoomExperience({
                 </div>
                 <button
                   disabled={joining}
-                  onClick={() => (joined ? setView(waitingForSchedule ? 'arrival' : 'live') : joinRoom())}
+              onClick={() => (joined ? setView(waitingInLobby ? 'arrival' : 'live') : joinRoom())}
                   className="mt-10 inline-flex items-center gap-2 rounded-full bg-spark-coral px-5 py-3 text-sm font-bold text-white transition hover:bg-spark-flame disabled:cursor-wait disabled:opacity-70"
                 >
                   {joining ? 'Joining room…' : joined ? 'Enter experience' : 'Join experience'}
@@ -421,8 +439,10 @@ export default function RoomExperience({
           <h1 className="mt-3 text-3xl font-bold tracking-[-.055em]">You’re in.</h1>
           <p className="mx-auto mt-3 max-w-sm text-sm leading-6 text-[#6F6470]">
             {waitingForSchedule
-              ? `This room opens on ${scheduledStartLabel}. It will open automatically when the time arrives.`
-              : 'Opening your experience…'}
+                ? `This room opens on ${scheduledStartLabel}. It will open automatically when the time arrives.`
+              : waitingForMembers
+                ? `Waiting for all ${lobbyMeta.maxMembers || maxMembers} people to arrive. The experience starts for everyone as soon as the room is full.`
+                : 'Opening your experience…'}
           </p>
 
           {!experience && (
@@ -584,7 +604,9 @@ export default function RoomExperience({
             </div>
           </div>
 
-          <p className="mt-7 text-xs font-semibold text-[#6F6470]">You’ll enter automatically at the scheduled time.</p>
+          <p className="mt-7 text-xs font-semibold text-[#6F6470]">
+            {waitingForSchedule ? 'You’ll enter automatically once everyone has joined and the scheduled time arrives.' : 'You’ll enter automatically when everyone has joined.'}
+          </p>
         </section>
       </main>
     );

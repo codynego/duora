@@ -59,8 +59,8 @@ export default function HomePage() {
 
         <section id="discover" className="border-y border-[#281D32]/8 bg-[#FFF7F2] px-5 py-20 sm:px-8 sm:py-28">
           <div className="mx-auto grid max-w-7xl gap-12 lg:grid-cols-[.8fr_1.2fr] lg:gap-20">
-          <div><p className="section-label">Why Duora</p><h2 className="mt-4 text-4xl font-bold tracking-[-.06em] sm:text-5xl">Getting started is easier when you have a shared reason to show up.</h2></div>
-            <div className="max-w-2xl text-lg leading-8 text-[#6F6470]"><p>A blank chat makes the first message feel bigger than it needs to be. A shared activity gives both people something real to react to from the start.</p><p className="mt-5">Duora gives a room, a relationship, or an ordinary evening just enough structure to get moving—without making it feel scripted.</p><p className="mt-7 font-semibold text-dark-950">Not another feed to keep up with. A place to actually spend time together.</p></div>
+          <div><p className="section-label">Why Duorah</p><h2 className="mt-4 text-4xl font-bold tracking-[-.06em] sm:text-5xl">Getting started is easier when you have a shared reason to show up.</h2></div>
+            <div className="max-w-2xl text-lg leading-8 text-[#6F6470]"><p>A blank chat makes the first message feel bigger than it needs to be. A shared activity gives both people something real to react to from the start.</p><p className="mt-5">Duorah gives a room, a relationship, or an ordinary evening just enough structure to get moving—without making it feel scripted.</p><p className="mt-7 font-semibold text-dark-950">Not another feed to keep up with. A place to actually spend time together.</p></div>
           </div>
         </section>
 
@@ -74,7 +74,7 @@ export default function HomePage() {
 
         <section id="start" className="px-5 py-24 text-center sm:px-8 sm:py-32"><div className="mx-auto max-w-2xl"><Sparkles className="mx-auto h-6 w-6 text-spark-coral" strokeWidth={1.7}/><h2 className="mt-7 text-4xl font-bold tracking-[-.06em] sm:text-6xl">Start the next conversation with a shared moment.</h2><p className="mt-5 text-lg leading-8 text-[#6F6470]">Choose an experience, invite someone in, or join a room with something worth doing together.</p><a href="/signup" className="mt-9 inline-flex items-center gap-2 rounded-full bg-spark-coral px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-[#d94767]">Start an experience <ArrowRight className="h-4 w-4" /></a></div></section>
       </main>
-      <footer className="border-t border-[#281D32]/10 px-5 py-10 sm:px-8"><div className="mx-auto flex max-w-7xl flex-col justify-between gap-5 text-sm text-[#6F6470] sm:flex-row sm:items-center"><div><span className="font-bold tracking-[-.05em] text-dark-950">Duora</span><span className="ml-3">More ways to spend time together.</span></div><div className="flex gap-5"><a href="#discover">Why Duora</a><a href="#experiences">Experiences</a><a href="#">Privacy</a><span>© Duora</span></div></div></footer>
+      <footer className="border-t border-[#281D32]/10 px-5 py-10 sm:px-8"><div className="mx-auto flex max-w-7xl flex-col justify-between gap-5 text-sm text-[#6F6470] sm:flex-row sm:items-center"><div><span className="font-bold tracking-[-.05em] text-dark-950">Duorah</span><span className="ml-3">More ways to spend time together.</span></div><div className="flex gap-5"><a href="#discover">Why Duorah</a><a href="#experiences">Experiences</a><a href="#">Privacy</a><span>© Duorah</span></div></div></footer>
     </div>
   );
 }

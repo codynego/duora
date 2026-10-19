@@ -1,6 +1,6 @@
 import { ImageResponse } from 'next/og';
 
-export const alt = 'Duora — Make every connection more interesting';
+export const alt = 'Duorah — Make every connection more interesting';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
@@ -13,7 +13,7 @@ export default function OpenGraphImage() {
         <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', width: '680px', zIndex: 1 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: 28, fontWeight: 700, letterSpacing: 3 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 52, height: 52, borderRadius: 16, background: '#F05A78', color: '#281D32', fontSize: 34, fontWeight: 800 }}>D</div>
-            DUORA
+            DUORAH
           </div>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             <div style={{ fontSize: 68, lineHeight: 1.03, fontWeight: 800, letterSpacing: -3 }}>Make every connection more interesting.</div>

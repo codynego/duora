@@ -5,8 +5,8 @@ import { ChevronDown, HelpCircle } from 'lucide-react';
 
 const FAQS = [
   {
-    q: 'Is Duora another dating app?',
-    a: 'No. Traditional dating apps focus on photo directories, endless swiping, and superficial matching. Duora is an experience-led platform for connection—whether you are flirting with a crush, getting to know someone, or creating a better date night.'
+    q: 'Is Duorah another dating app?',
+    a: 'No. Traditional dating apps focus on photo directories, endless swiping, and superficial matching. Duorah is an experience-led platform for connection—whether you are flirting with a crush, getting to know someone, or creating a better date night.'
   },
   {
     q: 'Does the other person need to download an app or create an account?',
@@ -21,8 +21,8 @@ const FAQS = [
     a: 'Always. Both participants have full agency to skip any prompt or pass on any dare at any time. Private answers are never exposed without explicit consent.'
   },
   {
-    q: 'How does Duora make money?',
-    a: 'Duora is free to start. We may offer optional themed experiences, planning tools, and keepsakes without locking people into an expensive mandatory subscription.'
+    q: 'How does Duorah make money?',
+    a: 'Duorah is free to start. We may offer optional themed experiences, planning tools, and keepsakes without locking people into an expensive mandatory subscription.'
   }
 ];
 

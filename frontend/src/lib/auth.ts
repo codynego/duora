@@ -23,6 +23,7 @@ configureApiCredentials();
 async function request(path: string, body: Record<string, string>) {
   const response = await fetch(`${apiUrl}/api/v1/auth/${path}`, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
   const data = await response.json();
+  if (response.status === 429) throw new Error('Too many attempts from this connection. Please wait a few minutes, then try again.');
   if (!response.ok) throw new Error(data?.detail ?? Object.values(data ?? {}).flat().join(' ') ?? 'Something went wrong.');
   return data;
 }

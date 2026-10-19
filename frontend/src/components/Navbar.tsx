@@ -10,7 +10,7 @@ export default function Navbar() {
   return (
     <header className="sticky top-0 z-50 border-b border-[#281D32]/10 bg-white/90 backdrop-blur-md">
       <div className="mx-auto flex h-[72px] max-w-7xl items-center justify-between px-5 sm:px-8">
-        <a href="#" className="text-[23px] font-bold tracking-[-.06em] text-dark-950">Duora</a>
+        <a href="#" className="text-[23px] font-bold tracking-[-.06em] text-dark-950">Duorah</a>
         <nav className="hidden items-center gap-8 text-sm font-medium text-[#6F6470] md:flex">
           {links.map(([label, href]) => <a key={href} href={href} className="transition-colors hover:text-dark-950">{label}</a>)}
         </nav>

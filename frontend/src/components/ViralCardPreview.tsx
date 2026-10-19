@@ -19,7 +19,7 @@ export default function ViralCardPreview() {
           </h2>
 
           <p className="text-base sm:text-lg text-slate-300 leading-relaxed">
-            When an experience ends, Duora does not just say <em>“Thanks for playing.”</em> It gives people a thoughtful moment they can save, share, or use to continue the conversation.
+            When an experience ends, Duorah does not just say <em>“Thanks for playing.”</em> It gives people a thoughtful moment they can save, share, or use to continue the conversation.
           </p>
 
           <div className="space-y-3 pt-2">
@@ -112,7 +112,7 @@ export default function ViralCardPreview() {
                 {/* Watermark CTA */}
                 <div className="mt-6 pt-4 border-t border-white/10 flex items-center justify-between text-[11px]">
                   <span className="text-slate-400">Think you can score higher?</span>
-                  <span className="font-bold text-spark-coral">duora.app/play</span>
+                  <span className="font-bold text-spark-coral">duorah.vercel.app/play</span>
                 </div>
               </div>
 

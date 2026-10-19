@@ -3,7 +3,10 @@ from .models import Room
 
 
 class RoomSerializer(serializers.ModelSerializer):
-    members_count = serializers.IntegerField(source='memberships.count', read_only=True)
+    members_count = serializers.SerializerMethodField()
+
+    def get_members_count(self, room):
+        return room.memberships.filter(disposition='present').count()
 
     class Meta:
         model = Room
