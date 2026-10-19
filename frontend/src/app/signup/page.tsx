@@ -52,7 +52,9 @@ export default function SignupPage() {
     setUsernameError('');
     try {
       await signUp(username, password, confirm, gender);
-      router.push('/onboarding');
+      const requestedPath = new URLSearchParams(window.location.search).get('next');
+      const destination = requestedPath?.startsWith('/i/') ? requestedPath : '/onboarding';
+      router.replace(destination);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unable to create your account.';
       if (/username.*already in use/i.test(message)) {

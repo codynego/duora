@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, LockKeyhole } from "lucide-react";
 import { getAccessToken } from "@/lib/auth";
@@ -16,8 +16,9 @@ type Preview = {
 export default function InviteAcceptancePage({
   params,
 }: {
-  params: { token: string };
+  params: Promise<{ token: string }>;
 }) {
+  const { token } = use(params);
   const router = useRouter();
   const [preview, setPreview] = useState<Preview | null>(null);
   const [loading, setLoading] = useState(true);
@@ -26,9 +27,10 @@ export default function InviteAcceptancePage({
   const [guestName, setGuestName] = useState("");
   const [signedIn, setSignedIn] = useState(false);
   const api = process.env.NEXT_PUBLIC_DUORA_API_URL ?? "http://127.0.0.1:8000";
+  const invitePath = `/i/${token}`;
 
   useEffect(() => {
-    fetch(`${api}/api/v1/rooms/invites/${params.token}/`)
+    fetch(`${api}/api/v1/rooms/invites/${token}/`)
       .then(async (response) => {
         const body = await response.json();
         if (!response.ok)
@@ -43,7 +45,7 @@ export default function InviteAcceptancePage({
         ),
       )
       .finally(() => setLoading(false));
-  }, [api, params.token]);
+  }, [api, token]);
   useEffect(() => {
     void getAccessToken({ redirectOnFailure: false }).then((token) =>
       setSignedIn(Boolean(token)),
@@ -56,7 +58,7 @@ export default function InviteAcceptancePage({
     setError("");
     try {
       const response = await fetch(
-        `${api}/api/v1/rooms/invites/${params.token}/accept/`,
+        `${api}/api/v1/rooms/invites/${token}/accept/`,
         {
           method: "POST",
           headers: {
@@ -103,6 +105,23 @@ export default function InviteAcceptancePage({
             </p>
             {!signedIn && (
               <>
+                <div className="mx-auto mt-7 flex max-w-sm flex-wrap justify-center gap-2">
+                  <Link
+                    href={`/login?next=${encodeURIComponent(invitePath)}`}
+                    className="inline-flex items-center justify-center rounded-full bg-dark-950 px-4 py-2.5 text-sm font-bold text-white"
+                  >
+                    Sign in
+                  </Link>
+                  <Link
+                    href={`/signup?next=${encodeURIComponent(invitePath)}`}
+                    className="inline-flex items-center justify-center rounded-full border border-dark-950/15 px-4 py-2.5 text-sm font-bold"
+                  >
+                    Create account
+                  </Link>
+                </div>
+                <p className="mx-auto mt-4 max-w-sm text-xs leading-5 text-[#6F6470]">
+                  Sign in or create an account to continue. You will return here to accept the invitation.
+                </p>
                 <label className="mx-auto mt-7 block max-w-sm text-left text-sm font-bold">
                   Your first name
                   <input
@@ -114,8 +133,7 @@ export default function InviteAcceptancePage({
                   />
                 </label>
                 <p className="mx-auto mt-3 max-w-sm text-xs leading-5 text-[#6F6470]">
-                  No account is required to join. You can create one later if
-                  you want to keep the connection.
+                  Or continue as a guest. No account is required.
                 </p>
               </>
             )}
