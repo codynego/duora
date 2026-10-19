@@ -86,8 +86,8 @@ export default function BuildStoryStage({
       </div>
 
       {reviewing && !finished && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-[#fffdf9] px-5 py-8 text-dark-950 sm:px-10 sm:py-12">
-          <div className="mx-auto flex min-h-full w-full max-w-4xl flex-col">
+        <div className="fixed inset-0 z-[100] flex h-[100dvh] w-screen flex-col overflow-hidden bg-[#fffdf9] px-5 pb-[env(safe-area-inset-bottom)] pt-8 text-dark-950 sm:px-10 sm:pt-12">
+          <div className="mx-auto flex h-full min-h-0 w-full max-w-5xl flex-col">
             <div className="flex items-start justify-between gap-4 border-b border-dark-950/10 pb-6">
               <div>
                 <p className="text-xs font-bold tracking-[0.16em] text-spark-coral">FULL STORY</p>
@@ -97,7 +97,7 @@ export default function BuildStoryStage({
                 Keep writing
               </button>
             </div>
-            <article className="my-10 flex-1 rounded-[30px] border border-dark-950/10 bg-white p-6 text-lg leading-[1.9] shadow-[0_18px_55px_rgba(40,29,50,.08)] sm:p-10 sm:text-2xl">
+            <article className="my-6 min-h-0 flex-1 overflow-y-auto rounded-[30px] border border-dark-950/10 bg-white p-6 text-lg leading-[1.9] shadow-[0_18px_55px_rgba(40,29,50,.08)] sm:my-8 sm:p-10 sm:text-2xl">
               {story.length ? story.map((chunk, idx) => (
                 <span key={`${chunk.author}-${idx}`} className="mr-2 inline">
                   <span className="font-serif">{chunk.sentence}</span>{' '}
@@ -107,9 +107,11 @@ export default function BuildStoryStage({
                 </span>
               )) : <p className="text-base text-[#6F6470] sm:text-lg">The story is still waiting for its first sentence.</p>}
             </article>
-            <button type="button" onClick={() => { handleFinish(); setReviewing(false); }} className="mx-auto inline-flex items-center justify-center rounded-full bg-dark-950 px-6 py-3.5 text-sm font-bold text-white">
+            <div className="shrink-0 border-t border-dark-950/10 pt-4 sm:pt-5">
+              <button type="button" onClick={() => { handleFinish(); setReviewing(false); }} className="inline-flex w-full items-center justify-center rounded-full bg-dark-950 px-6 py-3.5 text-sm font-bold text-white sm:w-auto sm:min-w-56">
               Finish and continue <ArrowRight className="ml-2 h-4 w-4" />
-            </button>
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -139,18 +141,19 @@ export default function BuildStoryStage({
 
         {/* Contribution Input */}
         {!finished ? (
-          <form onSubmit={handleAddSentence} className="mt-5 max-w-2xl">
+          <form onSubmit={handleAddSentence} className="relative z-20 mt-5 max-w-2xl">
             <label className="block text-xs font-semibold text-[#6F6470]">
               Add the next sentence to continue the story:
             </label>
+            {!isMyTurn && <p className="mt-1 text-xs font-semibold text-spark-coral">{activePlayer.name} is writing the next sentence. Your turn comes next.</p>}
             <div className="mt-2 flex flex-col gap-2 sm:flex-row">
               <input
                 type="text"
                 value={mySentence}
                 onChange={(e) => setMySentence(e.target.value)}
-                placeholder="What happens next? Write one sentence..."
-                disabled={finished}
-                className="min-w-0 flex-1 rounded-2xl border border-dark-950/15 bg-white px-4 py-3 text-xs outline-none transition focus:border-spark-coral focus:ring-2 focus:ring-spark-coral/15 disabled:bg-dark-950/5 sm:text-sm"
+                placeholder={isMyTurn ? 'What happens next? Write one sentence...' : `${activePlayer.name} is writing...`}
+                disabled={finished || !isMyTurn}
+                className="relative z-20 min-w-0 flex-1 cursor-text rounded-2xl border border-dark-950/15 bg-white px-4 py-3 text-xs outline-none transition focus:border-spark-coral focus:ring-2 focus:ring-spark-coral/15 disabled:bg-dark-950/5 sm:text-sm"
               />
               <button
                 type="submit"

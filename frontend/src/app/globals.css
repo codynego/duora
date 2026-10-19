@@ -99,8 +99,19 @@ body { margin: 0; background: var(--canvas); color: var(--ink); font-family: 'DM
 
 .game-stage button,
 .game-stage input,
-.game-stage textarea {
+.game-stage textarea,
+.game-stage select {
   min-height: 2.75rem;
+}
+
+/* Keep every activity control above decorative stage layers on desktop. */
+.game-stage form,
+.game-stage button,
+.game-stage input,
+.game-stage textarea,
+.game-stage select {
+  position: relative;
+  z-index: 20;
 }
 
 /* Shared feedback: an action should acknowledge the tap before the network does. */
