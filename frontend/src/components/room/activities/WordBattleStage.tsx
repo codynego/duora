@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowRight, Send, Timer, Zap } from 'lucide-react';
 import { BaseStageProps, RoomParticipant } from '../types';
 import { ADDITIONAL_WORD_CHALLENGES } from './additional-game-content';
@@ -21,6 +21,17 @@ const BASE_WORD_CHALLENGES: WordChallenge[] = [
 
 const WORD_CHALLENGES: WordChallenge[] = [...BASE_WORD_CHALLENGES, ...ADDITIONAL_WORD_CHALLENGES];
 
+function shuffledDeck(challenges: WordChallenge[], seed: number) {
+  const deck = [...challenges];
+  let value = seed || 1;
+  for (let index = deck.length - 1; index > 0; index -= 1) {
+    value = (value * 1_664_525 + 1_013_904_223) >>> 0;
+    const swapIndex = value % (index + 1);
+    [deck[index], deck[swapIndex]] = [deck[swapIndex], deck[index]];
+  }
+  return deck;
+}
+
 export default function WordBattleStage({
   isHost,
   participants,
@@ -32,6 +43,7 @@ export default function WordBattleStage({
   const round = typeof gameState.round === 'number' ? gameState.round : 0;
   const turnIndex = typeof gameState.turnIndex === 'number' ? gameState.turnIndex : 0;
   const turnStartedAt = typeof gameState.turnStartedAt === 'number' ? gameState.turnStartedAt : null;
+  const deckSeed = typeof gameState.wordBattleSeed === 'number' ? gameState.wordBattleSeed : 0;
   const [myAnswer, setMyAnswer] = useState('');
   const [now, setNow] = useState(() => Date.now());
   const [localFeedback, setLocalFeedback] = useState<string | null>(null);
@@ -43,7 +55,8 @@ export default function WordBattleStage({
     : [{ id: 'you', name: 'You', initial: 'Y', color: '#F05A78', isYou: true }];
   const activePlayer = roster[turnIndex % roster.length];
   const isMyTurn = Boolean(activePlayer.isYou);
-  const current = WORD_CHALLENGES[round % WORD_CHALLENGES.length];
+  const deck = useMemo(() => shuffledDeck(WORD_CHALLENGES, deckSeed), [deckSeed]);
+  const current = deck[round % deck.length];
   const scores = (gameState.scores as Record<string, number> | undefined) ?? {};
   const secondsLeft = turnStartedAt
     ? Math.max(0, TURN_SECONDS - Math.floor((now - turnStartedAt) / 1000))
@@ -58,7 +71,7 @@ export default function WordBattleStage({
     // Only the host initializes the shared clock. If every browser initializes
     // it independently, the last poller wins and the turn/score state jumps.
     if (turnStartedAt || !onGameStateChange || (!isHost && roster.length > 1)) return;
-    onGameStateChange({ ...gameState, round, turnIndex: 0, turnStartedAt: Date.now(), scores: {} });
+    onGameStateChange({ ...gameState, round, turnIndex: 0, turnStartedAt: Date.now(), wordBattleSeed: Date.now(), scores: {} });
   }, [gameState, isHost, onGameStateChange, round, roster.length, turnStartedAt]);
 
   useEffect(() => {

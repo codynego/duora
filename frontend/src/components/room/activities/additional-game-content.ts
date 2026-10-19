@@ -147,28 +147,32 @@ export const ADDITIONAL_GUESS_QUESTIONS = [
   ['Which flavor would they choose on a difficult day?', ['Sweet', 'Salty', 'Fresh', 'Very spicy'], 'Salty'],
 ].map(([question, options, correctAnswer], index) => ({ id: `extra-guess-${index + 1}`, question: `${question as string}`, options: options as string[], correctAnswer: correctAnswer as string }));
 
-export const ADDITIONAL_WORD_CHALLENGES = [
-  ['Drink', 'C', 'Name a drink beginning with C'],
-  ['Country', 'I', 'Name a country beginning with I'],
-  ['Animal', 'T', 'Name an animal beginning with T'],
-  ['Film', 'B', 'Name a film beginning with B'],
-  ['Food', 'S', 'Name a food beginning with S'],
-  ['City', 'L', 'Name a major world city beginning with L'],
-  ['Object', 'K', 'Name an everyday object beginning with K'],
-  ['Song', 'H', 'Name a song beginning with H'],
-  ['Plant', 'R', 'Name a plant beginning with R'],
-  ['Job', 'D', 'Name a job beginning with D'],
-  ['Fruit', 'B', 'Name a fruit beginning with B'],
-  ['Sport', 'T', 'Name a sport beginning with T'],
-  ['Place', 'S', 'Name a place beginning with S'],
-  ['Animal', 'L', 'Name an animal beginning with L'],
-  ['Dessert', 'P', 'Name a dessert beginning with P'],
-  ['City', 'N', 'Name a city beginning with N'],
-  ['Book', 'G', 'Name a book beginning with G'],
-  ['Household item', 'T', 'Name a household item beginning with T'],
-  ['Weather word', 'F', 'Name a weather word beginning with F'],
-  ['Technology', 'M', 'Name a piece of technology beginning with M'],
-].map(([category, letter, prompt], index) => ({ id: `extra-word-${index + 1}`, category, letter, prompt }));
+const WORD_BATTLE_DECKS: Array<[string, string, string]> = [
+  ['Animal', 'A B C D E F G H L M P R S T W', 'Name an animal beginning with'],
+  ['Fruit', 'A B C G K L M P R S T W', 'Name a fruit beginning with'],
+  ['Food', 'A B C D E F G H L M N P R S T', 'Name a food beginning with'],
+  ['Drink', 'A B C E F G H J L M O S T W', 'Name a drink beginning with'],
+  ['Country', 'A B C D E F G H I J K L M N P S T U', 'Name a country beginning with'],
+  ['City', 'A B C D E F G H I J K L M N O P R S T V', 'Name a world city beginning with'],
+  ['Job', 'A B C D E F G H J L M N P R S T V W', 'Name a job beginning with'],
+  ['Sport', 'A B C D F G H J L P R S T V W', 'Name a sport or physical activity beginning with'],
+  ['Dessert', 'A B C D E F G H I L M P S T W', 'Name a dessert or sweet treat beginning with'],
+  ['Plant', 'A B C D F G H I J L M O P R S T V', 'Name a plant or flower beginning with'],
+  ['Movie', 'A B C D E F G H I J K L M N P R S T', 'Name a film beginning with'],
+  ['Song', 'A B C D E F G H I J K L M N P R S T', 'Name a song title beginning with'],
+  ['Book', 'A B C D E F G H I J K L M N P R S T', 'Name a book title beginning with'],
+  ['Technology', 'A B C D E F G H I J K L M N P R S T', 'Name a piece of technology beginning with'],
+  ['Household item', 'A B C D E F G H I K L M P R S T V W', 'Name something you might find at home beginning with'],
+  ['Clothing', 'A B C D F G H J L M P R S T V W', 'Name an item of clothing beginning with'],
+  ['Vehicle', 'A B C D F G H J M P R S T V W', 'Name a vehicle or way to travel beginning with'],
+  ['School subject', 'A B C D E F G H L M P R S T', 'Name a school subject beginning with'],
+  ['Weather word', 'A B C D F G H L M P R S T W', 'Name a weather word beginning with'],
+  ['Everyday object', 'A B C D E F G H I J K L M N P R S T V W', 'Name an everyday object beginning with'],
+];
+
+export const ADDITIONAL_WORD_CHALLENGES = WORD_BATTLE_DECKS.flatMap(([category, letters, prompt]) =>
+  letters.split(' ').map((letter) => ({ category, letter, prompt })),
+).map((challenge, index) => ({ id: `extra-word-${index + 1}`, ...challenge }));
 
 export const ADDITIONAL_TRUTH_CHALLENGES = [
   ['What is a tiny habit you hope nobody notices?', 'Give a dramatic weather forecast for the room.'],
