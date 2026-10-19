@@ -30,21 +30,22 @@ export default function InviteAcceptancePage({
   const invitePath = `/i/${token}`;
 
   useEffect(() => {
-    fetch(`${api}/api/v1/rooms/invites/${encodeURIComponent(token)}/`)
-      .then(async (response) => {
+    async function loadPreview() {
+      try {
+        const authToken = await getAccessToken({ redirectOnFailure: false });
+        const response = await fetch(`${api}/api/v1/rooms/invites/${encodeURIComponent(token)}/`, {
+          headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
+        });
         const body = await response.json();
-        if (!response.ok)
-          throw new Error(body.detail ?? "This invitation is unavailable.");
+        if (!response.ok) throw new Error(body.detail ?? "This invitation is unavailable.");
         setPreview(body.data);
-      })
-      .catch((requestError) =>
-        setError(
-          requestError instanceof Error
-            ? requestError.message
-            : "This invitation is unavailable.",
-        ),
-      )
-      .finally(() => setLoading(false));
+      } catch (requestError) {
+        setError(requestError instanceof Error ? requestError.message : "This invitation is unavailable.");
+      } finally {
+        setLoading(false);
+      }
+    }
+    void loadPreview();
   }, [api, token]);
   useEffect(() => {
     void getAccessToken({ redirectOnFailure: false }).then((token) =>

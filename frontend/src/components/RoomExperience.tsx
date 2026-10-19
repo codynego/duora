@@ -87,7 +87,7 @@ export default function RoomExperience({
 }: RoomExperienceProps) {
   const [view, setView] = useState<'overview' | 'arrival' | 'live' | 'wrap'>('overview');
   const [clock, setClock] = useState(() => Date.now());
-  const [seconds, setSeconds] = useState(durationMinutes * 60);
+  const [seconds, setSeconds] = useState(durationMinutes > 0 ? durationMinutes * 60 : 0);
   const [roomStatus, setRoomStatus] = useState(initialRoomStatus);
   const [activeStartsAt, setActiveStartsAt] = useState(startsAt);
   const [joined, setJoined] = useState(alreadyJoined);
@@ -160,6 +160,10 @@ export default function RoomExperience({
 
   useEffect(() => {
     if (view !== 'live') return;
+    if (durationMinutes <= 0) {
+      setSeconds(0);
+      return;
+    }
     const startedAt = activeStartsAt ? new Date(activeStartsAt).getTime() : Date.now();
     const update = () => setSeconds(Math.max(0, durationMinutes * 60 - Math.max(0, Math.floor((Date.now() - startedAt) / 1000))));
     update();
@@ -167,9 +171,13 @@ export default function RoomExperience({
     return () => window.clearInterval(timer);
   }, [view, activeStartsAt, durationMinutes]);
 
-  useEffect(() => { if (view === 'live' && seconds === 0) setView('wrap'); }, [seconds, view]);
+  useEffect(() => {
+    if (view !== 'live' || durationMinutes <= 0 || seconds !== 0) return;
+    setView('wrap');
+    if (isRoomHost && roomStatus === 'active' && roomAction === null) void endRoom();
+  }, [durationMinutes, isRoomHost, roomAction, roomStatus, seconds, view]);
 
-  const formattedTime = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+  const formattedTime = durationMinutes <= 0 ? 'Untimed' : `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
   const scheduledStart = startsAt ? new Date(startsAt).getTime() : 0;
   const waitingForSchedule = Boolean(scheduledStart && scheduledStart > clock);
   const roomIsFull = lobbyMeta.maxMembers > 0 && lobbyMeta.membersCount >= lobbyMeta.maxMembers;
@@ -399,7 +407,7 @@ export default function RoomExperience({
                 <p className="mt-5 max-w-lg text-base leading-7 text-white/68">{roomSummary}</p>
                 <div className="mt-9 flex flex-wrap gap-3 text-sm text-white/75">
                   <span className="rounded-full border border-white/15 px-3 py-2">{maxMembers} people max</span>
-                  <span className="rounded-full border border-white/15 px-3 py-2">{durationMinutes} minutes</span>
+                  <span className="rounded-full border border-white/15 px-3 py-2">{durationMinutes > 0 ? `${durationMinutes} minutes` : 'Untimed'}</span>
                   <span className="rounded-full border border-white/15 px-3 py-2">
                     {isTalk ? 'Thoughtful conversation' : isPlay ? 'Playful game format' : 'Guided activity'}
                   </span>

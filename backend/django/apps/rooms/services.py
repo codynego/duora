@@ -64,13 +64,29 @@ EXPERIENCE_INTENTS = {
 }
 
 
+def room_invite_unavailable(room: Room, *, now=None) -> bool:
+    """Invite links remain reusable until their room is ended or archived."""
+    now = now or timezone.now()
+    return (
+        room.archived_at is not None
+        or room.status == Room.Status.ENDED
+        or (
+            room.duration_minutes > 0
+            and room.starts_at + timedelta(minutes=room.duration_minutes) <= now
+        )
+    )
+
+
 @transaction.atomic
-def create_private_room(*, user, experience: str, topic: str = '', discussion_description: str = '', starts_at=None, invited_user=None, creates_connection=False):
+def create_private_room(*, user, experience: str, topic: str = '', discussion_description: str = '', starts_at=None, invited_user=None, creates_connection=False, duration_minutes=None):
     try:
         title, description, duration_minutes, max_members = PRIVATE_EXPERIENCES[experience]
     except KeyError as error:
         raise ValidationError({'experience': 'Choose a supported private experience.'}) from error
 
+    duration_minutes = PRIVATE_EXPERIENCES[experience][2] if duration_minutes is None else duration_minutes
+    if duration_minutes not in {0, 10, 30, 60}:
+        raise ValidationError({'duration_minutes': 'Choose 10, 30, 60 minutes, or untimed.'})
     code = f'P-{secrets.token_urlsafe(6).replace("-", "").replace("_", "")[:8].upper()}'
     scheduled_at = starts_at if starts_at and starts_at > timezone.now() else timezone.now()
     is_scheduled = scheduled_at > timezone.now()
@@ -96,13 +112,16 @@ def create_private_room(*, user, experience: str, topic: str = '', discussion_de
 
 
 @transaction.atomic
-def create_public_room(*, user, experience: str, tone: str, audience: str, max_members: int, city: str, topic: str = '', discussion_description: str = '', starts_at=None):
+def create_public_room(*, user, experience: str, tone: str, audience: str, max_members: int, city: str, topic: str = '', discussion_description: str = '', starts_at=None, duration_minutes=None):
     try:
         title, description, duration_minutes, experience_max_members = PRIVATE_EXPERIENCES[experience]
     except KeyError as error:
         raise ValidationError({'experience': 'Choose a supported experience.'}) from error
     if max_members > experience_max_members:
         raise ValidationError({'max_members': f'{title} supports up to {experience_max_members} people.'})
+    duration_minutes = PRIVATE_EXPERIENCES[experience][2] if duration_minutes is None else duration_minutes
+    if duration_minutes not in {0, 10, 30, 60}:
+        raise ValidationError({'duration_minutes': 'Choose 10, 30, 60 minutes, or untimed.'})
     code = f'R-{secrets.token_urlsafe(6).replace("-", "").replace("_", "")[:8].upper()}'
     scheduled_at = starts_at if starts_at and starts_at > timezone.now() else timezone.now()
     is_scheduled = scheduled_at > timezone.now()
@@ -188,10 +207,11 @@ def join_room(*, room: Room, user) -> RoomMembership:
 @transaction.atomic
 def accept_invite(*, invite: RoomInvite, user):
     locked = RoomInvite.objects.select_for_update().select_related('room').get(pk=invite.pk)
-    if not locked.is_active:
-        raise ValidationError({'invite': 'This invite is no longer available.'})
+    if locked.revoked_at is not None or room_invite_unavailable(locked.room):
+        raise ValidationError({'invite': 'This room has ended or was archived.'})
     membership = join_room(room=locked.room, user=user)
-    locked.accepted_by = user
-    locked.accepted_at = timezone.now()
-    locked.save(update_fields=('accepted_by', 'accepted_at'))
+    if locked.accepted_at is None:
+        locked.accepted_by = user
+        locked.accepted_at = timezone.now()
+        locked.save(update_fields=('accepted_by', 'accepted_at'))
     return membership

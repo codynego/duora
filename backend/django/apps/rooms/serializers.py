@@ -27,6 +27,12 @@ class PublicRoomCreateSerializer(serializers.Serializer):
     topic = serializers.CharField(max_length=120, required=False, allow_blank=True)
     discussion_description = serializers.CharField(max_length=500, required=False, allow_blank=True)
     starts_at = serializers.DateTimeField(required=False, allow_null=True, default=None)
+    duration_minutes = serializers.IntegerField(min_value=0, required=False, default=None)
+
+    def validate_duration_minutes(self, value):
+        if value not in {0, 10, 30, 60}:
+            raise serializers.ValidationError('Choose 10, 30, 60 minutes, or untimed.')
+        return value
 
     def validate_max_members(self, value):
         if value not in {2, 4, 6}:

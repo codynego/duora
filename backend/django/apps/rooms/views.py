@@ -37,6 +37,7 @@ class RoomViewSet(ReadOnlyModelViewSet):
         available_ids = [
             room.id for room in candidates
             if room.status != Room.Status.ACTIVE
+            or room.duration_minutes == 0
             or room.starts_at + timedelta(minutes=room.duration_minutes) > now
         ]
         return self.queryset.filter(id__in=available_ids, archived_at__isnull=True)
@@ -72,6 +73,7 @@ class RoomViewSet(ReadOnlyModelViewSet):
         rooms = [
             room for room in candidates
             if room.status in {Room.Status.OPEN, Room.Status.SCHEDULED}
+            or room.duration_minutes == 0
             or room.starts_at <= now < room.starts_at + timedelta(minutes=room.duration_minutes)
         ]
         return Response({'data': RoomSerializer(rooms, many=True).data})
@@ -85,7 +87,7 @@ class RoomViewSet(ReadOnlyModelViewSet):
             raise ValidationError({'room': 'This room was archived by its host, so it is no longer accepting participants.'})
         if room.status == Room.Status.ENDED:
             raise ValidationError({'room': 'This room has already ended. Try another room from Discover.'})
-        if room.status == Room.Status.ACTIVE and room.starts_at + timedelta(minutes=room.duration_minutes) <= timezone.now():
+        if room.status == Room.Status.ACTIVE and room.duration_minutes > 0 and room.starts_at + timedelta(minutes=room.duration_minutes) <= timezone.now():
             raise ValidationError({'room': 'This room has already ended. Try another room from Discover.'})
         membership = join_room(room=room, user=request.user)
         current_room = membership.room
@@ -172,7 +174,7 @@ class CreatePrivateRoomView(APIView):
                 starts_at = timezone.make_aware(starts_at, timezone.get_current_timezone())
             if starts_at <= timezone.now():
                 raise ValidationError({'starts_at': 'Choose a time in the future, or start the experience now.'})
-        room, invite = create_private_room(user=request.user, experience=request.data.get('experience', ''), topic=request.data.get('topic', ''), discussion_description=request.data.get('discussion_description', ''), starts_at=starts_at, invited_user=invited_user, creates_connection=bool(request.data.get('connect_on_accept', False)))
+        room, invite = create_private_room(user=request.user, experience=request.data.get('experience', ''), topic=request.data.get('topic', ''), discussion_description=request.data.get('discussion_description', ''), starts_at=starts_at, invited_user=invited_user, creates_connection=bool(request.data.get('connect_on_accept', False)), duration_minutes=request.data.get('duration_minutes'))
         return Response({'data': {
             'room': {'id': str(room.id), 'code': room.code, 'title': room.title},
             'invite': {'token': str(invite.token), 'expires_at': invite.expires_at},

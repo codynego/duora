@@ -193,6 +193,7 @@ function CreateExperienceFlow() {
   const [startMode, setStartMode] = useState<"now" | "scheduled">("now");
   const [scheduledDate, setScheduledDate] = useState("");
   const [scheduledTime, setScheduledTime] = useState("");
+  const [durationMinutes, setDurationMinutes] = useState(30);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState("");
   const [inviteUrl, setInviteUrl] = useState("");
@@ -278,9 +279,10 @@ function CreateExperienceFlow() {
         : {};
       const body =
         visibility === "private"
-          ? { experience: experience.key, ...details, ...schedule, ...(connectionId ? { connection_id: connectionId } : {}) }
+          ? { experience: experience.key, duration_minutes: durationMinutes, ...details, ...schedule, ...(connectionId ? { connection_id: connectionId } : {}) }
           : {
               experience: experience.key,
+              duration_minutes: durationMinutes,
               tone,
               audience,
               max_members: maxMembers,
@@ -446,6 +448,7 @@ function CreateExperienceFlow() {
                 </div>
               </div>
               <ScheduleFields mode={startMode} setMode={setStartMode} date={scheduledDate} setDate={setScheduledDate} time={scheduledTime} setTime={setScheduledTime} />
+              <DurationFields value={durationMinutes} onChange={setDurationMinutes} />
               <div className="mt-8 flex justify-end">
                 <button
                   disabled={creating}
@@ -503,6 +506,7 @@ function CreateExperienceFlow() {
                 </button>}
               </div>
               <ScheduleFields mode={startMode} setMode={setStartMode} date={scheduledDate} setDate={setScheduledDate} time={scheduledTime} setTime={setScheduledTime} />
+              <DurationFields value={durationMinutes} onChange={setDurationMinutes} />
             </>
           )}
           {((step === 4 && category !== "talk") || (step === 5 && category === "talk")) && visibility === "public" && (
@@ -573,6 +577,7 @@ function CreateExperienceFlow() {
                 <Row label="Experience" value={experience.title} />
                 <Row label="Experience family" value={family.title} />
                 <Row label="When" value={scheduleLabel} />
+                <Row label="Game length" value={durationMinutes === 0 ? "Untimed" : `${durationMinutes} minutes`} />
                 <div className="p-4">
                   <span className="text-sm text-[#6F6470]">What happens</span>
                   <p className="mt-1 text-sm leading-6">{experience.flow}</p>
@@ -706,4 +711,9 @@ function Row({ label, value }: { label: string; value: string }) {
 function ScheduleFields({ mode, setMode, date, setDate, time, setTime }: { mode: "now" | "scheduled"; setMode: (value: "now" | "scheduled") => void; date: string; setDate: (value: string) => void; time: string; setTime: (value: string) => void }) {
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   return <div className="mt-7 rounded-2xl border border-dark-950/8 bg-[#fffaf8] p-4"><p className="text-sm font-bold">When should it happen?</p><p className="mt-1 text-xs leading-5 text-[#6F6470]">Start right away or give people time to plan.</p><div className="mt-3 grid gap-2 sm:grid-cols-2"><button type="button" onClick={() => setMode("now")} className={`rounded-xl border px-3 py-3 text-left text-sm font-bold ${mode === "now" ? "border-spark-coral bg-[#fff0f3]" : "border-dark-950/10 bg-white"}`}>Start now<span className="mt-1 block text-xs font-normal text-[#6F6470]">Open as soon as it is created.</span></button><button type="button" onClick={() => setMode("scheduled")} className={`rounded-xl border px-3 py-3 text-left text-sm font-bold ${mode === "scheduled" ? "border-spark-coral bg-[#fff0f3]" : "border-dark-950/10 bg-white"}`}>Schedule for later<span className="mt-1 block text-xs font-normal text-[#6F6470]">Everyone sees the planned start.</span></button></div>{mode === "scheduled" && <div className="mt-3 grid gap-3 sm:grid-cols-2"><label className="text-xs font-bold">Date<input type="date" min={new Date().toISOString().slice(0, 10)} value={date} onChange={(event) => setDate(event.target.value)} className="mt-1.5 w-full rounded-xl border border-dark-950/12 bg-white px-3 py-2.5 text-sm font-medium" /></label><label className="text-xs font-bold">Time<input type="time" value={time} onChange={(event) => setTime(event.target.value)} className="mt-1.5 w-full rounded-xl border border-dark-950/12 bg-white px-3 py-2.5 text-sm font-medium" /><span className="mt-1 block font-normal text-[#6F6470]">Timezone: {timezone}</span></label></div>}</div>;
+}
+
+function DurationFields({ value, onChange }: { value: number; onChange: (value: number) => void }) {
+  const options = [{ value: 10, label: "10 mins" }, { value: 30, label: "30 mins" }, { value: 60, label: "1 hour" }, { value: 0, label: "Untimed" }];
+  return <div className="mt-7 rounded-2xl border border-dark-950/8 bg-[#fffaf8] p-4"><p className="text-sm font-bold">How long should the game last?</p><p className="mt-1 text-xs leading-5 text-[#6F6470]">The room ends automatically when the timer runs out, unless you choose untimed.</p><div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">{options.map((option) => <button key={option.value} type="button" onClick={() => onChange(option.value)} className={`rounded-xl border px-3 py-3 text-center text-sm font-bold ${value === option.value ? "border-spark-coral bg-[#fff0f3] text-dark-950" : "border-dark-950/10 bg-white text-[#6F6470]"}`}>{option.label}</button>)}</div></div>;
 }

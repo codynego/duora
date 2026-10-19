@@ -1,4 +1,5 @@
 import uuid
+from datetime import timedelta
 
 from django.conf import settings
 from django.db import models
@@ -76,7 +77,16 @@ class RoomInvite(models.Model):
     @property
     def is_active(self):
         from django.utils import timezone
-        return self.revoked_at is None and self.accepted_at is None and self.expires_at > timezone.now()
+        now = timezone.now()
+        return (
+            self.revoked_at is None
+            and self.room.archived_at is None
+            and self.room.status != Room.Status.ENDED
+            and (
+                self.room.duration_minutes == 0
+                or self.room.starts_at + timedelta(minutes=self.room.duration_minutes) > now
+            )
+        )
 
 
 class RoomActivity(models.Model):
