@@ -20,6 +20,8 @@ export type ReactionKind = 'heart' | 'support' | 'laugh' | 'cheer';
 export interface RoomParticipant {
   id: string;
   name: string;
+  /** Stable account label for resolving older display-name-based game state. */
+  accountName?: string;
   initial: string;
   color: string;
   isHost?: boolean;

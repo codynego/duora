@@ -149,7 +149,7 @@ export default function RoomExperience({
   }
 
   // Together is strictly 2 people (You + 1 Partner)
-  const roomParticipants: RoomParticipant[] = wrapPeople.length ? wrapPeople.map((person, index) => ({ id: person.id, name: person.is_you ? 'You' : person.name, initial: person.initial, color: ['#281D32', '#c94f70', '#8770a0', '#d7953d'][index % 4], isYou: person.is_you, isHost: person.is_host, statusLabel: person.is_you ? 'You' : 'Here' })) : (roomId ? [] : (isTogether ? [DEFAULT_PEOPLE[1]] : DEFAULT_PEOPLE));
+  const roomParticipants: RoomParticipant[] = wrapPeople.length ? wrapPeople.map((person, index) => ({ id: person.id, name: person.is_you ? 'You' : person.name, accountName: person.name, initial: person.initial, color: ['#281D32', '#c94f70', '#8770a0', '#d7953d'][index % 4], isYou: person.is_you, isHost: person.is_host, statusLabel: person.is_you ? 'You' : 'Here' })) : (roomId ? [] : (isTogether ? [DEFAULT_PEOPLE[1]] : DEFAULT_PEOPLE));
   const isRoomHost = roomId ? Boolean(roomParticipants.find((person) => person.isYou)?.isHost) : true;
 
   const roomSummary = isTalk

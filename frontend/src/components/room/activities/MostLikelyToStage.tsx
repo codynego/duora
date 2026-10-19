@@ -55,14 +55,28 @@ export default function MostLikelyToStage({
   const phase = gameState.phase === 'revealed' ? 'revealed' : 'voting';
   const votes = (gameState.votes && typeof gameState.votes === 'object' ? gameState.votes : {}) as Record<string, string>;
   const playerId = currentPlayerId(participants);
-  const selectedTarget = votes[playerId] ?? null;
 
   const currentPrompt = PROMPTS[roundIndex % PROMPTS.length];
   const players = participants.length ? participants : [{ id: 'you', name: 'You', initial: 'Y', color: '#F05A78', isYou: true }];
   const totalRounds = PROMPTS.length;
 
-  const handleVote = (name: string) => {
-    onGameStateChange?.({ ...gameState, roundIndex, phase: 'voting', votes: { ...votes, [playerId]: name } });
+  // Vote values must be participant IDs. Display labels are intentionally
+  // personalized (each person sees themselves as “You”), so persisting a
+  // label used to split votes for one person into separate "You" and account
+  // name buckets. The fallbacks keep already-running, older rounds readable.
+  const resolveTargetId = (voterId: string, target: string) => {
+    if (players.some((player) => player.id === target)) return target;
+    if (target === 'You' && players.some((player) => player.id === voterId)) return voterId;
+    return players.find((player) => player.name === target || player.accountName === target)?.id ?? target;
+  };
+  const allVotes = Object.fromEntries(
+    Object.entries(votes).map(([voterId, target]) => [voterId, resolveTargetId(voterId, target)]),
+  );
+  const selectedTarget = allVotes[playerId] ?? null;
+  const playerName = (id: string) => players.find((player) => player.id === id)?.name ?? id;
+
+  const handleVote = (targetId: string) => {
+    onGameStateChange?.({ ...gameState, roundIndex, phase: 'voting', votes: { ...votes, [playerId]: targetId } });
   };
 
   const handleReveal = () => {
@@ -73,10 +87,6 @@ export default function MostLikelyToStage({
   const handleNextRound = () => {
     if (!isHost) return;
     onGameStateChange?.({ ...gameState, roundIndex: (roundIndex + 1) % totalRounds, phase: 'voting', votes: {} });
-  };
-
-  const allVotes: Record<string, string> = {
-    ...votes,
   };
 
   // Tally votes for each candidate
@@ -138,11 +148,11 @@ export default function MostLikelyToStage({
           <div className="mt-6 max-w-2xl">
             <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-3">
               {players.map((p) => {
-                const isSelected = selectedTarget === p.name;
+                const isSelected = selectedTarget === p.id;
                 return (
                   <button
                     key={p.id}
-                    onClick={() => handleVote(p.name)}
+                    onClick={() => handleVote(p.id)}
                     className={`flex flex-col items-center gap-2 rounded-2xl border p-3 transition sm:gap-2.5 sm:p-4 ${
                       isSelected
                         ? 'border-spark-coral bg-[#fff0f3] ring-2 ring-spark-coral'
@@ -163,7 +173,7 @@ export default function MostLikelyToStage({
 
             <div className="mt-5 flex items-center justify-between text-xs text-[#6F6470]">
               <span>
-                {selectedTarget ? `You picked ${selectedTarget}.` : 'Tap someone above to lock in your vote.'}
+                {selectedTarget ? `You picked ${playerName(selectedTarget)}.` : 'Tap someone above to lock in your vote.'}
               </span>
 
               <button
@@ -185,7 +195,7 @@ export default function MostLikelyToStage({
                 <Crown className="h-6 w-6 shrink-0 text-spark-coral" />
                 <div>
                   <p className="text-sm font-bold text-dark-950">
-                    {winner[0]} won with {winner[1]} votes!
+                    {playerName(winner[0])} won with {winner[1]} {winner[1] === 1 ? 'vote' : 'votes'}!
                   </p>
                   <p className="text-xs text-[#6F6470]">
                     Ask them to explain how they feel about this title.
@@ -201,7 +211,7 @@ export default function MostLikelyToStage({
                   className="flex items-center justify-between rounded-xl border border-dark-950/10 bg-white px-3.5 py-2.5 text-xs"
                 >
                   <span className="font-semibold text-[#6F6470]">{players.find((person) => person.id === voter)?.name ?? voter} voted for:</span>
-                  <span className="font-bold text-spark-coral">{target}</span>
+                  <span className="font-bold text-spark-coral">{playerName(target)}</span>
                 </div>
               ))}
             </div>
@@ -213,7 +223,7 @@ export default function MostLikelyToStage({
       <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-dark-950/8 pt-5">
         <button
           onClick={() => {
-            const comment = `Why did so many people choose ${winner?.[0] ?? 'that'}?! 😂`;
+            const comment = `Why did so many people choose ${winner ? playerName(winner[0]) : 'that'}?! 😂`;
             if (onPromptChat) onPromptChat(comment);
             else onSendMessage(comment);
           }}
