@@ -80,6 +80,54 @@ class RoomViewSet(ReadOnlyModelViewSet):
         return Response({'data': {'room_code': membership.room.code, 'status': membership.disposition}}, status=status.HTTP_201_CREATED)
 
 
+class PrivateRoomDetailView(APIView):
+    """Return real private-room details only to someone still in that room."""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, room_id):
+        room = Room.objects.filter(
+            id=room_id,
+            is_discovery_room=False,
+            archived_at__isnull=True,
+        ).exclude(status=Room.Status.ENDED).first()
+        is_member = room and RoomMembership.objects.filter(
+            room=room, user=request.user, disposition=RoomMembership.Disposition.PRESENT,
+        ).exists()
+        if not is_member:
+            return Response({'detail': 'This private experience is unavailable.'}, status=status.HTTP_404_NOT_FOUND)
+        return Response(RoomSerializer(room).data)
+
+
+class RoomLeaveView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @transaction.atomic
+    def post(self, request, room_id):
+        membership = RoomMembership.objects.select_for_update().filter(
+            room_id=room_id, user=request.user, disposition=RoomMembership.Disposition.PRESENT,
+        ).first()
+        if not membership:
+            return Response({'detail': 'You are no longer in this room.'}, status=status.HTTP_404_NOT_FOUND)
+        membership.disposition = RoomMembership.Disposition.LEFT
+        membership.save(update_fields=('disposition',))
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class RoomEndView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @transaction.atomic
+    def post(self, request, room_id):
+        room = Room.objects.select_for_update().filter(id=room_id, created_by=request.user).first()
+        if not room:
+            return Response({'detail': 'Only the room host can end this experience.'}, status=status.HTTP_403_FORBIDDEN)
+        if room.status != Room.Status.ENDED:
+            room.status = Room.Status.ENDED
+            room.save(update_fields=('status',))
+            room.invites.filter(revoked_at__isnull=True, accepted_at__isnull=True).update(revoked_at=timezone.now())
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
 class CreatePrivateRoomView(APIView):
     permission_classes = [IsAuthenticated]
 

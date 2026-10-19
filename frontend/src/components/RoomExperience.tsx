@@ -87,6 +87,7 @@ export default function RoomExperience({
   const [joined, setJoined] = useState(alreadyJoined);
   const [joining, setJoining] = useState(false);
   const [joinError, setJoinError] = useState('');
+  const [roomAction, setRoomAction] = useState<'leaving' | 'ending' | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [wrapPeople, setWrapPeople] = useState<{ id: string; name: string; initial: string; is_you?: boolean; is_host?: boolean; ready?: boolean }[]>([]);
@@ -248,6 +249,34 @@ export default function RoomExperience({
   function handlePromptChat(promptText: string) {
     setChatOpen(true);
     sendChatMessage(promptText);
+  }
+
+  async function leaveRoom() {
+    if (!roomId) return router.push('/discover');
+    setRoomAction('leaving');
+    const token = await getAccessToken();
+    if (!token) return setRoomAction(null);
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_DUORA_API_URL ?? 'http://127.0.0.1:8000'}/api/v1/rooms/${roomId}/leave/`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
+      if (response.ok) return router.push('/discover');
+      setRoomAction(null);
+    } catch {
+      setRoomAction(null);
+    }
+  }
+
+  async function endRoom() {
+    if (!roomId) return setView('wrap');
+    setRoomAction('ending');
+    const token = await getAccessToken();
+    if (!token) return setRoomAction(null);
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_DUORA_API_URL ?? 'http://127.0.0.1:8000'}/api/v1/rooms/${roomId}/end/`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
+      if (response.ok) return setView('wrap');
+      setRoomAction(null);
+    } catch {
+      setRoomAction(null);
+    }
   }
 
   useEffect(() => {
@@ -601,7 +630,9 @@ export default function RoomExperience({
       onSelectTemplate={isRoomHost ? selectTemplate : undefined}
       onReaction={sendReaction}
       onSendMessage={sendChatMessage}
-      onEndRoom={() => setView('wrap')}
+      onLeaveRoom={() => void leaveRoom()}
+      onEndRoom={() => void endRoom()}
+      roomAction={roomAction}
       events={roomEvents}
       chatOpen={chatOpen}
       onToggleChat={toggleChat}

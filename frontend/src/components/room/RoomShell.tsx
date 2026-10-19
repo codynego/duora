@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
 import {
   ArrowLeft,
   Heart,
@@ -34,7 +33,9 @@ interface RoomShellProps {
   onSelectTemplate?: (template: ExperienceTemplate) => void;
   onReaction: (kind: ReactionKind) => void;
   onSendMessage: (message: string) => void;
+  onLeaveRoom: () => void;
   onEndRoom: () => void;
+  roomAction?: 'leaving' | 'ending' | null;
   events: RoomEvent[];
   chatOpen: boolean;
   onToggleChat: () => void;
@@ -134,7 +135,9 @@ export default function RoomShell({
   onSelectTemplate,
   onReaction,
   onSendMessage,
+  onLeaveRoom,
   onEndRoom,
+  roomAction = null,
   events,
   chatOpen,
   onToggleChat,
@@ -198,13 +201,15 @@ export default function RoomShell({
       {/* Top Header */}
       <header className="z-20 grid shrink-0 grid-cols-[minmax(0,1fr)_auto] grid-rows-[auto_auto] items-center gap-x-2 gap-y-2 border-b border-white/8 px-3 py-2.5 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:grid-rows-1 sm:gap-3 sm:px-6 sm:py-3">
         <div className="col-start-1 row-start-1 flex min-w-0 items-center gap-2 sm:col-auto sm:row-auto sm:gap-3">
-          <Link
-            href="/discover"
-            className="inline-flex items-center gap-1.5 rounded-full bg-white/8 px-3 py-1.5 text-xs font-semibold text-white/80 transition hover:bg-white/15"
+          <button
+            type="button"
+            onClick={onLeaveRoom}
+            disabled={roomAction !== null}
+            className="inline-flex items-center gap-1.5 rounded-full bg-white/8 px-3 py-1.5 text-xs font-semibold text-white/80 transition hover:bg-white/15 disabled:cursor-wait disabled:opacity-60"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Leave</span>
-          </Link>
+            <span className="hidden sm:inline">{roomAction === 'leaving' ? 'Leaving…' : 'Leave'}</span>
+          </button>
 
           <div className="hidden sm:block h-4 w-px bg-white/12" />
 
@@ -343,12 +348,7 @@ export default function RoomShell({
         {/* Right Exit / More */}
         <div className="col-start-2 row-start-1 flex shrink-0 items-center justify-end gap-1.5 sm:col-auto sm:row-auto sm:gap-2">
           {isHost && onSetTopic && <button aria-label="Set topic" onClick={onSetTopic} className="inline-flex items-center gap-1.5 rounded-full border border-spark-coral/40 bg-spark-coral/10 px-2.5 py-1.5 text-xs font-semibold text-spark-rose transition hover:bg-spark-coral/20 sm:px-3"><Pencil className="h-3.5 w-3.5" /><span className="hidden sm:inline">Set topic</span></button>}
-          <button
-            onClick={onEndRoom}
-            className="rounded-full bg-white/8 px-3 py-1.5 text-xs font-semibold text-white/80 transition hover:bg-white/15"
-          >
-            End
-          </button>
+          {isHost && <button onClick={onEndRoom} disabled={roomAction !== null} className="rounded-full bg-white/8 px-3 py-1.5 text-xs font-semibold text-white/80 transition hover:bg-white/15 disabled:cursor-wait disabled:opacity-60">{roomAction === 'ending' ? 'Ending…' : 'End for everyone'}</button>}
         </div>
       </header>
 
