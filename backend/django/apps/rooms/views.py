@@ -312,9 +312,10 @@ class RoomNextStepView(APIView):
         mutual = RoomNextStep.objects.filter(room=room, user_id=target.user_id, participant=request.user, choice=choice).exists()
         thread_id = None
         if mutual and choice == RoomNextStep.Choice.CONTINUE_CHAT:
-            from apps.connections.models import ConnectionRequest, ConnectionThread
+            from apps.connections.models import ConnectionRequest
+            from apps.connections.services import canonical_thread_for_users
             one, two = sorted((request.user.id, target.user_id))
-            thread, _ = ConnectionThread.objects.get_or_create(room=room, user_one_id=one, user_two_id=two)
+            thread = canonical_thread_for_users(one, two)
             existing_connection = ConnectionRequest.objects.filter(
                 (Q(requester_id=one, recipient_id=two) | Q(requester_id=two, recipient_id=one))
             ).first()

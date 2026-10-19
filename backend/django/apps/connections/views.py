@@ -9,6 +9,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from .models import ConnectionRequest, ConnectionThread, ThreadMessage
 from .serializers import ConnectionCreateSerializer, ConnectionRequestSerializer
+from .services import canonical_thread_for_users
 from apps.moderation.models import SafetyExclusion
 from apps.rooms.models import Room, RoomMembership, RoomNextStep
 
@@ -86,10 +87,7 @@ class ConnectionThreadStartView(APIView):
         other_id = connection.recipient_id if connection.requester_id == request.user.id else connection.requester_id
         if SafetyExclusion.objects.filter(Q(user=request.user, excluded_user_id=other_id) | Q(user_id=other_id, excluded_user=request.user)).exists():
             return Response({'detail': 'This connection is not available for chat.'}, status=status.HTTP_403_FORBIDDEN)
-        one, two = sorted((request.user.id, other_id))
-        thread = ConnectionThread.objects.filter(room__isnull=True, user_one_id=one, user_two_id=two).first()
-        if not thread:
-            thread = ConnectionThread.objects.create(user_one_id=one, user_two_id=two)
+        thread = canonical_thread_for_users(request.user.id, other_id)
         return Response({'data': {'id': str(thread.id)}}, status=status.HTTP_201_CREATED)
 
 
@@ -97,12 +95,15 @@ class ThreadsView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        threads = ConnectionThread.objects.filter(user_one=request.user) | ConnectionThread.objects.filter(user_two=request.user)
+        threads = list(ConnectionThread.objects.filter(user_one=request.user) | ConnectionThread.objects.filter(user_two=request.user))
+        canonical_ids = set()
+        for thread in threads:
+            canonical_ids.add(canonical_thread_for_users(thread.user_one_id, thread.user_two_id).id)
         data = []
-        for thread in threads.select_related('user_one', 'user_two', 'room').prefetch_related('messages'):
+        for thread in ConnectionThread.objects.filter(id__in=canonical_ids).select_related('user_one', 'user_two').prefetch_related('messages'):
             person = thread.user_two if thread.user_one_id == request.user.id else thread.user_one
             latest = thread.messages.last()
-            data.append({'id': str(thread.id), 'person': {'id': str(person.id), 'name': person.get_full_name().strip() or person.username, 'initial': (person.get_full_name().strip() or person.username)[:1].upper()}, 'room': thread.room.title if thread.room else None, 'last_message': latest.body if latest else None, 'last_message_at': thread.last_message_at})
+            data.append({'id': str(thread.id), 'person': {'id': str(person.id), 'name': person.get_full_name().strip() or person.username, 'initial': (person.get_full_name().strip() or person.username)[:1].upper()}, 'room': None, 'last_message': latest.body if latest else None, 'last_message_at': thread.last_message_at})
         return Response({'data': data})
 
 
@@ -116,7 +117,7 @@ class ThreadMessageView(APIView):
         other_id = thread.user_two_id if thread.user_one_id == user.id else thread.user_one_id
         if SafetyExclusion.objects.filter(Q(user=user, excluded_user_id=other_id) | Q(user_id=other_id, excluded_user=user)).exists():
             return None
-        return thread
+        return canonical_thread_for_users(thread.user_one_id, thread.user_two_id)
 
     def get(self, request, thread_id):
         thread = self._thread(thread_id, request.user)
