@@ -9,7 +9,7 @@ import {
   ArrowRight,
   TrendingUp,
 } from 'lucide-react';
-import { BaseStageProps } from '../types';
+import { BaseStageProps, currentPlayerId } from '../types';
 
 type TakeReaction = 'agree' | 'disagree' | 'depends';
 
@@ -50,22 +50,21 @@ export default function QuickTakesStage({
   onGameStateChange,
 }: BaseStageProps) {
   const takeIndex = typeof gameState.takeIndex === 'number' ? gameState.takeIndex : 0;
-  const myReaction = gameState.myReaction === 'agree' || gameState.myReaction === 'disagree' || gameState.myReaction === 'depends' ? gameState.myReaction : null;
+  const playerId = currentPlayerId(participants);
+  const allReactions: Record<string, TakeReaction> = { ...((gameState.reactions as Record<string, TakeReaction> | undefined) ?? {}) };
+  const myReaction = allReactions[playerId] ?? null;
 
   const currentTake = QUICK_TAKES[takeIndex % QUICK_TAKES.length];
   const customTopic = typeof gameState.customTopic === 'string' && gameState.customTopic.trim() ? gameState.customTopic : null;
   const totalTakes = QUICK_TAKES.length;
 
   const handleReact = (reaction: TakeReaction) => {
-    onGameStateChange?.({ ...gameState, takeIndex, myReaction: reaction, reactions: { ...(gameState.reactions as Record<string, TakeReaction> | undefined), You: reaction } });
+    onGameStateChange?.({ ...gameState, takeIndex, reactions: { ...allReactions, [playerId]: reaction } });
   };
 
   const handleNextTake = () => {
-    onGameStateChange?.({ ...gameState, takeIndex: (takeIndex + 1) % totalTakes, myReaction: null, reactions: {} });
-  };
-
-  const allReactions: Record<string, TakeReaction> = {
-    ...((gameState.reactions as Record<string, TakeReaction> | undefined) ?? {}),
+    if (!isHost) return;
+    onGameStateChange?.({ ...gameState, takeIndex: (takeIndex + 1) % totalTakes, reactions: {} });
   };
 
   const counts = Object.values(allReactions).reduce(
@@ -79,7 +78,7 @@ export default function QuickTakesStage({
   const total = Object.keys(allReactions).length;
 
   return (
-    <section className="flex min-h-full w-full flex-col overflow-y-auto rounded-[28px] bg-[#fffdfa] p-5 text-dark-950 shadow-[0_20px_60px_rgba(0,0,0,.2)] sm:rounded-[32px] sm:p-8 lg:p-10">
+    <section className="game-stage game-stage--quick flex min-h-full w-full flex-col overflow-y-auto rounded-[28px] bg-[#fffdfa] p-5 text-dark-950 shadow-[0_20px_60px_rgba(0,0,0,.2)] sm:rounded-[32px] sm:p-8 lg:p-10">
       {/* Header */}
       <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 pb-4">
         <span className="inline-flex items-center gap-1.5 rounded-full bg-[#fff0f3] px-3 py-1 text-xs font-bold tracking-wider text-spark-coral">
@@ -147,26 +146,26 @@ export default function QuickTakesStage({
 
             <div className="mt-2 flex h-3.5 overflow-hidden rounded-full bg-dark-950/10">
               <div
-                style={{ width: `${(counts.agree / total) * 100}%` }}
+                style={{ width: `${total ? (counts.agree / total) * 100 : 0}%` }}
                 className="bg-[#4d8568] transition-all"
                 title={`Agree: ${counts.agree}`}
               />
               <div
-                style={{ width: `${(counts.disagree / total) * 100}%` }}
+                style={{ width: `${total ? (counts.disagree / total) * 100 : 0}%` }}
                 className="bg-spark-coral transition-all"
                 title={`Disagree: ${counts.disagree}`}
               />
               <div
-                style={{ width: `${(counts.depends / total) * 100}%` }}
+                style={{ width: `${total ? (counts.depends / total) * 100 : 0}%` }}
                 className="bg-spark-amber transition-all"
                 title={`Depends: ${counts.depends}`}
               />
             </div>
 
             <div className="mt-2 flex justify-between text-[11px] text-[#6F6470]">
-              <span className="text-[#3b7d56] font-bold">Agree {Math.round((counts.agree / total) * 100)}%</span>
-              <span className="text-spark-coral font-bold">Disagree {Math.round((counts.disagree / total) * 100)}%</span>
-              <span className="text-[#b45309] font-bold">Depends {Math.round((counts.depends / total) * 100)}%</span>
+              <span className="text-[#3b7d56] font-bold">Agree {total ? Math.round((counts.agree / total) * 100) : 0}%</span>
+              <span className="text-spark-coral font-bold">Disagree {total ? Math.round((counts.disagree / total) * 100) : 0}%</span>
+              <span className="text-[#b45309] font-bold">Depends {total ? Math.round((counts.depends / total) * 100) : 0}%</span>
             </div>
           </div>
         )}
@@ -180,9 +179,10 @@ export default function QuickTakesStage({
 
         <button
           onClick={handleNextTake}
+          disabled={!isHost}
           className="inline-flex items-center gap-2 rounded-full bg-dark-950 px-5 py-2.5 text-xs font-bold text-white transition hover:bg-dark-900"
         >
-          <span>Next take</span>
+          <span>{isHost ? 'Next take' : 'Host controls next take'}</span>
           <ArrowRight className="h-4 w-4" />
         </button>
       </div>

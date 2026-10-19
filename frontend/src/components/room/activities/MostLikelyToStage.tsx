@@ -10,7 +10,7 @@ import {
   Crown,
   Smile,
 } from 'lucide-react';
-import { BaseStageProps } from '../types';
+import { BaseStageProps, currentPlayerId } from '../types';
 
 interface MostLikelyPrompt {
   id: string;
@@ -48,22 +48,24 @@ export default function MostLikelyToStage({
   const roundIndex = typeof gameState.roundIndex === 'number' ? gameState.roundIndex : 0;
   const phase = gameState.phase === 'revealed' ? 'revealed' : 'voting';
   const votes = (gameState.votes && typeof gameState.votes === 'object' ? gameState.votes : {}) as Record<string, string>;
-  const selectedTarget = votes.You ?? null;
+  const playerId = currentPlayerId(participants);
+  const selectedTarget = votes[playerId] ?? null;
 
   const currentPrompt = PROMPTS[roundIndex % PROMPTS.length];
   const players = participants.length ? participants : [{ id: 'you', name: 'You', initial: 'Y', color: '#F05A78', isYou: true }];
   const totalRounds = PROMPTS.length;
 
   const handleVote = (name: string) => {
-    onGameStateChange?.({ ...gameState, roundIndex, phase: 'voting', votes: { ...votes, You: name } });
+    onGameStateChange?.({ ...gameState, roundIndex, phase: 'voting', votes: { ...votes, [playerId]: name } });
   };
 
   const handleReveal = () => {
+    if (!isHost) return;
     onGameStateChange?.({ ...gameState, roundIndex, phase: 'revealed', votes });
-    window.setTimeout(() => onGameStateChange?.({ ...gameState, roundIndex: (roundIndex + 1) % totalRounds, phase: 'voting', votes: {} }), 900);
   };
 
   const handleNextRound = () => {
+    if (!isHost) return;
     onGameStateChange?.({ ...gameState, roundIndex: (roundIndex + 1) % totalRounds, phase: 'voting', votes: {} });
   };
 
@@ -81,7 +83,7 @@ export default function MostLikelyToStage({
   const winner = sortedCandidates[0];
 
   return (
-    <section className="flex h-full min-h-0 flex-1 flex-col justify-between overflow-hidden rounded-[32px] bg-[#fffdfa] p-6 text-dark-950 shadow-[0_20px_60px_rgba(0,0,0,.2)] sm:p-9 lg:p-11">
+    <section className="game-stage game-stage--most-likely flex h-full min-h-0 flex-1 flex-col justify-between overflow-hidden rounded-[32px] bg-[#fffdfa] p-6 text-dark-950 shadow-[0_20px_60px_rgba(0,0,0,.2)] sm:p-9 lg:p-11">
       {/* Top Banner */}
       <div className="flex shrink-0 items-center justify-between gap-4 border-b border-dark-950/8 pb-4">
         <div className="flex items-center gap-2">
@@ -160,9 +162,10 @@ export default function MostLikelyToStage({
 
               <button
                 onClick={handleReveal}
+                disabled={!isHost}
                 className="font-bold text-spark-coral hover:underline"
               >
-                Reveal votes now →
+                {isHost ? 'Reveal votes now →' : 'Waiting for the host to reveal →'}
               </button>
             </div>
           </div>
@@ -191,7 +194,7 @@ export default function MostLikelyToStage({
                   key={voter}
                   className="flex items-center justify-between rounded-xl border border-dark-950/10 bg-white px-3.5 py-2.5 text-xs"
                 >
-                  <span className="font-semibold text-[#6F6470]">{voter} voted for:</span>
+                  <span className="font-semibold text-[#6F6470]">{players.find((person) => person.id === voter)?.name ?? voter} voted for:</span>
                   <span className="font-bold text-spark-coral">{target}</span>
                 </div>
               ))}
@@ -216,9 +219,10 @@ export default function MostLikelyToStage({
 
         <button
           onClick={handleNextRound}
+          disabled={!isHost}
           className="inline-flex items-center gap-2 rounded-full bg-dark-950 px-5 py-2.5 text-xs font-bold text-white transition hover:bg-dark-900"
         >
-          <span>Next question</span>
+          <span>{isHost ? 'Next question' : 'Host controls next question'}</span>
           <ArrowRight className="h-4 w-4" />
         </button>
       </div>

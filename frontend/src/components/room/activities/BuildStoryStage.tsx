@@ -36,6 +36,7 @@ export default function BuildStoryStage({
 
   const handleAddSentence = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
+    if (!isMyTurn) return;
     const text = mySentence.trim();
     if (!text) return;
 
@@ -53,12 +54,13 @@ export default function BuildStoryStage({
   };
 
   const handleFinish = () => {
+    if (!isHost) return;
     onGameStateChange?.({ ...gameState, story, finished: true });
     onSendReaction('cheer');
   };
 
   return (
-    <section className="flex h-full min-h-0 flex-1 flex-col justify-between overflow-hidden rounded-[32px] bg-[#fffdfa] p-6 text-dark-950 shadow-[0_20px_60px_rgba(0,0,0,.2)] sm:p-9 lg:p-11">
+    <section className="game-stage game-stage--story flex h-full min-h-0 flex-1 flex-col justify-between overflow-hidden rounded-[32px] bg-[#fffdfa] p-6 text-dark-950 shadow-[0_20px_60px_rgba(0,0,0,.2)] sm:p-9 lg:p-11">
       {/* Header */}
       <div className="flex shrink-0 items-center justify-between gap-4 border-b border-dark-950/8 pb-4">
         <div className="flex items-center gap-2">
@@ -73,6 +75,7 @@ export default function BuildStoryStage({
 
         <button
           onClick={handleFinish}
+          disabled={!isHost || finished}
           className="text-xs font-bold text-spark-coral hover:underline"
         >
           {finished ? 'Finished story' : 'Review full story'}

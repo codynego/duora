@@ -11,7 +11,7 @@ import {
   MessageSquare,
   Lock,
 } from 'lucide-react';
-import { BaseStageProps } from '../types';
+import { BaseStageProps, currentPlayerId } from '../types';
 
 type Stance = 'agree' | 'disagree' | 'depends';
 
@@ -55,25 +55,25 @@ export default function DebateStage({
 }: BaseStageProps) {
   const statementIndex = typeof gameState.statementIndex === 'number' ? gameState.statementIndex : 0;
   const phase = gameState.phase === 'revealed' || gameState.phase === 'discussion' ? gameState.phase : 'voting';
-  const myStance = gameState.myStance === 'agree' || gameState.myStance === 'disagree' || gameState.myStance === 'depends' ? gameState.myStance : null;
+  const playerId = currentPlayerId(participants);
+  const allVotes: Record<string, Stance> = { ...((gameState.votes as Record<string, Stance> | undefined) ?? {}) };
+  const myStance = allVotes[playerId] ?? null;
 
   const currentStatement = STATEMENTS[statementIndex % STATEMENTS.length];
   const customTopic = typeof gameState.customTopic === 'string' && gameState.customTopic.trim() ? gameState.customTopic : null;
 
   const handleSelectStance = (stance: Stance) => {
-    onGameStateChange?.({ ...gameState, statementIndex, phase: 'voting', votes: { ...(gameState.votes as Record<string, Stance> | undefined), You: stance }, myStance: stance });
+    onGameStateChange?.({ ...gameState, statementIndex, phase: 'voting', votes: { ...allVotes, [playerId]: stance } });
   };
 
   const handleReveal = () => {
-    onGameStateChange?.({ ...gameState, statementIndex, phase: 'revealed', myStance });
+    if (!isHost) return;
+    onGameStateChange?.({ ...gameState, statementIndex, phase: 'revealed' });
   };
 
   const handleNextStatement = () => {
-    onGameStateChange?.({ ...gameState, statementIndex: (statementIndex + 1) % STATEMENTS.length, phase: 'voting', myStance: null, votes: {} });
-  };
-
-  const allVotes: Record<string, Stance> = {
-    ...((gameState.votes as Record<string, Stance> | undefined) ?? {}),
+    if (!isHost) return;
+    onGameStateChange?.({ ...gameState, statementIndex: (statementIndex + 1) % STATEMENTS.length, phase: 'voting', votes: {} });
   };
 
   const voteCounts = Object.values(allVotes).reduce(
@@ -87,7 +87,7 @@ export default function DebateStage({
   const totalVotes = Object.keys(allVotes).length;
 
   return (
-    <section className="flex min-h-full w-full flex-col overflow-y-auto rounded-[28px] bg-[#fffdfa] p-5 text-dark-950 shadow-[0_20px_60px_rgba(0,0,0,.2)] sm:rounded-[32px] sm:p-8 lg:p-10">
+    <section className="game-stage game-stage--debate flex min-h-full w-full flex-col overflow-y-auto rounded-[28px] bg-[#fffdfa] p-5 text-dark-950 shadow-[0_20px_60px_rgba(0,0,0,.2)] sm:rounded-[32px] sm:p-8 lg:p-10">
       {/* Top Header */}
       <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 pb-4">
         <div className="flex items-center gap-2">
@@ -180,9 +180,10 @@ export default function DebateStage({
 
               <button
                 onClick={handleReveal}
+                disabled={!isHost}
                 className="font-bold text-spark-coral hover:underline"
               >
-                Reveal group positions now →
+                {isHost ? 'Reveal group positions now →' : 'Waiting for the host to reveal →'}
               </button>
             </div>
           </div>
@@ -301,9 +302,10 @@ export default function DebateStage({
 
         <button
           onClick={handleNextStatement}
+          disabled={!isHost}
           className="inline-flex items-center gap-2 rounded-full bg-dark-950 px-5 py-2.5 text-xs font-bold text-white transition hover:bg-dark-900"
         >
-          <span>Next statement</span>
+          <span>{isHost ? 'Next statement' : 'Host controls next statement'}</span>
           <ArrowRight className="h-4 w-4" />
         </button>
       </div>

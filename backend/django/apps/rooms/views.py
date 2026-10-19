@@ -207,7 +207,20 @@ class RoomGameStateView(APIView):
         next_state = request.data.get('state')
         if not isinstance(next_state, dict):
             raise ValidationError({'state': 'Game state must be an object.'})
-        state.state = next_state
+
+        current_state = state.state if isinstance(state.state, dict) else {}
+        map_keys = {'answers', 'submissions', 'votes', 'predictions', 'reactions', 'scores'}
+        advance_keys = {'questionIndex', 'statementIndex', 'takeIndex', 'roundIndex', 'round', 'turnIndex', 'chapter'}
+        advances_round = any(key in next_state and next_state.get(key) != current_state.get(key) for key in advance_keys)
+        merged_state = dict(current_state)
+        for key, value in next_state.items():
+            if key in map_keys and isinstance(value, dict) and isinstance(current_state.get(key), dict):
+                # Player actions merge by participant key, while an explicit
+                # empty map on a new prompt/round clears the old responses.
+                merged_state[key] = value if advances_round and not value else {**current_state[key], **value}
+            else:
+                merged_state[key] = value
+        state.state = merged_state
         state.save(update_fields=('state', 'updated_at'))
         return Response({'data': state.state, 'updated_at': state.updated_at})
 

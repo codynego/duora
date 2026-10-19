@@ -11,7 +11,7 @@ import {
   Lock,
   UserCheck,
 } from 'lucide-react';
-import { BaseStageProps } from '../types';
+import { BaseStageProps, currentPlayerId } from '../types';
 
 interface GuessQuestion {
   id: string;
@@ -42,6 +42,7 @@ const GUESS_QUESTIONS: GuessQuestion[] = [
 ];
 
 export default function GuessMyAnswerStage({
+  roomId,
   roomName,
   isHost,
   participants,
@@ -52,7 +53,10 @@ export default function GuessMyAnswerStage({
 }: BaseStageProps) {
   const questionIndex = typeof gameState.questionIndex === 'number' ? gameState.questionIndex : 0;
   const phase = gameState.phase === 'revealed' ? 'revealed' : 'predicting';
-  const myPrediction = typeof gameState.myPrediction === 'string' ? gameState.myPrediction : null;
+  const playerId = currentPlayerId(participants);
+  const predictions = (gameState.predictions && typeof gameState.predictions === 'object' ? gameState.predictions : {}) as Record<string, string>;
+  const answers = (gameState.answers && typeof gameState.answers === 'object' ? gameState.answers : {}) as Record<string, string>;
+  const myPrediction = predictions[playerId] ?? null;
 
   const currentQ = GUESS_QUESTIONS[questionIndex % GUESS_QUESTIONS.length];
   const targetPlayers = participants.filter((person) => !person.isYou);
@@ -60,26 +64,28 @@ export default function GuessMyAnswerStage({
   const targetName = target.name;
   const questionText = currentQ.question.replace('{name}', targetName);
   const isTarget = Boolean(target.isYou);
+  const actualAnswer = answers[target.id] ?? (!roomId ? currentQ.correctAnswer : null);
 
   const handleSelectOption = (opt: string) => {
-    onGameStateChange?.({ ...gameState, questionIndex, phase: 'predicting', myPrediction: opt, predictions: { ...(gameState.predictions as Record<string, string> | undefined), You: opt } });
+    if (isTarget) {
+      onGameStateChange?.({ ...gameState, questionIndex, phase: 'predicting', answers: { ...answers, [target.id]: opt } });
+      return;
+    }
+    onGameStateChange?.({ ...gameState, questionIndex, phase: 'predicting', predictions: { ...predictions, [playerId]: opt } });
   };
 
   const handleReveal = () => {
+    if (!isHost || !actualAnswer) return;
     onGameStateChange?.({ ...gameState, questionIndex, phase: 'revealed' });
-    window.setTimeout(() => onGameStateChange?.({ ...gameState, questionIndex: (questionIndex + 1) % GUESS_QUESTIONS.length, phase: 'predicting', myPrediction: null, predictions: {} }), 900);
   };
 
   const handleNextRound = () => {
-    onGameStateChange?.({ ...gameState, questionIndex: (questionIndex + 1) % GUESS_QUESTIONS.length, phase: 'predicting', myPrediction: null, predictions: {} });
-  };
-
-  const allPredictions: Record<string, string> = {
-    ...((gameState.predictions as Record<string, string> | undefined) ?? {}),
+    if (!isHost) return;
+    onGameStateChange?.({ ...gameState, questionIndex: (questionIndex + 1) % GUESS_QUESTIONS.length, phase: 'predicting', predictions: {}, answers: {} });
   };
 
   return (
-    <section className="flex h-full min-h-0 flex-1 flex-col justify-between overflow-hidden rounded-[32px] bg-[#fffdfa] p-6 text-dark-950 shadow-[0_20px_60px_rgba(0,0,0,.2)] sm:p-9 lg:p-11">
+    <section className="game-stage game-stage--guess flex h-full min-h-0 flex-1 flex-col justify-between overflow-hidden rounded-[32px] bg-[#fffdfa] p-6 text-dark-950 shadow-[0_20px_60px_rgba(0,0,0,.2)] sm:p-9 lg:p-11">
       {/* Header */}
       <div className="flex shrink-0 items-center justify-between gap-4 border-b border-dark-950/8 pb-4">
         <div className="flex items-center gap-2">
@@ -126,8 +132,8 @@ export default function GuessMyAnswerStage({
         {/* Option Grid */}
         <div className="mt-6 grid gap-2.5 sm:grid-cols-2">
           {currentQ.options.map((option) => {
-            const isSelected = myPrediction === option;
-            const isCorrect = phase === 'revealed' && option === currentQ.correctAnswer;
+            const isSelected = isTarget ? actualAnswer === option : myPrediction === option;
+            const isCorrect = phase === 'revealed' && option === actualAnswer;
             const isWrongGuess = phase === 'revealed' && isSelected && !isCorrect;
 
             return (
@@ -165,20 +171,19 @@ export default function GuessMyAnswerStage({
 
         {/* Phase 1: Action Prompt */}
         {phase === 'predicting' && (
-          <div className="mt-6 flex items-center justify-between text-xs text-[#6F6470]">
+          <div className="mt-6 flex items-center justify-between gap-3 text-xs text-[#6F6470]">
             <span>
-              {myPrediction
-                ? isTarget
-                  ? 'Your true answer is locked in.'
-                  : 'Your prediction is locked in.'
-                : 'Choose an option to lock in.'}
+              {isTarget
+                ? actualAnswer ? 'Your true answer is locked in.' : 'Choose your true answer.'
+                : myPrediction ? 'Your prediction is locked in.' : 'Choose an option to lock in.'}
             </span>
 
             <button
               onClick={handleReveal}
-              className="font-bold text-spark-coral hover:underline"
+              disabled={!isHost || !actualAnswer}
+              className="font-bold text-spark-coral hover:underline disabled:cursor-not-allowed disabled:opacity-40"
             >
-              Reveal answer & matches →
+              {isHost ? 'Reveal answer & matches →' : 'Waiting for the host to reveal →'}
             </button>
           </div>
         )}
@@ -190,8 +195,8 @@ export default function GuessMyAnswerStage({
               Who knew {targetName} best?
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
-              {Object.entries(allPredictions).map(([player, guess]) => {
-                const matched = guess === currentQ.correctAnswer;
+              {Object.entries(predictions).map(([player, guess]) => {
+                const matched = guess === actualAnswer;
                 return (
                   <span
                     key={player}
@@ -202,7 +207,7 @@ export default function GuessMyAnswerStage({
                     }`}
                   >
                     {matched ? <Check className="h-3.5 w-3.5 text-[#3b7d56]" /> : <X className="h-3.5 w-3.5 text-[#6F6470]" />}
-                    {player}: {guess}
+                    {participants.find((person) => person.id === player)?.name ?? player}: {guess}
                   </span>
                 );
               })}
@@ -219,9 +224,10 @@ export default function GuessMyAnswerStage({
 
         <button
           onClick={handleNextRound}
+          disabled={!isHost}
           className="inline-flex items-center gap-2 rounded-full bg-dark-950 px-5 py-2.5 text-xs font-bold text-white transition hover:bg-dark-900"
         >
-          <span>Next person</span>
+          <span>{isHost ? 'Next person' : 'Host controls next person'}</span>
           <ArrowRight className="h-4 w-4" />
         </button>
       </div>

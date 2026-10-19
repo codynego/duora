@@ -96,7 +96,7 @@ export default function OpenConversationStage({
   };
 
   return (
-    <section className="flex min-h-full w-full flex-col overflow-y-auto rounded-[28px] bg-[#fffdfa] p-5 text-dark-950 shadow-[0_20px_60px_rgba(0,0,0,.2)] sm:rounded-[32px] sm:p-8 lg:p-10">
+    <section className="game-stage game-stage--open flex min-h-full w-full flex-col overflow-y-auto rounded-[28px] bg-[#fffdfa] p-5 text-dark-950 shadow-[0_20px_60px_rgba(0,0,0,.2)] sm:rounded-[32px] sm:p-8 lg:p-10">
       {/* Editorial Header */}
       <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 pb-4">
         <div className="flex items-center gap-2">

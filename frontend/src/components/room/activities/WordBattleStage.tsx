@@ -19,6 +19,7 @@ const WORD_CHALLENGES: WordChallenge[] = [
 ];
 
 export default function WordBattleStage({
+  isHost,
   participants,
   onSendMessage,
   onSendReaction,
@@ -46,9 +47,11 @@ export default function WordBattleStage({
   const feedback = typeof gameState.feedback === 'string' ? gameState.feedback : localFeedback;
 
   useEffect(() => {
-    if (turnStartedAt || !onGameStateChange) return;
+    // Only the host initializes the shared clock. If every browser initializes
+    // it independently, the last poller wins and the turn/score state jumps.
+    if (turnStartedAt || !onGameStateChange || (!isHost && roster.length > 1)) return;
     onGameStateChange({ ...gameState, round, turnIndex: 0, turnStartedAt: Date.now(), scores: {} });
-  }, [gameState, onGameStateChange, round, turnStartedAt]);
+  }, [gameState, isHost, onGameStateChange, round, roster.length, turnStartedAt]);
 
   useEffect(() => {
     if (!turnStartedAt) return;
@@ -98,7 +101,7 @@ export default function WordBattleStage({
   }
 
   return (
-    <section className="flex min-h-full w-full flex-col overflow-y-auto rounded-[28px] bg-[#fffdfa] p-5 text-dark-950 shadow-[0_20px_60px_rgba(0,0,0,.2)] sm:rounded-[32px] sm:p-8 lg:p-10">
+    <section className="game-stage game-stage--word flex min-h-full w-full flex-col overflow-y-auto rounded-[28px] bg-[#fffdfa] p-5 text-dark-950 shadow-[0_20px_60px_rgba(0,0,0,.2)] sm:rounded-[32px] sm:p-8 lg:p-10">
       <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 pb-4">
         <span className="inline-flex items-center gap-1.5 rounded-full bg-[#fff0f3] px-3 py-1 text-xs font-bold tracking-wider text-spark-coral"><Zap className="h-3.5 w-3.5" />WORD BATTLE · ROUND {round + 1}</span>
         <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold ${secondsLeft <= 3 ? 'bg-[#fff0f3] text-spark-coral' : 'bg-dark-950/8 text-dark-950'}`}><Timer className="h-3.5 w-3.5" />{secondsLeft}s</span>

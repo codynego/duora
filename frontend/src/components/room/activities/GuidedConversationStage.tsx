@@ -11,7 +11,7 @@ import {
   Sparkles,
   CheckCircle2,
 } from 'lucide-react';
-import { BaseStageProps } from '../types';
+import { BaseStageProps, currentPlayerId } from '../types';
 
 interface QuestionItem {
   id: string;
@@ -68,6 +68,7 @@ const QUESTIONS: QuestionItem[] = [
 ];
 
 export default function GuidedConversationStage({
+  roomId,
   roomName,
   isHost,
   participants,
@@ -79,7 +80,10 @@ export default function GuidedConversationStage({
   const questionIndex = typeof gameState.questionIndex === 'number' ? gameState.questionIndex : 0;
   const phase = gameState.phase === 'revealed' ? 'revealed' : 'responding';
   const [myAnswer, setMyAnswer] = useState('');
-  const submitted = Boolean(gameState.submitted);
+  const playerId = currentPlayerId(participants);
+  const submissions = (gameState.submissions && typeof gameState.submissions === 'object' ? gameState.submissions : {}) as Record<string, boolean>;
+  const answers = (gameState.answers && typeof gameState.answers === 'object' ? gameState.answers : {}) as Record<string, string>;
+  const submitted = Boolean(submissions[playerId]);
   const [showDeeperPrompt, setShowDeeperPrompt] = useState(false);
   const [selectedResponseName, setSelectedResponseName] = useState<string | null>(null);
 
@@ -95,17 +99,23 @@ export default function GuidedConversationStage({
 
   const handleSubmitMyAnswer = () => {
     if (!myAnswer.trim()) return;
-    onGameStateChange?.({ ...gameState, questionIndex, phase: 'responding', submitted: true });
-    // In real room socket, dispatch answer.saved.
-    // When all are ready or host triggers reveal:
+    onGameStateChange?.({
+      ...gameState,
+      questionIndex,
+      phase: 'responding',
+      submissions: { ...submissions, [playerId]: true },
+      answers: { ...answers, [playerId]: myAnswer.trim() },
+    });
   };
 
   const handleRevealAll = () => {
-    onGameStateChange?.({ ...gameState, questionIndex, phase: 'revealed', submitted });
+    if (!isHost) return;
+    onGameStateChange?.({ ...gameState, questionIndex, phase: 'revealed' });
   };
 
   const handleNextQuestion = () => {
-    onGameStateChange?.({ ...gameState, questionIndex: (questionIndex + 1) % totalQuestions, phase: 'responding', submitted: false });
+    if (!isHost) return;
+    onGameStateChange?.({ ...gameState, questionIndex: (questionIndex + 1) % totalQuestions, phase: 'responding', submissions: {}, answers: {} });
     setMyAnswer('');
     setShowDeeperPrompt(false);
     setSelectedResponseName(null);
@@ -125,7 +135,7 @@ export default function GuidedConversationStage({
   };
 
   return (
-    <section className="flex min-h-full w-full flex-col overflow-y-auto rounded-[28px] bg-[#fffdfa] p-5 text-dark-950 shadow-[0_20px_60px_rgba(0,0,0,.2)] sm:rounded-[32px] sm:p-8 lg:p-10">
+    <section className="game-stage game-stage--guided flex min-h-full w-full flex-col overflow-y-auto rounded-[28px] bg-[#fffdfa] p-5 text-dark-950 shadow-[0_20px_60px_rgba(0,0,0,.2)] sm:rounded-[32px] sm:p-8 lg:p-10">
       {/* Top Progress & Context */}
       <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 pb-4">
         <div className="flex items-center gap-3">
@@ -212,9 +222,10 @@ export default function GuidedConversationStage({
 
               <button
                 onClick={handleRevealAll}
+                disabled={!isHost}
                 className="font-bold text-spark-coral hover:underline"
               >
-                Reveal responses now →
+                {isHost ? 'Reveal responses now →' : 'Waiting for the host to reveal →'}
               </button>
             </div>
           </div>
@@ -227,10 +238,12 @@ export default function GuidedConversationStage({
               Room Responses:
             </p>
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
-              {Object.entries({
-                ...sampleResponses,
-                ...(myAnswer ? { You: myAnswer } : {}),
-              }).map(([name, ans]) => (
+              {Object.entries(participants.reduce<Record<string, string>>((responses, person, index) => {
+                const answer = answers[person.id];
+                if (answer) responses[person.isYou ? 'You' : person.name] = answer;
+                else if (!roomId && sampleResponses[person.isYou ? 'You' : person.name]) responses[person.isYou ? 'You' : person.name] = sampleResponses[person.isYou ? 'You' : person.name];
+                return responses;
+              }, {})).map(([name, ans]) => (
                 <div
                   key={name}
                   onClick={() => setSelectedResponseName(name)}
@@ -286,9 +299,10 @@ export default function GuidedConversationStage({
 
         <button
           onClick={handleNextQuestion}
+          disabled={!isHost}
           className="inline-flex items-center gap-2 rounded-full bg-spark-coral px-5 py-2.5 text-xs font-bold text-white transition hover:bg-spark-flame"
         >
-          <span>Next question</span>
+          <span>{isHost ? 'Next question' : 'Host controls next question'}</span>
           <ArrowRight className="h-4 w-4" />
         </button>
       </div>

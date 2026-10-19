@@ -12,8 +12,6 @@ import {
   MoreHorizontal,
   Send,
   Volume2,
-  Mic,
-  Video,
   X,
   Compass,
   Layers,
@@ -389,7 +387,7 @@ export default function RoomShell({
       </section>
 
       {/* Main Dynamic Stage Slot */}
-      <div className="relative mx-auto flex min-h-0 w-full max-w-5xl flex-1 flex-col overflow-hidden px-3 py-3 sm:px-6 sm:py-4">
+      <div className="room-stage-stage relative mx-auto flex min-h-0 w-full max-w-5xl flex-1 flex-col overflow-y-auto px-3 py-3 sm:px-6 sm:py-4">
         {children}
       </div>
 
@@ -589,23 +587,6 @@ export default function RoomShell({
           )}
         </button>
 
-        {/* Ambient Mic Status (Visual Placeholder) */}
-        <button
-          title="Microphone active"
-          aria-label="Microphone"
-          className="grid h-11 w-11 place-items-center rounded-full bg-white/8 text-white/80 hover:bg-white/16"
-        >
-          <Mic className="h-4 w-4" />
-        </button>
-
-        {/* Ambient Video Status (Visual Placeholder) */}
-        <button
-          title="Camera off"
-          aria-label="Camera"
-          className="grid h-11 w-11 place-items-center rounded-full bg-white/8 text-white/60 hover:bg-white/16"
-        >
-          <Video className="h-4 w-4" />
-        </button>
       </footer>
     </div>
   );

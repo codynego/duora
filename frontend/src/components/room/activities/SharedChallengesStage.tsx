@@ -10,14 +10,15 @@ import {
   UsersRound,
   PartyPopper,
 } from 'lucide-react';
-import { BaseStageProps } from '../types';
+import { BaseStageProps, currentPlayerId } from '../types';
 
 interface ChallengeTask {
   id: string;
   title: string;
   description: string;
-  completedByYou: boolean;
-  completedByPartner: boolean;
+  completedByYou?: boolean;
+  completedByPartner?: boolean;
+  completedBy?: Record<string, boolean>;
 }
 
 const INITIAL_TASKS: ChallengeTask[] = [
@@ -61,27 +62,30 @@ export default function SharedChallengesStage({
   onGameStateChange,
 }: BaseStageProps) {
   const tasks = Array.isArray(gameState.tasks) ? gameState.tasks as ChallengeTask[] : INITIAL_TASKS.map((task) => ({ ...task, completedByYou: false, completedByPartner: false }));
-  const partnerName = participants.find((person) => !person.isYou)?.name ?? 'your partner';
+  const playerId = currentPlayerId(participants);
+  const partner = participants.find((person) => !person.isYou);
+  const partnerName = partner?.name ?? 'your partner';
+  const isCompleteFor = (task: ChallengeTask, id: string) => task.completedBy?.[id] ?? (id === 'you' ? Boolean(task.completedByYou) : false);
 
   const toggleMyTask = (taskId: string) => {
     onGameStateChange?.({ ...gameState, tasks: tasks.map((t) => {
         if (t.id === taskId) {
-          const nextState = !t.completedByYou;
+          const nextState = !isCompleteFor(t, playerId);
           if (nextState) {
             onSendReaction('cheer');
             onSendMessage(`✅ You checked off: “${t.title}”`);
           }
-          return { ...t, completedByYou: nextState };
+          return { ...t, completedBy: { ...(t.completedBy ?? {}), [playerId]: nextState } };
         }
         return t;
       }) });
   };
 
-  const completedCount = tasks.filter((t) => t.completedByYou && t.completedByPartner).length;
+  const completedCount = tasks.filter((t) => isCompleteFor(t, playerId) && partner && isCompleteFor(t, partner.id)).length;
   const isAllComplete = completedCount === tasks.length;
 
   return (
-    <section className="flex h-full min-h-0 flex-1 flex-col justify-between overflow-hidden rounded-[32px] bg-[#fffdfa] p-6 text-dark-950 shadow-[0_20px_60px_rgba(0,0,0,.2)] sm:p-9 lg:p-11">
+    <section className="game-stage game-stage--shared flex h-full min-h-0 flex-1 flex-col justify-between overflow-hidden rounded-[32px] bg-[#fffdfa] p-6 text-dark-950 shadow-[0_20px_60px_rgba(0,0,0,.2)] sm:p-9 lg:p-11">
       {/* Top Header */}
       <div className="flex shrink-0 items-center justify-between gap-4 border-b border-dark-950/8 pb-4">
         <div className="flex items-center gap-2">
@@ -120,7 +124,9 @@ export default function SharedChallengesStage({
         {/* Task Cards */}
         <div className="mt-6 max-h-[42vh] space-y-2.5 overflow-y-auto pr-1">
           {tasks.map((task) => {
-            const mutual = task.completedByYou && task.completedByPartner;
+            const completedByMe = isCompleteFor(task, playerId);
+            const completedByPartner = partner ? isCompleteFor(task, partner.id) : false;
+            const mutual = completedByMe && completedByPartner;
             return (
               <div
                 key={task.id}
@@ -128,7 +134,7 @@ export default function SharedChallengesStage({
                 className={`cursor-pointer rounded-2xl border p-4 transition ${
                   mutual
                     ? 'border-[#3b7d56] bg-[#f4faf6]'
-                    : task.completedByYou
+                    : completedByMe
                     ? 'border-spark-coral/40 bg-[#fff9fa]'
                     : 'border-dark-950/10 bg-white hover:border-dark-950/30'
                 }`}
@@ -145,18 +151,18 @@ export default function SharedChallengesStage({
                     <span
                       title="Your status"
                       className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold ${
-                        task.completedByYou ? 'bg-[#3b7d56] text-white' : 'bg-dark-950/10 text-[#6F6470]'
+                        completedByMe ? 'bg-[#3b7d56] text-white' : 'bg-dark-950/10 text-[#6F6470]'
                       }`}
                     >
-                      {task.completedByYou ? 'You ✓' : 'You ○'}
+                      {completedByMe ? 'You ✓' : 'You ○'}
                     </span>
                     <span
                       title={`${partnerName}'s status`}
                       className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold ${
-                        task.completedByPartner ? 'bg-[#3b7d56] text-white' : 'bg-dark-950/10 text-[#6F6470]'
+                        completedByPartner ? 'bg-[#3b7d56] text-white' : 'bg-dark-950/10 text-[#6F6470]'
                       }`}
                     >
-                      {task.completedByPartner ? `${partnerName} ✓` : `${partnerName} ○`}
+                      {completedByPartner ? `${partnerName} ✓` : `${partnerName} ○`}
                     </span>
                   </div>
                 </div>

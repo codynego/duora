@@ -57,3 +57,7 @@ export interface BaseStageProps {
   onPromptChat?: (promptText: string) => void;
   onAdvanceActivity?: (action: string, payload?: unknown) => void;
 }
+
+export function currentPlayerId(participants: RoomParticipant[]) {
+  return participants.find((person) => person.isYou)?.id ?? 'you';
+}

@@ -13,6 +13,106 @@ body { margin: 0; background: var(--canvas); color: var(--ink); font-family: 'DM
 .soft-shadow { box-shadow: 0 20px 50px rgba(40, 29, 50, .09); }
 .section-label { font-size: .7rem; font-weight: 700; letter-spacing: .15em; text-transform: uppercase; color: #F05A78; }
 
+/* One scroll context for every live game. Individual stages can grow on small
+   screens without being clipped by the viewport or fighting the room shell. */
+.room-stage-stage {
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.room-stage-stage > section {
+  min-height: 100% !important;
+  height: auto !important;
+  flex: 1 1 auto;
+  overflow: visible !important;
+  border-radius: clamp(1.25rem, 3vw, 2rem) !important;
+  padding: clamp(1.1rem, 3vw, 2.75rem) !important;
+}
+
+.room-stage-stage > section > div:first-child {
+  border-bottom-color: transparent !important;
+}
+
+.room-stage-stage > section > div:last-child {
+  border-top-color: transparent !important;
+}
+
+/* Each activity keeps the same interaction frame, but has its own visual
+   temperature so the format is legible before anyone reads the copy. */
+.game-stage {
+  position: relative;
+  isolation: isolate;
+  border: 1px solid rgba(40, 29, 50, .08);
+  box-shadow: 0 22px 60px rgba(40, 29, 50, .18) !important;
+}
+
+.game-stage--open { background: linear-gradient(135deg, #fffdfa 0%, #fff7f2 100%) !important; }
+.game-stage--guided { background: linear-gradient(135deg, #fffdfa 0%, #fbf7ff 100%) !important; }
+.game-stage--debate { background: linear-gradient(135deg, #fffdfa 0%, #fff1f4 100%) !important; border-color: rgba(240, 90, 120, .2); }
+.game-stage--quick { background: linear-gradient(135deg, #fffdfa 0%, #fff9e9 100%) !important; border-color: rgba(244, 201, 107, .35); }
+.game-stage--most-likely { background: linear-gradient(135deg, #fffdfa 0%, #fff9e9 100%) !important; border-color: rgba(244, 201, 107, .3); }
+.game-stage--truth { background: linear-gradient(135deg, #fffdfa 0%, #fff4f1 100%) !important; }
+.game-stage--guess { background: linear-gradient(135deg, #fffdfa 0%, #f8f3ff 100%) !important; border-color: rgba(135, 112, 160, .22); }
+.game-stage--word { background: linear-gradient(135deg, #fffdfa 0%, #fff9e8 100%) !important; border-color: rgba(244, 201, 107, .35); }
+.game-stage--story { background: linear-gradient(135deg, #fffdfa 0%, #fff8ee 100%) !important; }
+.game-stage--plan { background: linear-gradient(135deg, #fffdfa 0%, #f2faf5 100%) !important; border-color: rgba(59, 125, 86, .18); }
+.game-stage--shared { background: linear-gradient(135deg, #fffdfa 0%, #f0faf4 100%) !important; border-color: rgba(59, 125, 86, .18); }
+.game-stage--date { background: linear-gradient(135deg, #fffdfa 0%, #f7f2ff 100%) !important; border-color: rgba(135, 112, 160, .22); }
+
+.game-stage--open > div:nth-child(2),
+.game-stage--guided > div:nth-child(2),
+.game-stage--debate > div:nth-child(2) {
+  width: 100%;
+  max-width: 58rem;
+  margin-inline: auto;
+}
+
+.game-stage--quick > div:nth-child(2),
+.game-stage--word > div:nth-child(2) {
+  width: 100%;
+  max-width: 48rem;
+  margin-inline: auto;
+  text-align: center;
+}
+
+.game-stage--truth > div:nth-child(2),
+.game-stage--guess > div:nth-child(2),
+.game-stage--most-likely > div:nth-child(2) {
+  width: 100%;
+  max-width: 54rem;
+  margin-inline: auto;
+}
+
+.game-stage--plan > div:nth-child(2),
+.game-stage--shared > div:nth-child(2),
+.game-stage--date > div:nth-child(2) {
+  width: 100%;
+  max-width: 52rem;
+  margin-inline: auto;
+}
+
+.game-stage button,
+.game-stage input,
+.game-stage textarea {
+  min-height: 2.75rem;
+}
+
+.room-stage-stage h1,
+.room-stage-stage h2,
+.room-stage-stage h3 {
+  text-wrap: balance;
+}
+
+@media (max-width: 640px) {
+  .room-stage-stage {
+    padding: .75rem .75rem 1rem;
+  }
+
+  .room-stage-stage > section {
+    box-shadow: 0 14px 40px rgba(0, 0, 0, .18) !important;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
 }
