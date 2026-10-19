@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   ArrowRight,
   CalendarDays,
@@ -39,6 +40,11 @@ type Thread = {
   room: string | null;
   last_message: string | null;
 };
+type DirectGameInvite = {
+  token: string;
+  invited_by: string;
+  room: { id: string; title: string; experience: string; duration_minutes: number };
+};
 
 const api = process.env.NEXT_PUBLIC_DUORA_API_URL ?? "http://127.0.0.1:8000";
 
@@ -50,11 +56,14 @@ export default function ConnectionsPage() {
     activity: { rooms_completed: 0, people_connected: 0, saved_for_later: 0 },
   });
   const [threads, setThreads] = useState<Thread[]>([]);
+  const [gameInvites, setGameInvites] = useState<DirectGameInvite[]>([]);
   const [tab, setTab] = useState<"all" | "requests" | "invites">("all");
   const [selected, setSelected] = useState<ConnectionItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [signedOut, setSignedOut] = useState(false);
   const [error, setError] = useState("");
+  const [joiningInvite, setJoiningInvite] = useState("");
+  const router = useRouter();
 
   async function loadConnections() {
     const token = await getAccessToken();
@@ -64,7 +73,7 @@ export default function ConnectionsPage() {
       return;
     }
     try {
-      const [response, threadsResponse] = await Promise.all([
+      const [response, threadsResponse, gameInvitesResponse] = await Promise.all([
         fetch(`${api}/api/v1/connections/`, {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -77,12 +86,19 @@ export default function ConnectionsPage() {
             Accept: "application/json",
           },
         }),
+        fetch(`${api}/api/v1/rooms/direct-invites/`, {
+          headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+        }),
       ]);
       if (!response.ok) throw new Error("Could not load your connections.");
       setData(await response.json());
       if (threadsResponse.ok) {
         const body = await threadsResponse.json();
         setThreads(body.data ?? []);
+      }
+      if (gameInvitesResponse.ok) {
+        const body = await gameInvitesResponse.json();
+        setGameInvites(body.data ?? []);
       }
     } catch (reason) {
       setError(
@@ -116,6 +132,24 @@ export default function ConnectionsPage() {
     await loadConnections();
     setSelected(null);
   }
+  async function joinGameInvite(invite: DirectGameInvite) {
+    const token = await getAccessToken();
+    if (!token) return;
+    setJoiningInvite(invite.token);
+    try {
+      const response = await fetch(`${api}/api/v1/rooms/invites/${invite.token}/accept/`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const body = await response.json();
+      if (!response.ok || !body.data?.room_id) throw new Error(body.detail ?? "This game invitation is no longer available.");
+      router.push(`/rooms/private/${body.data.room_id}`);
+      router.refresh();
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "This game invitation could not be opened.");
+      setJoiningInvite("");
+    }
+  }
 
   return (
     <div className="min-h-screen bg-[#fffdfc] text-dark-950 md:pl-[244px]">
@@ -139,6 +173,21 @@ export default function ConnectionsPage() {
             Find a room <ArrowRight className="h-4 w-4" />
           </Link>
         </header>
+        {gameInvites.length > 0 && (
+          <section className="mt-7 rounded-[28px] border border-spark-coral/25 bg-[#fff0f3] p-5 sm:p-6">
+            <p className="text-xs font-bold tracking-[.14em] text-spark-coral">GAME INVITATIONS</p>
+            <div className="mt-4 space-y-3">
+              {gameInvites.map((invite) => (
+                <div key={invite.token} className="flex flex-col gap-3 rounded-2xl bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-sm leading-6"><b>{invite.invited_by}</b> invited you to play <b>{invite.room.title}</b> · {invite.room.duration_minutes} min</p>
+                  <button disabled={joiningInvite === invite.token} onClick={() => void joinGameInvite(invite)} className="shrink-0 rounded-full bg-dark-950 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-60">
+                    {joiningInvite === invite.token ? "Joining…" : "Join game"}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
         <nav
           className="mt-7 flex gap-1 overflow-x-auto rounded-2xl bg-dark-950/5 p-1"
           aria-label="Connection views"

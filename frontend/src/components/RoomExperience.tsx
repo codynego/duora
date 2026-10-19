@@ -173,7 +173,7 @@ export default function RoomExperience({
   const scheduledStart = startsAt ? new Date(startsAt).getTime() : 0;
   const waitingForSchedule = Boolean(scheduledStart && scheduledStart > clock);
   const roomIsFull = lobbyMeta.maxMembers > 0 && lobbyMeta.membersCount >= lobbyMeta.maxMembers;
-  const waitingForMembers = isDiscoveryRoom && roomStatus !== 'active' && !roomIsFull;
+  const waitingForMembers = Boolean(roomId) && roomStatus !== 'active' && !roomIsFull;
   const waitingInLobby = waitingForMembers || waitingForSchedule;
   const scheduledStartLabel = scheduledStart
     ? new Date(scheduledStart).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })
@@ -217,7 +217,7 @@ export default function RoomExperience({
       if (joinedRoomStatus === 'scheduled' || joinedRoomStatus === 'open' || joinedRoomStatus === 'active') setRoomStatus(joinedRoomStatus);
       if (typeof joinedStartsAt === 'string') setActiveStartsAt(joinedStartsAt);
       setLobbyMeta((current) => ({ ...current, membersCount: body.data?.members_count ?? current.membersCount, maxMembers: body.data?.max_members ?? current.maxMembers }));
-      setView(isDiscoveryRoom && joinedRoomStatus !== 'active' ? 'arrival' : waitingForSchedule ? 'arrival' : 'live');
+      setView(joinedRoomStatus !== 'active' ? 'arrival' : waitingForSchedule ? 'arrival' : 'live');
     } catch (error) {
       setJoinError(error instanceof Error ? error.message : 'This room cannot be joined right now.');
     } finally {

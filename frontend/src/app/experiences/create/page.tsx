@@ -307,8 +307,14 @@ function CreateExperienceFlow() {
         );
       if (visibility === "private") {
         const inviteToken = data?.data?.invite?.token;
-        if (!inviteToken)
+        const roomId = data?.data?.room?.id;
+        if (!inviteToken || !roomId)
           throw new Error("The invite link could not be created.");
+        if (connectionId) {
+          router.push(`/rooms/private/${roomId}`);
+          router.refresh();
+          return;
+        }
         setInviteUrl(`${window.location.origin}/i/${inviteToken}`);
       } else {
         // Include a fresh navigation key so Discover does not reuse the

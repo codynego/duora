@@ -132,14 +132,14 @@ def create_public_room(*, user, experience: str, tone: str, audience: str, max_m
     return room
 
 
-def start_public_room_if_ready(room: Room, *, now=None) -> bool:
-    """Start a public room once it is full (and its scheduled time has arrived).
+def start_room_if_ready(room: Room, *, now=None) -> bool:
+    """Start a room once it is full (and its scheduled time has arrived).
 
     ``starts_at`` is the beginning of the experience, not the moment a host
     opened its lobby.  Replacing it when the last participant arrives keeps
     the full duration available to everyone.
     """
-    if not room.is_discovery_room or room.status not in {Room.Status.OPEN, Room.Status.SCHEDULED}:
+    if room.status not in {Room.Status.OPEN, Room.Status.SCHEDULED}:
         return False
 
     now = now or timezone.now()
@@ -163,7 +163,7 @@ def join_room(*, room: Room, user) -> RoomMembership:
     locked_room = Room.objects.select_for_update().get(pk=room.pk)
     membership = RoomMembership.objects.filter(room=locked_room, user=user).first()
     if membership and membership.disposition == RoomMembership.Disposition.PRESENT:
-        start_public_room_if_ready(locked_room)
+        start_room_if_ready(locked_room)
         membership.room = locked_room
         return membership
     if locked_room.status not in {Room.Status.OPEN, Room.Status.SCHEDULED}:
@@ -177,7 +177,7 @@ def join_room(*, room: Room, user) -> RoomMembership:
         membership.save(update_fields=('disposition', 'ready_at'))
     else:
         membership = RoomMembership.objects.create(room=locked_room, user=user)
-    start_public_room_if_ready(locked_room)
+    start_room_if_ready(locked_room)
     membership.room = locked_room
     return membership
 

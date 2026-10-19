@@ -27,6 +27,30 @@ class CreateInviteView(APIView):
         return Response({'data': {'id': str(invite.id), 'token': str(invite.token), 'room_code': room.code, 'expires_at': invite.expires_at}}, status=status.HTTP_201_CREATED)
 
 
+class DirectRoomInvitesView(APIView):
+    """Private game invitations sent to an existing connection."""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        invites = RoomInvite.objects.filter(
+            invited_user=request.user,
+            accepted_at__isnull=True,
+            revoked_at__isnull=True,
+            expires_at__gt=timezone.now(),
+            room__archived_at__isnull=True,
+        ).select_related('room', 'created_by').exclude(room__status=Room.Status.ENDED).order_by('-room__created_at')
+        return Response({'data': [{
+            'token': str(invite.token),
+            'room': {
+                'id': str(invite.room_id),
+                'title': invite.room.title,
+                'experience': invite.room.experience,
+                'duration_minutes': invite.room.duration_minutes,
+            },
+            'invited_by': invite.created_by.get_full_name().strip() or invite.created_by.username,
+        } for invite in invites]})
+
+
 class InvitePreviewView(APIView):
     permission_classes = [AllowAny]
     def get(self, request, token):

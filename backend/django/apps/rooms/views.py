@@ -15,7 +15,7 @@ from django.db import transaction
 from django.db.models import Q
 from .models import Moment, Room, RoomActivity, RoomAnswer, RoomGameState, RoomMembership, RoomNextStep
 from .serializers import PublicRoomCreateSerializer, RoomSerializer
-from .services import create_private_room, create_public_room, join_room, start_public_room_if_ready
+from .services import create_private_room, create_public_room, join_room, start_room_if_ready
 
 
 class RoomViewSet(ReadOnlyModelViewSet):
@@ -260,9 +260,9 @@ class RoomParticipantsView(APIView):
         room = Room.objects.select_for_update().filter(id=room_id).first()
         if not room or not RoomMembership.objects.filter(room=room, user=request.user, disposition=RoomMembership.Disposition.PRESENT).exists():
             raise ValidationError({'room': 'You do not have access to this room.'})
-        # A scheduled public room that filled before its start time is moved
-        # into play by the normal lobby refresh as soon as both conditions hold.
-        start_public_room_if_ready(room)
+        # A room that filled before its scheduled time is moved into play by
+        # the normal lobby refresh as soon as both conditions hold.
+        start_room_if_ready(room)
         # Turn indexes are shared game state, so every participant must receive
         # the roster in precisely the same order.
         memberships = room.memberships.filter(disposition=RoomMembership.Disposition.PRESENT).select_related('user').order_by('joined_at', 'user_id')
@@ -315,8 +315,8 @@ class RoomGameStateView(APIView):
     @transaction.atomic
     def patch(self, request, room_id):
         room = _member_room(room_id, request.user)
-        if room.is_discovery_room and room.status != Room.Status.ACTIVE:
-            raise ValidationError({'room': 'This public room is waiting for everyone to arrive.'})
+        if room.status != Room.Status.ACTIVE:
+            raise ValidationError({'room': 'This room is waiting for everyone to arrive.'})
         if timezone.now() < room.starts_at:
             raise ValidationError({'room': 'This room has not started yet.'})
         state, _ = RoomGameState.objects.select_for_update().get_or_create(room=room)
