@@ -376,6 +376,34 @@ export const ADDITIONAL_ADULT_CHALLENGES = [
   ['What do you need in order to feel fully present with someone?', 'Make a toast to curiosity, consent, and excellent chemistry.'],
 ].map(([truth, dare], index) => ({ id: `extra-adult-${index + 1}`, truth, dare }));
 
+export const ADDITIONAL_BOLD_ADULT_CHALLENGES = [
+  ['What is your favorite sex position, and what do you like about it?', 'Describe a fantasy scenario in a non-graphic, movie-rating-safe way.'],
+  ['What is something you would love a partner to initiate more often?', 'Give a confident but respectful invitation to a fictional intimate date.'],
+  ['What kind of verbal flirting affects you most?', 'Deliver a ten-second flirty monologue that includes an easy way to say no.'],
+  ['What is a desire you have been nervous to say out loud?', 'Write a direct message asking for what you want while leaving room for a no.'],
+  ['What is your favorite kind of sexual tension?', 'Hold eye contact for ten seconds, then offer a sincere compliment.'],
+  ['What makes someone instantly more attractive to you in an intimate moment?', 'Describe the exact mood you would create for a memorable date night.'],
+  ['What is one thing you would want clarified before trying something new?', 'Invent a playful check-in phrase for changing pace or stopping.'],
+  ['What is the boldest move you would enjoy from someone you trust?', 'Give a tasteful, non-explicit description of your ideal first move.'],
+  ['What is something you would never want assumed about your sexuality or desire?', 'Say one clear sentence that communicates enthusiastic consent.'],
+  ['What kind of teasing feels exciting rather than uncomfortable?', 'Create a flirtatious challenge that can be declined without explanation.'],
+  ['What is a sexual compliment you would actually enjoy receiving?', 'Give a compliment about someone’s magnetism without mentioning their body.'],
+  ['What is the difference between attraction and readiness for you?', 'Describe how you would check in during a heated moment.'],
+  ['What is an intimate experience you would like to make more playful?', 'Turn a romantic invitation into a dramatic one-line trailer.'],
+  ['What kind of aftercare helps you feel close and cared for?', 'Give a sincere toast to communication after intimacy.'],
+  ['What is something that can make you lose interest instantly?', 'Name three respectful ways to pause an intimate moment.'],
+  ['What is your ideal balance of tenderness and intensity?', 'Describe that balance using only three sensory details.'],
+  ['What makes dirty talk feel exciting or unappealing to you?', 'Read one non-explicit flirty line in your most confident voice.'],
+  ['What would make you feel safe exploring a new fantasy with a partner?', 'Design a fictional date with one bold moment and one easy exit.'],
+  ['What is a sexual boundary you are glad you learned to protect?', 'Give a confident “yes,” “maybe,” and “not today” in different tones.'],
+  ['What do you find more seductive: confidence, anticipation, or vulnerability?', 'Make a respectful invitation that uses your chosen quality.'],
+  ['What is one question you wish people asked before sex?', 'Ask the room a consent check-in question in a warm tone.'],
+  ['What kind of setting makes you feel most relaxed and desired?', 'Describe the setting without naming a specific person.'],
+  ['What is something you want more of after the flirting ends?', 'Give a fictional partner a thoughtful aftercare plan.'],
+  ['What is the most attractive way someone can handle rejection?', 'Act out a graceful, warm response to “not tonight.”'],
+  ['What is one way your preferences have changed as you have grown?', 'Share a non-explicit lesson about communicating desire.'],
+].map(([truth, dare], index) => ({ id: `bold-adult-${index + 1}`, truth, dare }));
+
 export const ADDITIONAL_SHARED_CHALLENGES = [
   ['Make breakfast together without looking at a recipe', 'Choose a dish neither of you has tried before.'],
   ['Create a two-song mini playlist for the other person', 'Each song should say something you appreciate about them.'],
