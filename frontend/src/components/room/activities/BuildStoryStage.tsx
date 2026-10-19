@@ -93,9 +93,14 @@ export default function BuildStoryStage({
                 <p className="text-xs font-bold tracking-[0.16em] text-spark-coral">FULL STORY</p>
                 <h2 className="mt-2 text-3xl font-bold tracking-[-.05em] sm:text-5xl">{roomName}</h2>
               </div>
-              <button type="button" onClick={() => setReviewing(false)} className="rounded-full border border-dark-950/15 px-4 py-2 text-xs font-bold text-dark-950">
-                Keep writing
-              </button>
+              <div className="flex shrink-0 flex-col items-stretch gap-2 sm:flex-row sm:items-center">
+                <button type="button" onClick={() => { handleFinish(); setReviewing(false); }} className="inline-flex items-center justify-center rounded-full bg-dark-950 px-4 py-2 text-xs font-bold text-white sm:min-w-44">
+                  Finish and continue <ArrowRight className="ml-2 h-4 w-4" />
+                </button>
+                <button type="button" onClick={() => setReviewing(false)} className="rounded-full border border-dark-950/15 px-4 py-2 text-xs font-bold text-dark-950">
+                  Keep writing
+                </button>
+              </div>
             </div>
             <article className="my-6 min-h-0 flex-1 overflow-y-auto rounded-[30px] border border-dark-950/10 bg-white p-6 text-lg leading-[1.9] shadow-[0_18px_55px_rgba(40,29,50,.08)] sm:my-8 sm:p-10 sm:text-2xl">
               {story.length ? story.map((chunk, idx) => (
@@ -107,11 +112,6 @@ export default function BuildStoryStage({
                 </span>
               )) : <p className="text-base text-[#6F6470] sm:text-lg">The story is still waiting for its first sentence.</p>}
             </article>
-            <div className="shrink-0 border-t border-dark-950/10 pt-4 sm:pt-5">
-              <button type="button" onClick={() => { handleFinish(); setReviewing(false); }} className="inline-flex w-full items-center justify-center rounded-full bg-dark-950 px-6 py-3.5 text-sm font-bold text-white sm:w-auto sm:min-w-56">
-              Finish and continue <ArrowRight className="ml-2 h-4 w-4" />
-              </button>
-            </div>
           </div>
         </div>
       )}
