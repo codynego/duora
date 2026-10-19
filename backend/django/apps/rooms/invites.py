@@ -20,8 +20,8 @@ class CreateInviteView(APIView):
     permission_classes = [IsAuthenticated]
     def post(self, request, room_id):
         room = get_object_or_404(Room, pk=room_id, created_by=request.user)
-        if room.archived_at or room.status == Room.Status.ENDED:
-            raise ValidationError({'room': 'Archived rooms cannot receive new invites.'})
+        if room_invite_unavailable(room):
+            raise ValidationError({'room': 'Ended or archived rooms cannot receive new invites.'})
         invite = RoomInvite.objects.create(room=room, created_by=request.user, expires_at=timezone.now() + timedelta(hours=24))
         return Response({'data': {'id': str(invite.id), 'token': str(invite.token), 'room_code': room.code, 'expires_at': invite.expires_at}}, status=status.HTTP_201_CREATED)
 
