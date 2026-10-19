@@ -170,10 +170,14 @@ export default function RoomExperience({
     : '';
 
   useEffect(() => {
-    if (view !== 'arrival' || !scheduledStart) return;
+    if (view !== 'arrival') return;
+    if (!waitingForSchedule) {
+      setView('live');
+      return;
+    }
     const timer = window.setInterval(() => setClock(Date.now()), 1000);
     return () => window.clearInterval(timer);
-  }, [view, scheduledStart]);
+  }, [view, waitingForSchedule]);
 
   async function joinRoom() {
     const token = await getAccessToken();
@@ -198,7 +202,7 @@ export default function RoomExperience({
         throw new Error(detail);
       }
       setJoined(true);
-      setView('arrival');
+      setView(waitingForSchedule ? 'arrival' : 'live');
     } catch (error) {
       setJoinError(error instanceof Error ? error.message : 'This room cannot be joined right now.');
     } finally {
@@ -332,10 +336,10 @@ export default function RoomExperience({
                 </div>
                 <button
                   disabled={joining}
-                  onClick={() => (joined ? setView('arrival') : joinRoom())}
+                  onClick={() => (joined ? setView(waitingForSchedule ? 'arrival' : 'live') : joinRoom())}
                   className="mt-10 inline-flex items-center gap-2 rounded-full bg-spark-coral px-5 py-3 text-sm font-bold text-white transition hover:bg-spark-flame disabled:cursor-wait disabled:opacity-70"
                 >
-                  {joining ? 'Joining room…' : joined ? 'Enter room' : 'Join this room'}
+                  {joining ? 'Joining room…' : joined ? 'Enter experience' : 'Join experience'}
                   <ArrowRight className="h-4 w-4" />
                 </button>
                 {joinError && <p role="alert" className="mt-4 text-sm text-spark-rose">{joinError}</p>}
@@ -388,8 +392,8 @@ export default function RoomExperience({
           <h1 className="mt-3 text-3xl font-bold tracking-[-.055em]">You’re in.</h1>
           <p className="mx-auto mt-3 max-w-sm text-sm leading-6 text-[#6F6470]">
             {waitingForSchedule
-              ? `This room opens on ${scheduledStartLabel}. You can get ready now, but the experience will not begin early.`
-              : 'The room opens once everyone is ready. Your selected experience is ready below:'}
+              ? `This room opens on ${scheduledStartLabel}. It will open automatically when the time arrives.`
+              : 'Opening your experience…'}
           </p>
 
           {!experience && (
@@ -551,14 +555,7 @@ export default function RoomExperience({
             </div>
           </div>
 
-          <button
-            disabled={readySubmitting || (selfReady && !lobbyMeta.allReady)}
-            onClick={() => void enterRoom()}
-            className="mt-7 inline-flex items-center gap-2 rounded-full bg-dark-950 px-6 py-3 text-sm font-bold text-white transition hover:bg-dark-900"
-          >
-            {waitingForSchedule ? (selfReady ? 'Ready for start time' : 'I’m ready') : selfReady ? (lobbyMeta.allReady ? 'Enter the room' : `Ready · ${lobbyMeta.readyCount}/${lobbyMeta.membersCount} ready`) : readySubmitting ? 'Saving…' : 'I’m ready'} <ArrowRight className="h-4 w-4" />
-          </button>
-          {selfReady && !lobbyMeta.allReady && <p className="mt-3 text-xs text-[#6F6470]">Waiting for the other people currently in the room.</p>}
+          <p className="mt-7 text-xs font-semibold text-[#6F6470]">You’ll enter automatically at the scheduled time.</p>
         </section>
       </main>
     );
