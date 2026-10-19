@@ -1,6 +1,7 @@
 const apiUrl = process.env.NEXT_PUBLIC_DUORA_API_URL ?? 'http://127.0.0.1:8000';
 let sessionValidUntil = 0;
 let credentialsConfigured = false;
+let refreshInFlight: Promise<boolean> | null = null;
 
 // This module is imported before every authenticated call. Configure this at
 // import time rather than after React hydration, so the request immediately
@@ -44,16 +45,21 @@ function redirectToLogin() {
 
 export async function getAccessToken({ redirectOnFailure = true }: { redirectOnFailure?: boolean } = {}) {
   if (Date.now() < sessionValidUntil) return 'cookie';
-  try {
-    const response = await fetch(`${apiUrl}/api/v1/auth/token/refresh/`, { method: 'POST', credentials: 'include' });
-    if (!response.ok) {
-      sessionValidUntil = 0;
-      if (redirectOnFailure) redirectToLogin();
-      return null;
-    }
-    sessionValidUntil = Date.now() + 14 * 60_000;
-    return 'cookie';
-  } catch { sessionValidUntil = 0; return null; }
+  if (!refreshInFlight) {
+    refreshInFlight = fetch(`${apiUrl}/api/v1/auth/token/refresh/`, { method: 'POST', credentials: 'include' })
+      .then((response) => {
+        if (!response.ok) return false;
+        sessionValidUntil = Date.now() + 14 * 60_000;
+        return true;
+      })
+      .catch(() => false)
+      .finally(() => { refreshInFlight = null; });
+  }
+  const refreshed = await refreshInFlight;
+  if (refreshed) return 'cookie';
+  sessionValidUntil = 0;
+  if (redirectOnFailure) redirectToLogin();
+  return null;
 }
 
 export async function logOut() {
