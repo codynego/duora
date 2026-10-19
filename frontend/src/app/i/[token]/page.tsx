@@ -23,7 +23,6 @@ export default function InviteAcceptancePage({ params }: { params: { token: stri
       const response = await fetch(`${api}/api/v1/rooms/invites/${params.token}/accept/`, { method: 'POST', headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}), 'Content-Type': 'application/json' }, body: JSON.stringify(token ? {} : { guest_name: guestName }) });
       const body = await response.json();
       if (!response.ok || !body.data?.room_id) throw new Error(body.detail ?? 'This invitation is unavailable.');
-      if (body.data.guest_session) { localStorage.setItem('duora_access', body.data.guest_session.access); localStorage.setItem('duora_refresh', body.data.guest_session.refresh); }
       router.push(`/rooms/private/${body.data.room_id}`);
     } catch (requestError) { setError(requestError instanceof Error ? requestError.message : 'This invitation is unavailable.'); } finally { setAccepting(false); }
   }

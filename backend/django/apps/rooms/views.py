@@ -55,6 +55,18 @@ class RoomViewSet(ReadOnlyModelViewSet):
         rooms = Room.objects.filter(created_by=request.user).prefetch_related('memberships').order_by('-created_at')[:6]
         return Response({'data': RoomSerializer(rooms, many=True).data})
 
+    @action(detail=False, methods=['get'])
+    def active(self, request):
+        """Rooms this member can return to before their scheduled end time."""
+        now = timezone.now()
+        candidates = Room.objects.filter(
+            memberships__user=request.user,
+            memberships__disposition=RoomMembership.Disposition.PRESENT,
+            archived_at__isnull=True,
+        ).exclude(status=Room.Status.ENDED).prefetch_related('memberships').distinct()
+        rooms = [room for room in candidates if room.starts_at <= now < room.starts_at + timedelta(minutes=room.duration_minutes)]
+        return Response({'data': RoomSerializer(rooms, many=True).data})
+
     @action(detail=True, methods=['post'], throttle_classes=[ScopedRateThrottle], throttle_scope='room_join')
     def join(self, request, code=None):
         room = Room.objects.filter(code=code).first()
@@ -178,7 +190,9 @@ class RoomParticipantsView(APIView):
 
     def get(self, request, room_id):
         room = _member_room(room_id, request.user)
-        memberships = room.memberships.filter(disposition=RoomMembership.Disposition.PRESENT).select_related('user')
+        # Turn indexes are shared game state, so every participant must receive
+        # the roster in precisely the same order.
+        memberships = room.memberships.filter(disposition=RoomMembership.Disposition.PRESENT).select_related('user').order_by('joined_at', 'user_id')
         members = [{'id': str(item.user_id), 'name': item.user.get_full_name().strip() or item.user.username, 'initial': (item.user.get_full_name().strip() or item.user.username)[:1].upper(), 'is_you': item.user_id == request.user.id, 'is_host': item.user_id == room.created_by_id, 'ready': item.ready_at is not None} for item in memberships]
         return Response({'data': members, 'meta': {'members_count': len(members), 'max_members': room.max_members, 'ready_count': sum(member['ready'] for member in members), 'all_ready': bool(members) and all(member['ready'] for member in members)}})
 

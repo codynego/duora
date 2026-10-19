@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { ApiCredentials } from '@/components/ApiCredentials';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -19,6 +20,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="min-h-screen bg-white text-dark-950 antialiased">
+        <ApiCredentials />
         {children}
       </body>
     </html>

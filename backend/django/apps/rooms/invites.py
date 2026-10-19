@@ -9,6 +9,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.exceptions import ValidationError
 from rest_framework_simplejwt.tokens import RefreshToken
+from apps.accounts.views import set_auth_cookies
 from .models import Room, RoomInvite
 from .services import accept_invite
 
@@ -36,7 +37,7 @@ class AcceptInviteView(APIView):
     permission_classes = [AllowAny]
     def post(self, request, token):
         invite = get_object_or_404(RoomInvite.objects.select_related('invited_user'), token=token)
-        guest_tokens = None
+        guest_refresh = None
         user = request.user
         if invite.invited_user_id and (not user.is_authenticated or invite.invited_user_id != user.id):
             raise ValidationError({'invite': 'This room was created for a specific connection.'})
@@ -50,9 +51,8 @@ class AcceptInviteView(APIView):
             user.set_unusable_password()
             user.save(update_fields=('password',))
             refresh = RefreshToken.for_user(user)
-            guest_tokens = {'access': str(refresh.access_token), 'refresh': str(refresh)}
+            guest_refresh = refresh
         membership = accept_invite(invite=invite, user=user)
         data = {'room_id': str(membership.room_id), 'membership_id': str(membership.id)}
-        if guest_tokens:
-            data['guest_session'] = guest_tokens
-        return Response({'data': data})
+        response = Response({'data': data})
+        return set_auth_cookies(response, guest_refresh) if guest_refresh else response

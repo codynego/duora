@@ -85,6 +85,9 @@ export default function WordBattleStage({
 
   function advanceTurn() {
     if (!isMyTurn || !onGameStateChange) return;
+    // Do not let this player's old timeout callback overwrite the new turn
+    // while the shared-state request is still travelling to the server.
+    advancedTurn.current = true;
     const nextStartedAt = Date.now();
     onGameStateChange({ ...gameState, round: round + 1, turnIndex: (turnIndex + 1) % roster.length, turnStartedAt: nextStartedAt, feedback: `${activePlayer.name} passed the turn.` });
     setMyAnswer('');
@@ -101,6 +104,9 @@ export default function WordBattleStage({
       return;
     }
     const nextScores = { ...scores, [activePlayer.id]: (scores[activePlayer.id] ?? 0) + 30 };
+    // A correct answer ends the turn now. The clock is only a fallback for a
+    // player who does not answer, rather than a delay before the next player.
+    advancedTurn.current = true;
     onGameStateChange?.({
       ...gameState,
       scores: nextScores,

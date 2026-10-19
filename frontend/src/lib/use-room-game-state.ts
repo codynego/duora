@@ -19,7 +19,7 @@ export function useRoomGameState<T extends Record<string, unknown>>(roomId: stri
   useEffect(() => {
     void refresh();
     if (!enabled || !roomId) return;
-    const interval = window.setInterval(() => void refresh(), 2000);
+    const interval = window.setInterval(() => void refresh(), 750);
     return () => window.clearInterval(interval);
   }, [enabled, refresh, roomId]);
 
@@ -27,7 +27,11 @@ export function useRoomGameState<T extends Record<string, unknown>>(roomId: stri
     setState(next);
     const token = await getAccessToken();
     if (!token || !roomId) return;
-    await fetch(`${api}/api/v1/rooms/${roomId}/game-state/`, { method: 'PATCH', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ state: next }) });
+    const response = await fetch(`${api}/api/v1/rooms/${roomId}/game-state/`, { method: 'PATCH', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ state: next }) });
+    const body = await response.json().catch(() => null);
+    // Use the server's merged state immediately. This prevents an older poll
+    // from visually restoring the previous player's turn after a submission.
+    if (response.ok && body?.data) setState(body.data as T);
   }, [roomId]);
 
   return { state, update };
