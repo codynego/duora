@@ -8,10 +8,11 @@ import {
   HelpCircle,
   ArrowRight,
   TrendingUp,
+  Send,
 } from 'lucide-react';
 import { BaseStageProps, currentPlayerId } from '../types';
 import { ADDITIONAL_QUICK_TAKES } from './additional-game-content';
-import { getSavedDeckIndex, saveDeckIndex, shuffledDeck } from './prompt-deck';
+import { getSavedDeckIndex, saveDeckIndex } from './prompt-deck';
 
 type TakeReaction = 'agree' | 'disagree' | 'depends';
 
@@ -60,12 +61,14 @@ export default function QuickTakesStage({
   const playerId = currentPlayerId(participants);
   const allReactions: Record<string, TakeReaction> = { ...((gameState.reactions as Record<string, TakeReaction> | undefined) ?? {}) };
   const myReaction = allReactions[playerId] ?? null;
+  const [customTake, setCustomTake] = useState('');
   const deckInitialized = React.useRef(false);
 
-  const takeDeck = React.useMemo(() => shuffledDeck(QUICK_TAKES), []);
+  // Keep prompts in editorial order. The saved index lets later sessions
+  // continue where the previous session ended without reshuffling repeats.
+  const takeDeck = React.useMemo(() => QUICK_TAKES, []);
   const currentTake = takeDeck[takeIndex % takeDeck.length];
-  const customTopic = takeIndex === 0 && typeof gameState.customTopic === 'string' && gameState.customTopic.trim() ? gameState.customTopic : null;
-  const totalTakes = QUICK_TAKES.length;
+  const customTopic = typeof gameState.customTopic === 'string' && gameState.customTopic.trim() ? gameState.customTopic : null;
 
   React.useEffect(() => {
     if (!isHost || deckInitialized.current || typeof gameState.takeIndex === 'number') return;
@@ -85,6 +88,13 @@ export default function QuickTakesStage({
     onGameStateChange?.({ ...gameState, takeIndex: nextIndex, reactions: {}, customTopic: '' });
   };
 
+  const handleCustomTake = (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!customTake.trim()) return;
+    onGameStateChange?.({ ...gameState, customTopic: customTake.trim(), reactions: {} });
+    setCustomTake('');
+  };
+
   const counts = Object.values(allReactions).reduce(
     (acc, r) => {
       acc[r] = (acc[r] || 0) + 1;
@@ -101,10 +111,24 @@ export default function QuickTakesStage({
       <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 pb-4">
         <span className="inline-flex items-center gap-1.5 rounded-full bg-[#fff0f3] px-3 py-1 text-xs font-bold tracking-wider text-spark-coral">
           <Zap className="h-3.5 w-3.5" />
-          QUICK TAKES · {takeIndex + 1} OF {totalTakes}
+          QUICK TAKES · HOT TAKE
         </span>
         <span className="text-xs text-[#6F6470]">React fast. Don’t overthink it.</span>
       </div>
+
+      <form onSubmit={handleCustomTake} className="mx-auto flex w-full max-w-2xl flex-col gap-2 border-b border-dark-950/8 pb-5 sm:flex-row">
+          <input
+            value={customTake}
+            onChange={(event) => setCustomTake(event.target.value)}
+            maxLength={220}
+            placeholder="Add your own hot take…"
+            aria-label="Add your own hot take"
+            className="min-w-0 flex-1 rounded-full border border-dark-950/12 bg-white px-4 py-3 text-sm outline-none transition focus:border-spark-coral focus:ring-2 focus:ring-spark-coral/15"
+          />
+          <button type="submit" disabled={!customTake.trim()} className="inline-flex items-center justify-center gap-2 rounded-full bg-dark-950 px-5 py-3 text-xs font-bold text-white disabled:cursor-not-allowed disabled:opacity-40">
+            Use this take <Send className="h-3.5 w-3.5" />
+          </button>
+      </form>
 
       {/* Main Statement Stage */}
       <div className="flex w-full max-w-4xl flex-none flex-col justify-center py-8 text-center sm:py-12">
