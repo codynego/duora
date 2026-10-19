@@ -13,12 +13,20 @@ import {
   HeartHandshake,
 } from 'lucide-react';
 import { BaseStageProps } from '../types';
+import { ADDITIONAL_DATE_PLANS } from './additional-game-content';
 
 interface PlanPrefs {
   budget: '$' | '$$' | '$$$';
   mood: string;
   time: string;
 }
+
+const DATE_PLAN_OPTIONS = [
+  'Cook homemade pasta from scratch with wine & background jazz',
+  'Cozy living room blanket fort + movie marathon with favorite snacks',
+  'Try a new dessert spot nearby then take a quiet evening walk',
+  ...ADDITIONAL_DATE_PLANS,
+];
 
 export default function PlanTogetherStage({
   roomName,
@@ -181,11 +189,7 @@ export default function PlanTogetherStage({
               <p className="text-xs font-bold uppercase tracking-wider text-dark-950/60">
                 Choose a plan to save together:
               </p>
-              {[
-                'Cook homemade pasta from scratch with wine & background jazz',
-                'Cozy living room blanket fort + movie marathon with favorite snacks',
-                'Try a new dessert spot nearby then take a quiet evening walk',
-              ].map((activity) => (
+              {DATE_PLAN_OPTIONS.map((activity) => (
                 <button
                   key={activity}
                   onClick={() => handleSavePlan(activity)}

@@ -10,6 +10,7 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { BaseStageProps, currentPlayerId } from '../types';
+import { ADDITIONAL_QUICK_TAKES } from './additional-game-content';
 
 type TakeReaction = 'agree' | 'disagree' | 'depends';
 
@@ -18,7 +19,7 @@ interface QuickTakeItem {
   statement: string;
 }
 
-const QUICK_TAKES: QuickTakeItem[] = [
+const BASE_QUICK_TAKES: QuickTakeItem[] = [
   {
     id: 't1',
     statement: 'Voice notes are strictly superior to text messages.',
@@ -39,6 +40,11 @@ const QUICK_TAKES: QuickTakeItem[] = [
     id: 't5',
     statement: 'Sunday afternoon anxiety can only be cured by an early dinner and no screens.',
   },
+];
+
+const QUICK_TAKES: QuickTakeItem[] = [
+  ...BASE_QUICK_TAKES,
+  ...ADDITIONAL_QUICK_TAKES.map((statement, index) => ({ id: `extra-take-${index + 1}`, statement })),
 ];
 
 export default function QuickTakesStage({

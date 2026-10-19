@@ -12,6 +12,7 @@ import {
   UserCheck,
 } from 'lucide-react';
 import { BaseStageProps, currentPlayerId } from '../types';
+import { ADDITIONAL_GUESS_QUESTIONS } from './additional-game-content';
 
 interface GuessQuestion {
   id: string;
@@ -20,7 +21,7 @@ interface GuessQuestion {
   correctAnswer: string;
 }
 
-const GUESS_QUESTIONS: GuessQuestion[] = [
+const BASE_GUESS_QUESTIONS: GuessQuestion[] = [
   {
     id: 'g1',
     question: 'What is {name}’s ideal holiday?',
@@ -40,6 +41,8 @@ const GUESS_QUESTIONS: GuessQuestion[] = [
     correctAnswer: 'Spicy ramen',
   },
 ];
+
+const GUESS_QUESTIONS: GuessQuestion[] = [...BASE_GUESS_QUESTIONS, ...ADDITIONAL_GUESS_QUESTIONS];
 
 export default function GuessMyAnswerStage({
   roomId,

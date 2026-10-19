@@ -12,6 +12,7 @@ import {
   Lock,
 } from 'lucide-react';
 import { BaseStageProps, currentPlayerId } from '../types';
+import { ADDITIONAL_DEBATE_STATEMENTS } from './additional-game-content';
 
 type Stance = 'agree' | 'disagree' | 'depends';
 
@@ -21,7 +22,7 @@ interface DebateStatement {
   context: string;
 }
 
-const STATEMENTS: DebateStatement[] = [
+const BASE_STATEMENTS: DebateStatement[] = [
   {
     id: 'd1',
     statement: 'Couples should know each other’s phone passwords without hesitation.',
@@ -43,6 +44,8 @@ const STATEMENTS: DebateStatement[] = [
     context: 'Can sheer love overcome mismatched life trajectories and daily friction?',
   },
 ];
+
+const STATEMENTS: DebateStatement[] = [...BASE_STATEMENTS, ...ADDITIONAL_DEBATE_STATEMENTS];
 
 export default function DebateStage({
   roomName,

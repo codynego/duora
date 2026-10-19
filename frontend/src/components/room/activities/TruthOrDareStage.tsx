@@ -12,6 +12,7 @@ import {
   PenLine,
 } from 'lucide-react';
 import { BaseStageProps } from '../types';
+import { ADDITIONAL_ADULT_CHALLENGES, ADDITIONAL_TRUTH_CHALLENGES } from './additional-game-content';
 
 interface ChallengeCard {
   id: string;
@@ -19,7 +20,7 @@ interface ChallengeCard {
   dare: string;
 }
 
-const CHALLENGES: ChallengeCard[] = [
+const BASE_CHALLENGES: ChallengeCard[] = [
   {
     id: 'c1',
     truth: 'What is the most awkward lie you have ever told to get out of social plans?',
@@ -42,11 +43,15 @@ const CHALLENGES: ChallengeCard[] = [
   },
 ];
 
-const ADULT_CHALLENGES: ChallengeCard[] = [
+const CHALLENGES: ChallengeCard[] = [...BASE_CHALLENGES, ...ADDITIONAL_TRUTH_CHALLENGES];
+
+const BASE_ADULT_CHALLENGES: ChallengeCard[] = [
   { id: 'a1', truth: 'What is your biggest turn-on, and how clearly do you communicate it?', dare: 'Give someone in the room a genuinely flirty compliment, only if everyone involved is comfortable.' },
   { id: 'a2', truth: 'What boundary or desire do you wish people asked about more directly?', dare: 'Read a consensual, flirty message you would send to someone you are attracted to.' },
   { id: 'a3', truth: 'What makes you feel desired and respected at the same time?', dare: 'Describe your ideal romantic or intimate atmosphere without naming a specific person.' },
 ];
+
+const ADULT_CHALLENGES: ChallengeCard[] = [...BASE_ADULT_CHALLENGES, ...ADDITIONAL_ADULT_CHALLENGES];
 
 export default function TruthOrDareStage({
   roomName,

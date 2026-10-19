@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ArrowRight, Send, Timer, Zap } from 'lucide-react';
 import { BaseStageProps, RoomParticipant } from '../types';
+import { ADDITIONAL_WORD_CHALLENGES } from './additional-game-content';
 
 interface WordChallenge {
   id: string;
@@ -12,11 +13,13 @@ interface WordChallenge {
 }
 
 const TURN_SECONDS = 10;
-const WORD_CHALLENGES: WordChallenge[] = [
+const BASE_WORD_CHALLENGES: WordChallenge[] = [
   { id: 'w1', category: 'Fruit', letter: 'M', prompt: 'Name a fruit beginning with M' },
   { id: 'w2', category: 'City', letter: 'P', prompt: 'Name a major world city beginning with P' },
   { id: 'w3', category: 'Animal', letter: 'O', prompt: 'Name an animal beginning with O' },
 ];
+
+const WORD_CHALLENGES: WordChallenge[] = [...BASE_WORD_CHALLENGES, ...ADDITIONAL_WORD_CHALLENGES];
 
 export default function WordBattleStage({
   isHost,

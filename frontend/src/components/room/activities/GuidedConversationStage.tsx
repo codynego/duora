@@ -12,6 +12,7 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { BaseStageProps, currentPlayerId } from '../types';
+import { ADDITIONAL_GUIDED_QUESTIONS } from './additional-game-content';
 
 interface QuestionItem {
   id: string;
@@ -20,7 +21,7 @@ interface QuestionItem {
   sampleResponses: Record<string, string>;
 }
 
-const QUESTIONS: QuestionItem[] = [
+const BASE_QUESTIONS: QuestionItem[] = [
   {
     id: 'q1',
     prompt: 'What is one small ritual that reliably resets your day?',
@@ -66,6 +67,8 @@ const QUESTIONS: QuestionItem[] = [
     },
   },
 ];
+
+const QUESTIONS: QuestionItem[] = [...BASE_QUESTIONS, ...ADDITIONAL_GUIDED_QUESTIONS];
 
 export default function GuidedConversationStage({
   roomId,

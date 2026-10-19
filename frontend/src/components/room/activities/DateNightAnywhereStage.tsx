@@ -11,6 +11,14 @@ import {
   Check,
 } from 'lucide-react';
 import { BaseStageProps } from '../types';
+import { ADDITIONAL_DATE_MEMORIES } from './additional-game-content';
+
+const DATE_MEMORIES = [
+  'A dedicated date night with phones locked away',
+  'Cooking a new special dinner recipe together on a Friday',
+  'Taking a Sunday afternoon walk to explore a new neighborhood',
+  ...ADDITIONAL_DATE_MEMORIES,
+];
 
 export default function DateNightAnywhereStage({
   roomName,
@@ -142,11 +150,7 @@ export default function DateNightAnywhereStage({
             </h1>
 
             <div className="mt-6 space-y-2.5">
-              {[
-                'A dedicated date night with phones locked away',
-                'Cooking a new special dinner recipe together on a Friday',
-                'Taking a Sunday afternoon walk to explore a new neighborhood',
-              ].map((memory) => (
+              {DATE_MEMORIES.map((memory) => (
                 <button
                   key={memory}
                   onClick={() => handleFinish(memory)}

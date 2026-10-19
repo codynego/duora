@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Sparkles, ArrowRight, Lightbulb, MessageSquarePlus, RefreshCw, Compass } from 'lucide-react';
 import { BaseStageProps } from '../types';
+import { ADDITIONAL_OPEN_TOPICS } from './additional-game-content';
 
 interface TopicItem {
   id: string;
@@ -12,7 +13,7 @@ interface TopicItem {
   suggestedAngles: string[];
 }
 
-const DEFAULT_TOPICS: TopicItem[] = [
+const BASE_TOPICS: TopicItem[] = [
   {
     id: '1',
     topic: 'What is an unpopular opinion you hold about modern relationships?',
@@ -57,6 +58,16 @@ const DEFAULT_TOPICS: TopicItem[] = [
       'Another angle: How do you protect that space from getting invaded?',
     ],
   },
+];
+
+const DEFAULT_TOPICS: TopicItem[] = [
+  ...BASE_TOPICS,
+  ...ADDITIONAL_OPEN_TOPICS.map((topic, index) => ({
+    id: `extra-open-${index + 1}`,
+    topic,
+    category: 'Conversation',
+    suggestedAngles: ['Tell a story from your own life.', 'Ask what shaped that view.', 'Explore the feeling underneath it.'],
+  })),
 ];
 
 export default function OpenConversationStage({

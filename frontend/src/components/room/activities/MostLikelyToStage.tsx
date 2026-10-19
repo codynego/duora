@@ -11,13 +11,14 @@ import {
   Smile,
 } from 'lucide-react';
 import { BaseStageProps, currentPlayerId } from '../types';
+import { ADDITIONAL_MOST_LIKELY_PROMPTS } from './additional-game-content';
 
 interface MostLikelyPrompt {
   id: string;
   question: string;
 }
 
-const PROMPTS: MostLikelyPrompt[] = [
+const BASE_PROMPTS: MostLikelyPrompt[] = [
   {
     id: 'p1',
     question: 'Who is most likely to become famous by accident?',
@@ -34,6 +35,11 @@ const PROMPTS: MostLikelyPrompt[] = [
     id: 'p4',
     question: 'Who is most likely to buy something ridiculous after 2 AM?',
   },
+];
+
+const PROMPTS: MostLikelyPrompt[] = [
+  ...BASE_PROMPTS,
+  ...ADDITIONAL_MOST_LIKELY_PROMPTS.map((question, index) => ({ id: `extra-most-${index + 1}`, question })),
 ];
 
 export default function MostLikelyToStage({

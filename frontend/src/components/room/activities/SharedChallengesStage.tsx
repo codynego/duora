@@ -11,6 +11,7 @@ import {
   PartyPopper,
 } from 'lucide-react';
 import { BaseStageProps, currentPlayerId } from '../types';
+import { ADDITIONAL_SHARED_CHALLENGES } from './additional-game-content';
 
 interface ChallengeTask {
   id: string;
@@ -52,6 +53,11 @@ const INITIAL_TASKS: ChallengeTask[] = [
   },
 ];
 
+const ALL_TASKS: ChallengeTask[] = [
+  ...INITIAL_TASKS,
+  ...ADDITIONAL_SHARED_CHALLENGES,
+];
+
 export default function SharedChallengesStage({
   roomName,
   isHost,
@@ -61,7 +67,7 @@ export default function SharedChallengesStage({
   gameState = {},
   onGameStateChange,
 }: BaseStageProps) {
-  const tasks = Array.isArray(gameState.tasks) ? gameState.tasks as ChallengeTask[] : INITIAL_TASKS.map((task) => ({ ...task, completedByYou: false, completedByPartner: false }));
+  const tasks = Array.isArray(gameState.tasks) ? gameState.tasks as ChallengeTask[] : ALL_TASKS.map((task) => ({ ...task, completedByYou: false, completedByPartner: false }));
   const playerId = currentPlayerId(participants);
   const partner = participants.find((person) => !person.isYou);
   const partnerName = partner?.name ?? 'your partner';
