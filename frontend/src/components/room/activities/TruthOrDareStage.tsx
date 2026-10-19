@@ -66,7 +66,7 @@ export default function TruthOrDareStage({
   const turnIndex = typeof gameState.turnIndex === 'number' ? gameState.turnIndex : 0;
   const cardIndex = typeof gameState.cardIndex === 'number' ? gameState.cardIndex : 0;
   const choice = gameState.choice === 'truth' || gameState.choice === 'dare' ? gameState.choice : null;
-  const status = gameState.status === 'active' || gameState.status === 'completed' || gameState.status === 'passed' ? gameState.status : 'choosing';
+  const status = gameState.status === 'active' || gameState.status === 'awaiting_custom' || gameState.status === 'completed' || gameState.status === 'passed' ? gameState.status : 'choosing';
   const questionMode = gameState.questionMode === 'custom' || gameState.questionMode === 'adult' ? gameState.questionMode : 'system';
   const customQuestion = typeof gameState.customQuestion === 'string' ? gameState.customQuestion : '';
   const [customQuestionInput, setCustomQuestionInput] = React.useState(customQuestion);
@@ -87,9 +87,13 @@ export default function TruthOrDareStage({
   };
 
   const handleSelectChoice = (type: 'truth' | 'dare') => {
-    if (!canSetPrompt) return;
-    if (questionMode === 'custom' && !customQuestionInput.trim()) return;
-    onGameStateChange?.({ ...gameState, turnIndex, choice: type, status: 'active', questionMode, customQuestion: questionMode === 'custom' ? customQuestionInput.trim() : '' });
+    if (!isMyTurn) return;
+    onGameStateChange?.({ ...gameState, turnIndex, choice: type, status: questionMode === 'custom' ? 'awaiting_custom' : 'active', questionMode, customQuestion: '' });
+  };
+
+  const handleCustomPrompt = () => {
+    if (!canSetPrompt || !customQuestionInput.trim() || !choice) return;
+    onGameStateChange?.({ ...gameState, turnIndex, choice, status: 'active', questionMode: 'custom', customQuestion: customQuestionInput.trim() });
   };
 
   const handleComplete = () => {
@@ -138,7 +142,7 @@ export default function TruthOrDareStage({
               Choose your fate.
             </h1>
             <p className="mt-2 text-xs text-[#6F6470] sm:text-sm">
-              {canSetPrompt ? `Set a truth or dare for ${activePlayer.name}.` : isMyTurn ? `${promptSetter.name} is choosing your challenge.` : `Waiting for ${promptSetter.name} to choose for ${activePlayer.name}.`}
+              {isMyTurn ? 'Choose truth or dare.' : `${activePlayer.name} is choosing truth or dare.`}
             </p>
 
             <details className="mx-auto mt-5 max-w-xl rounded-2xl border border-dark-950/10 bg-white/70 text-left">
@@ -149,20 +153,19 @@ export default function TruthOrDareStage({
                 </span>
               </summary>
               <div className="border-t border-dark-950/8 p-3">
-                <p className="mb-2 text-[10px] font-semibold leading-4 text-[#6F6470]">The next player sets the prompt for the person in the spotlight.</p>
+                <p className="mb-2 text-[10px] font-semibold leading-4 text-[#6F6470]">{canSetPrompt ? `Choose how ${activePlayer.name} receives their prompt.` : `${promptSetter.name} chooses the prompt source for this turn.`}</p>
                 <div className="grid gap-2 sm:grid-cols-3">
                   <button type="button" disabled={!canSetPrompt} onClick={() => handleQuestionMode('system')} className={`min-w-0 rounded-xl border px-3 py-2.5 text-left text-xs font-bold ${questionMode === 'system' ? 'border-spark-coral bg-[#fff0f3] text-spark-coral' : 'border-dark-950/10 bg-white'}`}>System prompt<span className="mt-1 block text-[10px] font-normal leading-4 text-[#6F6470]">Curated question</span></button>
                   <button type="button" disabled={!canSetPrompt} onClick={() => handleQuestionMode('custom')} className={`min-w-0 rounded-xl border px-3 py-2.5 text-left text-xs font-bold ${questionMode === 'custom' ? 'border-spark-coral bg-[#fff0f3] text-spark-coral' : 'border-dark-950/10 bg-white'}`}><PenLine className="mr-1 inline h-3 w-3" />Custom question<span className="mt-1 block text-[10px] font-normal leading-4 text-[#6F6470]">Ask {activePlayer.name}</span></button>
                   <button type="button" disabled={!canSetPrompt || audience !== 'adults'} onClick={() => handleQuestionMode('adult')} className={`min-w-0 rounded-xl border px-3 py-2.5 text-left text-xs font-bold ${questionMode === 'adult' ? 'border-spark-coral bg-[#fff0f3] text-spark-coral' : 'border-dark-950/10 bg-white'} disabled:cursor-not-allowed disabled:opacity-40`}>18+ raw<span className="mt-1 block text-[10px] font-normal leading-4 text-[#6F6470]">Adults only</span></button>
                 </div>
-                {questionMode === 'custom' && <input value={customQuestionInput} onChange={(event) => setCustomQuestionInput(event.target.value)} disabled={!canSetPrompt} maxLength={240} placeholder={`Write a question for ${activePlayer.name}...`} className="mt-2 w-full rounded-xl border border-dark-950/15 bg-white px-3 py-2.5 text-xs outline-none focus:border-spark-coral disabled:bg-dark-950/5" />}
                 {audience === 'all' && <p className="mt-2 text-[10px] leading-4 text-[#6F6470]">This room is open to everyone, so 18+ prompts are unavailable.</p>}
               </div>
             </details>
 
             <div className="mx-auto mt-6 grid w-full max-w-md grid-cols-2 gap-3 sm:mt-7 sm:gap-4">
               <button
-                disabled={!canSetPrompt}
+                disabled={!isMyTurn}
                 onClick={() => handleSelectChoice('truth')}
                 className="group flex min-h-[154px] flex-col items-center justify-center gap-3 rounded-3xl border border-dark-950/10 bg-white p-4 transition hover:border-[#3b7d56] hover:bg-[#f4faf6] hover:shadow-lg sm:min-h-0 sm:p-6"
               >
@@ -170,11 +173,11 @@ export default function TruthOrDareStage({
                   <HelpCircle className="h-6 w-6" />
                 </span>
                 <span className="text-base font-bold text-dark-950">Truth</span>
-                <span className="text-[11px] text-[#6F6470]">Ask {activePlayer.name}</span>
+                <span className="text-[11px] text-[#6F6470]">Choose truth</span>
               </button>
 
               <button
-                disabled={!canSetPrompt}
+                disabled={!isMyTurn}
                 onClick={() => handleSelectChoice('dare')}
                 className="group flex min-h-[154px] flex-col items-center justify-center gap-3 rounded-3xl border border-dark-950/10 bg-white p-4 transition hover:border-spark-coral hover:bg-[#fff0f3] hover:shadow-lg sm:min-h-0 sm:p-6"
               >
@@ -182,9 +185,18 @@ export default function TruthOrDareStage({
                   <Zap className="h-6 w-6" />
                 </span>
                 <span className="text-base font-bold text-dark-950">Dare</span>
-                <span className="text-[11px] text-[#6F6470]">Challenge {activePlayer.name}</span>
+                <span className="text-[11px] text-[#6F6470]">Choose dare</span>
               </button>
             </div>
+          </div>
+        )}
+
+        {status === 'awaiting_custom' && (
+          <div className="mx-auto w-full max-w-xl rounded-3xl border border-dark-950/10 bg-white p-5 text-left shadow-sm sm:p-7">
+            <p className="text-[11px] font-bold tracking-[0.16em] text-spark-coral">CUSTOM {choice?.toUpperCase()} FOR {activePlayer.name.toUpperCase()}</p>
+            <h1 className="mt-2 text-2xl font-bold tracking-[-.045em] text-dark-950">{canSetPrompt ? `Your turn to set ${activePlayer.name}’s ${choice}.` : `${promptSetter.name} is setting ${activePlayer.name}’s ${choice}.`}</h1>
+            <p className="mt-2 text-sm leading-6 text-[#6F6470]">{canSetPrompt ? 'Write one clear, considerate prompt. It will appear only when you send it.' : 'The challenge will appear as soon as it is ready.'}</p>
+            {canSetPrompt && <><textarea value={customQuestionInput} onChange={(event) => setCustomQuestionInput(event.target.value)} maxLength={240} placeholder={choice === 'truth' ? `Ask ${activePlayer.name} a truth question…` : `Give ${activePlayer.name} a dare…`} className="mt-5 min-h-28 w-full resize-none rounded-2xl border border-dark-950/15 bg-[#fffdfa] px-4 py-3 text-sm outline-none focus:border-spark-coral" /><div className="mt-3 flex items-center justify-between gap-3"><span className="text-xs text-[#6F6470]">{customQuestionInput.length}/240</span><button type="button" disabled={!customQuestionInput.trim()} onClick={handleCustomPrompt} className="rounded-full bg-dark-950 px-5 py-3 text-xs font-bold text-white transition hover:bg-dark-950/85 disabled:cursor-not-allowed disabled:opacity-45">Send {choice}</button></div></>}
           </div>
         )}
 

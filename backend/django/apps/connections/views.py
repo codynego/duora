@@ -7,7 +7,7 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .models import ConnectionRequest, ConnectionThread, ThreadMessage
+from .models import ConnectionRequest, ConnectionThread, ThreadMessage, ThreadTypingPresence
 from .serializers import ConnectionCreateSerializer, ConnectionRequestSerializer
 from .services import canonical_thread_for_users
 from apps.moderation.models import SafetyExclusion
@@ -136,3 +136,26 @@ class ThreadMessageView(APIView):
         thread.last_message_at = message.created_at
         thread.save(update_fields=('last_message_at',))
         return Response({'data': {'id': str(message.id), 'body': message.body, 'sender_id': message.sender_id, 'is_you': True, 'sender': {'name': request.user.get_full_name().strip() or request.user.username, 'initial': (request.user.get_full_name().strip() or request.user.username)[:1].upper()}, 'created_at': message.created_at}}, status=status.HTTP_201_CREATED)
+
+
+class ThreadTypingView(ThreadMessageView):
+    """Expose a deliberately brief, best-effort typing signal for a direct chat."""
+
+    def get(self, request, thread_id):
+        thread = self._thread(thread_id, request.user)
+        if not thread:
+            return Response({'detail': 'Connection thread not found.'}, status=status.HTTP_404_NOT_FOUND)
+        cutoff = timezone.now() - timedelta(seconds=5)
+        names = ThreadTypingPresence.objects.filter(thread=thread, updated_at__gte=cutoff).exclude(user=request.user).select_related('user')
+        return Response({'data': [presence.user.get_full_name().strip() or presence.user.username for presence in names]})
+
+    def post(self, request, thread_id):
+        thread = self._thread(thread_id, request.user)
+        if not thread:
+            return Response({'detail': 'Connection thread not found.'}, status=status.HTTP_404_NOT_FOUND)
+        is_typing = bool(request.data.get('is_typing'))
+        if is_typing:
+            ThreadTypingPresence.objects.update_or_create(thread=thread, user=request.user)
+        else:
+            ThreadTypingPresence.objects.filter(thread=thread, user=request.user).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)

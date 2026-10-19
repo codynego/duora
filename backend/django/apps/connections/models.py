@@ -58,3 +58,14 @@ class ThreadMessage(models.Model):
 
     class Meta:
         ordering = ('created_at',)
+
+
+class ThreadTypingPresence(models.Model):
+    """A short-lived signal that is renewed while someone is composing."""
+
+    thread = models.ForeignKey(ConnectionThread, on_delete=models.CASCADE, related_name='typing_presences')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='thread_typing_presences')
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=('thread', 'user'), name='unique_thread_typing_presence')]
