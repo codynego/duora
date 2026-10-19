@@ -196,6 +196,7 @@ function CreateExperienceFlow() {
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState("");
   const [inviteUrl, setInviteUrl] = useState("");
+  const [privateRoomId, setPrivateRoomId] = useState("");
   const experience = experiences[selected];
   const family = categories.find((item) => item.key === category)!;
   const choices = experiences.filter((item) => item.category === category);
@@ -315,6 +316,7 @@ function CreateExperienceFlow() {
           router.refresh();
           return;
         }
+        setPrivateRoomId(roomId);
         setInviteUrl(`${window.location.origin}/i/${inviteToken}`);
       } else {
         // Include a fresh navigation key so Discover does not reuse the
@@ -616,6 +618,14 @@ function CreateExperienceFlow() {
                 <Link2 className="h-4 w-4" />
                 {isDirectConnectionRoom ? "Copy invite link" : "Copy link"}
               </button>
+              {privateRoomId && (
+                <Link
+                  href={`/rooms/private/${privateRoomId}`}
+                  className="mt-4 inline-flex items-center gap-2 rounded-full border border-white/20 px-4 py-2.5 text-sm font-bold text-white transition hover:border-white/40"
+                >
+                  Open experience <ArrowRight className="h-4 w-4" />
+                </Link>
+              )}
             </div>
           )}
           {error && (
