@@ -587,7 +587,7 @@ export default function RoomShell({
         >
           <MessageCircle className="h-5 w-5" />
           {unreadCount > 0 && !chatOpen && (
-            <span className="absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-spark-coral px-1 text-[9px] font-bold text-white">
+            <span aria-label={`${unreadCount} unread message${unreadCount === 1 ? '' : 's'}`} className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full border-2 border-[#16101c] bg-spark-coral px-1 text-[9px] font-bold leading-none text-white shadow-sm">
               {unreadCount > 9 ? '9+' : unreadCount}
             </span>
           )}

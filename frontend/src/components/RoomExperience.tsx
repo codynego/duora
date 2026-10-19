@@ -104,7 +104,8 @@ export default function RoomExperience({
   const [nextStepThreadId, setNextStepThreadId] = useState('');
   const [nextStepPending, setNextStepPending] = useState('');
   const [nextStepChoices, setNextStepChoices] = useState<Record<string, 'continue_chat' | 'reconnect' | 'end'>>({});
-  const seenChatCount = useRef(0);
+  const chatInitialized = useRef(false);
+  const seenChatIds = useRef(new Set<string>());
   const router = useRouter();
 
   const isTalk = mode === 'talk';
@@ -225,12 +226,34 @@ export default function RoomExperience({
     }
   }
 
+  const ownParticipantId = roomParticipants.find((person) => person.isYou)?.id;
+
   useEffect(() => {
-    const chatCount = roomEvents.filter((ev) => ev.event === 'chat.sent').length;
-    const newCount = Math.max(0, chatCount - seenChatCount.current);
-    if (newCount > 0 && !chatOpen) setUnreadMessages((count) => count + newCount);
-    seenChatCount.current = chatCount;
-  }, [roomEvents, chatOpen]);
+    if (!roomId || !ownParticipantId) return;
+    const chatEvents = roomEvents.filter((event) => event.event === 'chat.sent');
+    const eventId = (event: RoomEvent, index: number) => event.id ?? `${event.user_id ?? 'member'}:${index}:${String(event.payload?.message ?? '')}`;
+    const currentIds = chatEvents.map(eventId);
+
+    // Existing conversation history is already read when a player enters;
+    // only messages arriving afterwards should increment the badge.
+    if (!chatInitialized.current) {
+      currentIds.forEach((id) => seenChatIds.current.add(id));
+      chatInitialized.current = true;
+      return;
+    }
+    if (chatOpen) {
+      currentIds.forEach((id) => seenChatIds.current.add(id));
+      setUnreadMessages(0);
+      return;
+    }
+
+    const incoming = chatEvents.filter((event, index) => {
+      const id = eventId(event, index);
+      return !seenChatIds.current.has(id) && String(event.user_id) !== ownParticipantId;
+    });
+    currentIds.forEach((id) => seenChatIds.current.add(id));
+    if (incoming.length) setUnreadMessages((count) => count + incoming.length);
+  }, [chatOpen, ownParticipantId, roomEvents, roomId]);
 
   function sendChatMessage(text: string) {
     if (!text.trim()) return;

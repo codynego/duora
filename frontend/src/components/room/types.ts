@@ -41,6 +41,7 @@ export interface ChatMessage {
 }
 
 export interface RoomEvent {
+  id?: string;
   event: string;
   payload?: Record<string, unknown>;
   user_id?: number;
