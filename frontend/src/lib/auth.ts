@@ -36,11 +36,21 @@ export async function logIn(username: string, password: string) {
 }
 export async function requestPasswordReset(email: string) { return request('password-reset/', { email }); }
 
-export async function getAccessToken() {
+function redirectToLogin() {
+  if (typeof window === 'undefined' || /^\/(login|signup|forgot-password)/.test(window.location.pathname)) return;
+  const next = `${window.location.pathname}${window.location.search}`;
+  window.location.replace(`/login?next=${encodeURIComponent(next)}`);
+}
+
+export async function getAccessToken({ redirectOnFailure = true }: { redirectOnFailure?: boolean } = {}) {
   if (Date.now() < sessionValidUntil) return 'cookie';
   try {
     const response = await fetch(`${apiUrl}/api/v1/auth/token/refresh/`, { method: 'POST', credentials: 'include' });
-    if (!response.ok) throw new Error('Refresh failed');
+    if (!response.ok) {
+      sessionValidUntil = 0;
+      if (redirectOnFailure) redirectToLogin();
+      return null;
+    }
     sessionValidUntil = Date.now() + 14 * 60_000;
     return 'cookie';
   } catch { sessionValidUntil = 0; return null; }

@@ -64,6 +64,7 @@ export default function TruthOrDareStage({
   onGameStateChange,
 }: BaseStageProps) {
   const turnIndex = typeof gameState.turnIndex === 'number' ? gameState.turnIndex : 0;
+  const cardIndex = typeof gameState.cardIndex === 'number' ? gameState.cardIndex : 0;
   const choice = gameState.choice === 'truth' || gameState.choice === 'dare' ? gameState.choice : null;
   const status = gameState.status === 'active' || gameState.status === 'completed' || gameState.status === 'passed' ? gameState.status : 'choosing';
   const questionMode = gameState.questionMode === 'custom' || gameState.questionMode === 'adult' ? gameState.questionMode : 'system';
@@ -72,19 +73,21 @@ export default function TruthOrDareStage({
 
   const allPlayers = participants.length ? participants : [{ id: 'you', name: 'You', color: '#F05A78', isYou: true }];
   const activePlayer = allPlayers[turnIndex % allPlayers.length];
+  const promptSetter = allPlayers[(turnIndex + 1) % allPlayers.length];
   const currentCard = questionMode === 'adult' && audience === 'adults'
-    ? ADULT_CHALLENGES[turnIndex % ADULT_CHALLENGES.length]
-    : CHALLENGES[turnIndex % CHALLENGES.length];
+    ? ADULT_CHALLENGES[cardIndex % ADULT_CHALLENGES.length]
+    : CHALLENGES[cardIndex % CHALLENGES.length];
   const isMyTurn = Boolean(activePlayer.isYou);
+  const canSetPrompt = Boolean(promptSetter.isYou);
   const activePrompt = questionMode === 'custom' && customQuestion ? customQuestion : choice === 'truth' ? currentCard.truth : currentCard.dare;
 
   const handleQuestionMode = (mode: 'system' | 'custom' | 'adult') => {
-    if (!isMyTurn || (mode === 'adult' && audience !== 'adults')) return;
+    if (!canSetPrompt || (mode === 'adult' && audience !== 'adults')) return;
     onGameStateChange?.({ ...gameState, turnIndex, questionMode: mode, customQuestion: mode === 'custom' ? customQuestionInput.trim() : '' });
   };
 
   const handleSelectChoice = (type: 'truth' | 'dare') => {
-    if (!isMyTurn) return;
+    if (!canSetPrompt) return;
     if (questionMode === 'custom' && !customQuestionInput.trim()) return;
     onGameStateChange?.({ ...gameState, turnIndex, choice: type, status: 'active', questionMode, customQuestion: questionMode === 'custom' ? customQuestionInput.trim() : '' });
   };
@@ -94,14 +97,14 @@ export default function TruthOrDareStage({
     onGameStateChange?.({ ...gameState, turnIndex, choice, status: 'completed' });
     onSendReaction('cheer');
     onSendMessage(`🎉 ${activePlayer.name} completed their ${choice?.toUpperCase()}!`);
-    window.setTimeout(() => onGameStateChange?.({ ...gameState, turnIndex: (turnIndex + 1) % allPlayers.length, choice: null, status: 'choosing', questionMode: questionMode === 'adult' ? 'adult' : 'system', customQuestion: '' }), 700);
+    window.setTimeout(() => onGameStateChange?.({ ...gameState, cardIndex: cardIndex + 1, turnIndex: (turnIndex + 1) % allPlayers.length, choice: null, status: 'choosing', questionMode: questionMode === 'adult' ? 'adult' : 'system', customQuestion: '' }), 700);
   };
 
   const handlePass = () => {
     if (!isMyTurn) return;
     onGameStateChange?.({ ...gameState, turnIndex, choice, status: 'passed' });
     onSendMessage(`🛡️ ${activePlayer.name} passed on this challenge. Respect!`);
-    window.setTimeout(() => onGameStateChange?.({ ...gameState, turnIndex: (turnIndex + 1) % allPlayers.length, choice: null, status: 'choosing', questionMode: questionMode === 'adult' ? 'adult' : 'system', customQuestion: '' }), 700);
+    window.setTimeout(() => onGameStateChange?.({ ...gameState, cardIndex: cardIndex + 1, turnIndex: (turnIndex + 1) % allPlayers.length, choice: null, status: 'choosing', questionMode: questionMode === 'adult' ? 'adult' : 'system', customQuestion: '' }), 700);
   };
 
   return (
@@ -135,7 +138,7 @@ export default function TruthOrDareStage({
               Choose your fate.
             </h1>
             <p className="mt-2 text-xs text-[#6F6470] sm:text-sm">
-              {isMyTurn ? 'Will you answer a question or take on a challenge?' : `Waiting for ${activePlayer.name} to choose...`}
+              {canSetPrompt ? `Set a truth or dare for ${activePlayer.name}.` : isMyTurn ? `${promptSetter.name} is choosing your challenge.` : `Waiting for ${promptSetter.name} to choose for ${activePlayer.name}.`}
             </p>
 
             <details className="mx-auto mt-5 max-w-xl rounded-2xl border border-dark-950/10 bg-white/70 text-left">
@@ -146,20 +149,20 @@ export default function TruthOrDareStage({
                 </span>
               </summary>
               <div className="border-t border-dark-950/8 p-3">
-                <p className="mb-2 text-[10px] font-semibold leading-4 text-[#6F6470]">Choose where the prompt comes from. These options only affect the player whose turn it is.</p>
+                <p className="mb-2 text-[10px] font-semibold leading-4 text-[#6F6470]">The next player sets the prompt for the person in the spotlight.</p>
                 <div className="grid gap-2 sm:grid-cols-3">
-                  <button type="button" disabled={!isMyTurn} onClick={() => handleQuestionMode('system')} className={`min-w-0 rounded-xl border px-3 py-2.5 text-left text-xs font-bold ${questionMode === 'system' ? 'border-spark-coral bg-[#fff0f3] text-spark-coral' : 'border-dark-950/10 bg-white'}`}>System prompt<span className="mt-1 block text-[10px] font-normal leading-4 text-[#6F6470]">Curated question</span></button>
-                  <button type="button" disabled={!isMyTurn} onClick={() => handleQuestionMode('custom')} className={`min-w-0 rounded-xl border px-3 py-2.5 text-left text-xs font-bold ${questionMode === 'custom' ? 'border-spark-coral bg-[#fff0f3] text-spark-coral' : 'border-dark-950/10 bg-white'}`}><PenLine className="mr-1 inline h-3 w-3" />My question<span className="mt-1 block text-[10px] font-normal leading-4 text-[#6F6470]">Ask your own</span></button>
-                  <button type="button" disabled={!isMyTurn || audience !== 'adults'} onClick={() => handleQuestionMode('adult')} className={`min-w-0 rounded-xl border px-3 py-2.5 text-left text-xs font-bold ${questionMode === 'adult' ? 'border-spark-coral bg-[#fff0f3] text-spark-coral' : 'border-dark-950/10 bg-white'} disabled:cursor-not-allowed disabled:opacity-40`}>18+ raw<span className="mt-1 block text-[10px] font-normal leading-4 text-[#6F6470]">Adults only</span></button>
+                  <button type="button" disabled={!canSetPrompt} onClick={() => handleQuestionMode('system')} className={`min-w-0 rounded-xl border px-3 py-2.5 text-left text-xs font-bold ${questionMode === 'system' ? 'border-spark-coral bg-[#fff0f3] text-spark-coral' : 'border-dark-950/10 bg-white'}`}>System prompt<span className="mt-1 block text-[10px] font-normal leading-4 text-[#6F6470]">Curated question</span></button>
+                  <button type="button" disabled={!canSetPrompt} onClick={() => handleQuestionMode('custom')} className={`min-w-0 rounded-xl border px-3 py-2.5 text-left text-xs font-bold ${questionMode === 'custom' ? 'border-spark-coral bg-[#fff0f3] text-spark-coral' : 'border-dark-950/10 bg-white'}`}><PenLine className="mr-1 inline h-3 w-3" />Custom question<span className="mt-1 block text-[10px] font-normal leading-4 text-[#6F6470]">Ask {activePlayer.name}</span></button>
+                  <button type="button" disabled={!canSetPrompt || audience !== 'adults'} onClick={() => handleQuestionMode('adult')} className={`min-w-0 rounded-xl border px-3 py-2.5 text-left text-xs font-bold ${questionMode === 'adult' ? 'border-spark-coral bg-[#fff0f3] text-spark-coral' : 'border-dark-950/10 bg-white'} disabled:cursor-not-allowed disabled:opacity-40`}>18+ raw<span className="mt-1 block text-[10px] font-normal leading-4 text-[#6F6470]">Adults only</span></button>
                 </div>
-                {questionMode === 'custom' && <input value={customQuestionInput} onChange={(event) => setCustomQuestionInput(event.target.value)} disabled={!isMyTurn} maxLength={240} placeholder="Write the question you want to ask..." className="mt-2 w-full rounded-xl border border-dark-950/15 bg-white px-3 py-2.5 text-xs outline-none focus:border-spark-coral disabled:bg-dark-950/5" />}
+                {questionMode === 'custom' && <input value={customQuestionInput} onChange={(event) => setCustomQuestionInput(event.target.value)} disabled={!canSetPrompt} maxLength={240} placeholder={`Write a question for ${activePlayer.name}...`} className="mt-2 w-full rounded-xl border border-dark-950/15 bg-white px-3 py-2.5 text-xs outline-none focus:border-spark-coral disabled:bg-dark-950/5" />}
                 {audience === 'all' && <p className="mt-2 text-[10px] leading-4 text-[#6F6470]">This room is open to everyone, so 18+ prompts are unavailable.</p>}
               </div>
             </details>
 
             <div className="mx-auto mt-6 grid w-full max-w-md grid-cols-2 gap-3 sm:mt-7 sm:gap-4">
               <button
-                disabled={!isMyTurn}
+                disabled={!canSetPrompt}
                 onClick={() => handleSelectChoice('truth')}
                 className="group flex min-h-[154px] flex-col items-center justify-center gap-3 rounded-3xl border border-dark-950/10 bg-white p-4 transition hover:border-[#3b7d56] hover:bg-[#f4faf6] hover:shadow-lg sm:min-h-0 sm:p-6"
               >
@@ -167,11 +170,11 @@ export default function TruthOrDareStage({
                   <HelpCircle className="h-6 w-6" />
                 </span>
                 <span className="text-base font-bold text-dark-950">Truth</span>
-                <span className="text-[11px] text-[#6F6470]">Answer honestly</span>
+                <span className="text-[11px] text-[#6F6470]">Ask {activePlayer.name}</span>
               </button>
 
               <button
-                disabled={!isMyTurn}
+                disabled={!canSetPrompt}
                 onClick={() => handleSelectChoice('dare')}
                 className="group flex min-h-[154px] flex-col items-center justify-center gap-3 rounded-3xl border border-dark-950/10 bg-white p-4 transition hover:border-spark-coral hover:bg-[#fff0f3] hover:shadow-lg sm:min-h-0 sm:p-6"
               >
@@ -179,7 +182,7 @@ export default function TruthOrDareStage({
                   <Zap className="h-6 w-6" />
                 </span>
                 <span className="text-base font-bold text-dark-950">Dare</span>
-                <span className="text-[11px] text-[#6F6470]">Take a challenge</span>
+                <span className="text-[11px] text-[#6F6470]">Challenge {activePlayer.name}</span>
               </button>
             </div>
           </div>

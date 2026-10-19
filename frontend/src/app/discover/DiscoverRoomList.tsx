@@ -55,7 +55,7 @@ export default function DiscoverRoomList({ rooms }: { rooms: RoomSummary[] }) {
   }, []);
   useEffect(() => {
     async function loadActiveRooms() {
-      const token = await getAccessToken();
+      const token = await getAccessToken({ redirectOnFailure: false });
       if (!token) return;
       const api = process.env.NEXT_PUBLIC_DUORA_API_URL ?? 'http://127.0.0.1:8000';
       const response = await fetch(`${api}/api/v1/rooms/active/`, { headers: { Authorization: `Bearer ${token}` } });

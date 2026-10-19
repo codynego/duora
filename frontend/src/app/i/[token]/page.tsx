@@ -14,10 +14,10 @@ export default function InviteAcceptancePage({ params }: { params: { token: stri
   const api = process.env.NEXT_PUBLIC_DUORA_API_URL ?? 'http://127.0.0.1:8000';
 
   useEffect(() => { fetch(`${api}/api/v1/rooms/invites/${params.token}/`).then(async (response) => { const body = await response.json(); if (!response.ok) throw new Error(body.detail ?? 'This invitation is unavailable.'); setPreview(body.data); }).catch((requestError) => setError(requestError instanceof Error ? requestError.message : 'This invitation is unavailable.')).finally(() => setLoading(false)); }, [api, params.token]);
-  useEffect(() => { void getAccessToken().then((token) => setSignedIn(Boolean(token))); }, []);
+  useEffect(() => { void getAccessToken({ redirectOnFailure: false }).then((token) => setSignedIn(Boolean(token))); }, []);
 
   async function accept() {
-    const token = await getAccessToken();
+    const token = await getAccessToken({ redirectOnFailure: false });
     setAccepting(true); setError('');
     try {
       const response = await fetch(`${api}/api/v1/rooms/invites/${params.token}/accept/`, { method: 'POST', headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}), 'Content-Type': 'application/json' }, body: JSON.stringify(token ? {} : { guest_name: guestName }) });
