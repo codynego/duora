@@ -30,7 +30,7 @@ export default function InviteAcceptancePage({
   const invitePath = `/i/${token}`;
 
   useEffect(() => {
-    fetch(`${api}/api/v1/rooms/invites/${token}/`)
+    fetch(`${api}/api/v1/rooms/invites/${encodeURIComponent(token)}/`)
       .then(async (response) => {
         const body = await response.json();
         if (!response.ok)
@@ -53,19 +53,19 @@ export default function InviteAcceptancePage({
   }, []);
 
   async function accept() {
-    const token = await getAccessToken({ redirectOnFailure: false });
+    const authToken = await getAccessToken({ redirectOnFailure: false });
     setAccepting(true);
     setError("");
     try {
       const response = await fetch(
-        `${api}/api/v1/rooms/invites/${token}/accept/`,
+        `${api}/api/v1/rooms/invites/${encodeURIComponent(token)}/accept/`,
         {
           method: "POST",
           headers: {
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(token ? {} : { guest_name: guestName }),
+          body: JSON.stringify(authToken ? {} : { guest_name: guestName }),
         },
       );
       const body = await response.json();
