@@ -12,7 +12,8 @@ import {
   PenLine,
 } from 'lucide-react';
 import { BaseStageProps } from '../types';
-import { ADDITIONAL_ADULT_CHALLENGES, ADDITIONAL_BOLD_ADULT_CHALLENGES, ADDITIONAL_TRUTH_CHALLENGES } from './additional-game-content';
+import { ADDITIONAL_ADULT_CHALLENGES, ADDITIONAL_BOLD_ADULT_CHALLENGES, ADDITIONAL_SUPER_BOLD_ADULT_CHALLENGES, ADDITIONAL_TRUTH_CHALLENGES } from './additional-game-content';
+import { shuffledDeck } from './prompt-deck';
 
 interface ChallengeCard {
   id: string;
@@ -53,6 +54,7 @@ const BASE_ADULT_CHALLENGES: ChallengeCard[] = [
 
 const ADULT_CHALLENGES: ChallengeCard[] = [...BASE_ADULT_CHALLENGES, ...ADDITIONAL_ADULT_CHALLENGES];
 const BOLD_ADULT_CHALLENGES: ChallengeCard[] = [...ADDITIONAL_BOLD_ADULT_CHALLENGES];
+const SUPER_BOLD_ADULT_CHALLENGES: ChallengeCard[] = [...ADDITIONAL_SUPER_BOLD_ADULT_CHALLENGES];
 
 export default function TruthOrDareStage({
   roomName,
@@ -68,24 +70,37 @@ export default function TruthOrDareStage({
   const cardIndex = typeof gameState.cardIndex === 'number' ? gameState.cardIndex : 0;
   const choice = gameState.choice === 'truth' || gameState.choice === 'dare' ? gameState.choice : null;
   const status = gameState.status === 'active' || gameState.status === 'awaiting_custom' || gameState.status === 'completed' || gameState.status === 'passed' ? gameState.status : 'choosing';
-  const questionMode = gameState.questionMode === 'custom' || gameState.questionMode === 'adult' || gameState.questionMode === 'bold' ? gameState.questionMode : 'system';
+  const questionMode = gameState.questionMode === 'custom' || gameState.questionMode === 'adult' || gameState.questionMode === 'bold' || gameState.questionMode === 'super_bold' ? gameState.questionMode : 'system';
   const customQuestion = typeof gameState.customQuestion === 'string' ? gameState.customQuestion : '';
   const [customQuestionInput, setCustomQuestionInput] = React.useState(customQuestion);
+  const deckSeed = typeof gameState.truthDareSeed === 'number' ? gameState.truthDareSeed : 1;
 
   const allPlayers = participants.length ? participants : [{ id: 'you', name: 'You', color: '#F05A78', isYou: true }];
   const activePlayer = allPlayers[turnIndex % allPlayers.length];
   const promptSetter = allPlayers[(turnIndex + 1) % allPlayers.length];
-  const currentCard = questionMode === 'bold' && audience === 'adults'
-    ? BOLD_ADULT_CHALLENGES[cardIndex % BOLD_ADULT_CHALLENGES.length]
+  const systemDeck = React.useMemo(() => shuffledDeck(CHALLENGES, deckSeed), [deckSeed]);
+  const adultDeck = React.useMemo(() => shuffledDeck(ADULT_CHALLENGES, deckSeed), [deckSeed]);
+  const boldDeck = React.useMemo(() => shuffledDeck(BOLD_ADULT_CHALLENGES, deckSeed), [deckSeed]);
+  const superBoldDeck = React.useMemo(() => shuffledDeck(SUPER_BOLD_ADULT_CHALLENGES, deckSeed), [deckSeed]);
+  const currentCard = questionMode === 'super_bold' && audience === 'adults'
+    ? superBoldDeck[cardIndex % superBoldDeck.length]
+    : questionMode === 'bold' && audience === 'adults'
+    ? boldDeck[cardIndex % boldDeck.length]
     : questionMode === 'adult' && audience === 'adults'
-    ? ADULT_CHALLENGES[cardIndex % ADULT_CHALLENGES.length]
-    : CHALLENGES[cardIndex % CHALLENGES.length];
+    ? adultDeck[cardIndex % adultDeck.length]
+    : systemDeck[cardIndex % systemDeck.length];
   const isMyTurn = Boolean(activePlayer.isYou);
   const canSetPrompt = Boolean(promptSetter.isYou);
   const activePrompt = questionMode === 'custom' && customQuestion ? customQuestion : choice === 'truth' ? currentCard.truth : currentCard.dare;
 
-  const handleQuestionMode = (mode: 'system' | 'custom' | 'adult' | 'bold') => {
-    if (!canSetPrompt || ((mode === 'adult' || mode === 'bold') && audience !== 'adults')) return;
+  React.useEffect(() => {
+    if (isHost && typeof gameState.truthDareSeed !== 'number') {
+      onGameStateChange?.({ ...gameState, truthDareSeed: Date.now() });
+    }
+  }, [gameState, isHost, onGameStateChange]);
+
+  const handleQuestionMode = (mode: 'system' | 'custom' | 'adult' | 'bold' | 'super_bold') => {
+    if (!canSetPrompt || ((mode === 'adult' || mode === 'bold' || mode === 'super_bold') && audience !== 'adults')) return;
     onGameStateChange?.({ ...gameState, turnIndex, questionMode: mode, customQuestion: mode === 'custom' ? customQuestionInput.trim() : '' });
   };
 
@@ -104,14 +119,14 @@ export default function TruthOrDareStage({
     onGameStateChange?.({ ...gameState, turnIndex, choice, status: 'completed' });
     onSendReaction('cheer');
     onSendMessage(`🎉 ${activePlayer.name} completed their ${choice?.toUpperCase()}!`);
-    window.setTimeout(() => onGameStateChange?.({ ...gameState, cardIndex: cardIndex + 1, turnIndex: (turnIndex + 1) % allPlayers.length, choice: null, status: 'choosing', questionMode: questionMode === 'adult' ? 'adult' : questionMode === 'bold' ? 'bold' : 'system', customQuestion: '' }), 700);
+    window.setTimeout(() => onGameStateChange?.({ ...gameState, cardIndex: cardIndex + 1, turnIndex: (turnIndex + 1) % allPlayers.length, choice: null, status: 'choosing', questionMode: questionMode === 'adult' ? 'adult' : questionMode === 'bold' ? 'bold' : questionMode === 'super_bold' ? 'super_bold' : 'system', customQuestion: '' }), 700);
   };
 
   const handlePass = () => {
     if (!isMyTurn) return;
     onGameStateChange?.({ ...gameState, turnIndex, choice, status: 'passed' });
     onSendMessage(`🛡️ ${activePlayer.name} passed on this challenge. Respect!`);
-    window.setTimeout(() => onGameStateChange?.({ ...gameState, cardIndex: cardIndex + 1, turnIndex: (turnIndex + 1) % allPlayers.length, choice: null, status: 'choosing', questionMode: questionMode === 'adult' ? 'adult' : questionMode === 'bold' ? 'bold' : 'system', customQuestion: '' }), 700);
+    window.setTimeout(() => onGameStateChange?.({ ...gameState, cardIndex: cardIndex + 1, turnIndex: (turnIndex + 1) % allPlayers.length, choice: null, status: 'choosing', questionMode: questionMode === 'adult' ? 'adult' : questionMode === 'bold' ? 'bold' : questionMode === 'super_bold' ? 'super_bold' : 'system', customQuestion: '' }), 700);
   };
 
   return (
@@ -152,16 +167,17 @@ export default function TruthOrDareStage({
               <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-xs font-bold text-dark-950 [&::-webkit-details-marker]:hidden">
                 <span>Prompt options</span>
                 <span className="text-[10px] font-semibold text-spark-coral">
-                  {questionMode === 'system' ? 'Curated question' : questionMode === 'custom' ? 'Your question' : questionMode === 'bold' ? '18+ bold' : '18+ warm'}
+                  {questionMode === 'system' ? 'Curated question' : questionMode === 'custom' ? 'Your question' : questionMode === 'super_bold' ? '18+ super bold' : questionMode === 'bold' ? '18+ bold' : '18+ warm'}
                 </span>
               </summary>
               <div className="border-t border-dark-950/8 p-3">
                 <p className="mb-2 text-[10px] font-semibold leading-4 text-[#6F6470]">{canSetPrompt ? `Choose how ${activePlayer.name} receives their prompt.` : `${promptSetter.name} chooses the prompt source for this turn.`}</p>
-                <div className="grid gap-2 sm:grid-cols-4">
+                <div className="grid gap-2 sm:grid-cols-5">
                   <button type="button" disabled={!canSetPrompt} onClick={() => handleQuestionMode('system')} className={`min-w-0 rounded-xl border px-3 py-2.5 text-left text-xs font-bold ${questionMode === 'system' ? 'border-spark-coral bg-[#fff0f3] text-spark-coral' : 'border-dark-950/10 bg-white'}`}>System prompt<span className="mt-1 block text-[10px] font-normal leading-4 text-[#6F6470]">Curated question</span></button>
                   <button type="button" disabled={!canSetPrompt} onClick={() => handleQuestionMode('custom')} className={`min-w-0 rounded-xl border px-3 py-2.5 text-left text-xs font-bold ${questionMode === 'custom' ? 'border-spark-coral bg-[#fff0f3] text-spark-coral' : 'border-dark-950/10 bg-white'}`}><PenLine className="mr-1 inline h-3 w-3" />Custom question<span className="mt-1 block text-[10px] font-normal leading-4 text-[#6F6470]">Ask {activePlayer.name}</span></button>
                   <button type="button" disabled={!canSetPrompt || audience !== 'adults'} onClick={() => handleQuestionMode('adult')} className={`min-w-0 rounded-xl border px-3 py-2.5 text-left text-xs font-bold ${questionMode === 'adult' ? 'border-spark-coral bg-[#fff0f3] text-spark-coral' : 'border-dark-950/10 bg-white'} disabled:cursor-not-allowed disabled:opacity-40`}>18+ warm<span className="mt-1 block text-[10px] font-normal leading-4 text-[#6F6470]">Flirty & thoughtful</span></button>
                   <button type="button" disabled={!canSetPrompt || audience !== 'adults'} onClick={() => handleQuestionMode('bold')} className={`min-w-0 rounded-xl border px-3 py-2.5 text-left text-xs font-bold ${questionMode === 'bold' ? 'border-spark-coral bg-[#fff0f3] text-spark-coral' : 'border-dark-950/10 bg-white'} disabled:cursor-not-allowed disabled:opacity-40`}>18+ bold<span className="mt-1 block text-[10px] font-normal leading-4 text-[#6F6470]">Direct, consensual</span></button>
+                  <button type="button" disabled={!canSetPrompt || audience !== 'adults'} onClick={() => handleQuestionMode('super_bold')} className={`min-w-0 rounded-xl border px-3 py-2.5 text-left text-xs font-bold ${questionMode === 'super_bold' ? 'border-spark-coral bg-[#fff0f3] text-spark-coral' : 'border-dark-950/10 bg-white'} disabled:cursor-not-allowed disabled:opacity-40`}>Super bold<span className="mt-1 block text-[10px] font-normal leading-4 text-[#6F6470]">Most direct</span></button>
                 </div>
                 {audience === 'all' && <p className="mt-2 text-[10px] leading-4 text-[#6F6470]">This room is open to everyone, so 18+ prompts are unavailable.</p>}
               </div>
