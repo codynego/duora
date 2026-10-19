@@ -1,5 +1,23 @@
 const apiUrl = process.env.NEXT_PUBLIC_DUORA_API_URL ?? 'http://127.0.0.1:8000';
 let sessionValidUntil = 0;
+let credentialsConfigured = false;
+
+// This module is imported before every authenticated call. Configure this at
+// import time rather than after React hydration, so the request immediately
+// following a successful login includes the new HttpOnly cookie as well.
+function configureApiCredentials() {
+  if (typeof window === 'undefined' || credentialsConfigured) return;
+  const apiOrigin = new URL(apiUrl).origin;
+  const nativeFetch = window.fetch;
+  window.fetch = (input, init = {}) => {
+    const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+    if (new URL(url, window.location.href).origin !== apiOrigin || init.credentials) return nativeFetch(input, init);
+    return nativeFetch(input, { ...init, credentials: 'include' });
+  };
+  credentialsConfigured = true;
+}
+
+configureApiCredentials();
 
 async function request(path: string, body: Record<string, string>) {
   const response = await fetch(`${apiUrl}/api/v1/auth/${path}`, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
