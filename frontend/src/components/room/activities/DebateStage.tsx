@@ -88,6 +88,7 @@ export default function DebateStage({
   );
 
   const totalVotes = Object.keys(allVotes).length;
+  const playerNameForId = (id: string) => participants.find((player) => player.id === id)?.name ?? 'A participant';
 
   return (
     <section className="game-stage game-stage--debate flex min-h-full w-full flex-col overflow-y-auto rounded-[28px] bg-[#fffdfa] p-5 text-dark-950 shadow-[0_20px_60px_rgba(0,0,0,.2)] sm:rounded-[32px] sm:p-8 lg:p-10">
@@ -202,17 +203,17 @@ export default function DebateStage({
             {/* Split Visual Bar */}
             <div className="mt-3 flex h-4 overflow-hidden rounded-full bg-dark-950/10">
               <div
-                style={{ width: `${(voteCounts.agree / totalVotes) * 100}%` }}
+                style={{ width: `${totalVotes ? (voteCounts.agree / totalVotes) * 100 : 0}%` }}
                 className="bg-[#4d8568] transition-all duration-500"
                 title={`Agree: ${voteCounts.agree}`}
               />
               <div
-                style={{ width: `${(voteCounts.disagree / totalVotes) * 100}%` }}
+                style={{ width: `${totalVotes ? (voteCounts.disagree / totalVotes) * 100 : 0}%` }}
                 className="bg-spark-coral transition-all duration-500"
                 title={`Disagree: ${voteCounts.disagree}`}
               />
               <div
-                style={{ width: `${(voteCounts.depends / totalVotes) * 100}%` }}
+                style={{ width: `${totalVotes ? (voteCounts.depends / totalVotes) * 100 : 0}%` }}
                 className="bg-spark-amber transition-all duration-500"
                 title={`Depends: ${voteCounts.depends}`}
               />
@@ -228,12 +229,12 @@ export default function DebateStage({
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   {Object.entries(allVotes)
                     .filter(([_, st]) => st === 'agree')
-                    .map(([name]) => (
+                    .map(([playerId]) => (
                       <span
-                        key={name}
+                        key={playerId}
                         className="rounded-full bg-white px-2.5 py-1 text-xs font-medium text-dark-950 shadow-sm"
                       >
-                        {name}
+                        {playerNameForId(playerId)}
                       </span>
                     ))}
                 </div>
@@ -247,12 +248,12 @@ export default function DebateStage({
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   {Object.entries(allVotes)
                     .filter(([_, st]) => st === 'disagree')
-                    .map(([name]) => (
+                    .map(([playerId]) => (
                       <span
-                        key={name}
+                        key={playerId}
                         className="rounded-full bg-white px-2.5 py-1 text-xs font-medium text-dark-950 shadow-sm"
                       >
-                        {name}
+                        {playerNameForId(playerId)}
                       </span>
                     ))}
                 </div>
@@ -266,12 +267,12 @@ export default function DebateStage({
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   {Object.entries(allVotes)
                     .filter(([_, st]) => st === 'depends')
-                    .map(([name]) => (
+                    .map(([playerId]) => (
                       <span
-                        key={name}
+                        key={playerId}
                         className="rounded-full bg-white px-2.5 py-1 text-xs font-medium text-dark-950 shadow-sm"
                       >
-                        {name}
+                        {playerNameForId(playerId)}
                       </span>
                     ))}
                 </div>
