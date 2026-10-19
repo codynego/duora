@@ -80,11 +80,14 @@ def room_invite_unavailable(room: Room, *, now=None) -> bool:
 @transaction.atomic
 def create_private_room(*, user, experience: str, topic: str = '', discussion_description: str = '', starts_at=None, invited_user=None, creates_connection=False, duration_minutes=None):
     try:
-        title, description, duration_minutes, max_members = PRIVATE_EXPERIENCES[experience]
+        title, description, default_duration, max_members = PRIVATE_EXPERIENCES[experience]
     except KeyError as error:
         raise ValidationError({'experience': 'Choose a supported private experience.'}) from error
 
-    duration_minutes = PRIVATE_EXPERIENCES[experience][2] if duration_minutes is None else duration_minutes
+    try:
+        duration_minutes = default_duration if duration_minutes is None else int(duration_minutes)
+    except (TypeError, ValueError) as error:
+        raise ValidationError({'duration_minutes': 'Choose 10, 30, 60 minutes, or untimed.'}) from error
     if duration_minutes not in {0, 10, 30, 60}:
         raise ValidationError({'duration_minutes': 'Choose 10, 30, 60 minutes, or untimed.'})
     code = f'P-{secrets.token_urlsafe(6).replace("-", "").replace("_", "")[:8].upper()}'
@@ -114,12 +117,15 @@ def create_private_room(*, user, experience: str, topic: str = '', discussion_de
 @transaction.atomic
 def create_public_room(*, user, experience: str, tone: str, audience: str, max_members: int, city: str, topic: str = '', discussion_description: str = '', starts_at=None, duration_minutes=None):
     try:
-        title, description, duration_minutes, experience_max_members = PRIVATE_EXPERIENCES[experience]
+        title, description, default_duration, experience_max_members = PRIVATE_EXPERIENCES[experience]
     except KeyError as error:
         raise ValidationError({'experience': 'Choose a supported experience.'}) from error
     if max_members > experience_max_members:
         raise ValidationError({'max_members': f'{title} supports up to {experience_max_members} people.'})
-    duration_minutes = PRIVATE_EXPERIENCES[experience][2] if duration_minutes is None else duration_minutes
+    try:
+        duration_minutes = default_duration if duration_minutes is None else int(duration_minutes)
+    except (TypeError, ValueError) as error:
+        raise ValidationError({'duration_minutes': 'Choose 10, 30, 60 minutes, or untimed.'}) from error
     if duration_minutes not in {0, 10, 30, 60}:
         raise ValidationError({'duration_minutes': 'Choose 10, 30, 60 minutes, or untimed.'})
     code = f'R-{secrets.token_urlsafe(6).replace("-", "").replace("_", "")[:8].upper()}'
