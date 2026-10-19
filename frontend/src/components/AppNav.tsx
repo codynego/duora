@@ -39,7 +39,7 @@ export default function AppNav() {
           <UsersRound className="h-5 w-5 text-spark-coral" strokeWidth={1.9} />
           <p className="mt-3 text-sm font-bold tracking-[-0.02em] text-dark-950">Have someone in mind?</p>
           <p className="mt-1 text-xs leading-5 text-dark-950/60">Start something private and send them the link.</p>
-          <Link href="/home#invite" className="mt-4 inline-flex text-xs font-bold text-spark-coral transition hover:text-dark-950">Create an invite →</Link>
+          <Link href="/invite?connect=true" className="mt-4 inline-flex text-xs font-bold text-spark-coral transition hover:text-dark-950">Create a connection invite →</Link>
         </section>
         <Link href={user ? '/profile' : '/login'} className="mt-5 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-dark-950 transition hover:bg-dark-950/[0.045]"><span className="grid h-8 w-8 place-items-center rounded-full bg-dark-950 text-xs font-bold text-white">{ready && user ? initial : '→'}</span><span className="flex-1">{ready && user ? displayName : ready ? 'Sign in' : 'Loading…'}</span><UserRound className="h-4 w-4 text-dark-950/45" strokeWidth={1.8} /></Link>
       </aside>

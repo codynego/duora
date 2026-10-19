@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { ArrowRight, LockKeyhole } from 'lucide-react';
 import { getAccessToken } from '@/lib/auth';
 
-type Preview = { room: { title: string; duration_minutes: number }; invited_by: string; expires_at: string };
+type Preview = { room: { title: string; duration_minutes: number }; invited_by: string; creates_connection?: boolean; expires_at: string };
 
 export default function InviteAcceptancePage({ params }: { params: { token: string } }) {
   const router = useRouter();

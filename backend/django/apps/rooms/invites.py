@@ -3,6 +3,8 @@ import secrets
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
+from django.db.models import Q
+from django.db import transaction
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -30,11 +32,13 @@ class InvitePreviewView(APIView):
     def get(self, request, token):
         invite = get_object_or_404(RoomInvite.objects.select_related('room', 'created_by'), token=token)
         if not invite.is_active: return Response({'detail': 'This invite is no longer available.'}, status=status.HTTP_410_GONE)
-        return Response({'data': {'room': {'id': str(invite.room_id), 'title': invite.room.title, 'duration_minutes': invite.room.duration_minutes}, 'invited_by': invite.created_by.username, 'expires_at': invite.expires_at}})
+        return Response({'data': {'room': {'id': str(invite.room_id), 'title': invite.room.title, 'duration_minutes': invite.room.duration_minutes}, 'invited_by': invite.created_by.username, 'creates_connection': invite.creates_connection, 'expires_at': invite.expires_at}})
 
 
 class AcceptInviteView(APIView):
     permission_classes = [AllowAny]
+
+    @transaction.atomic
     def post(self, request, token):
         invite = get_object_or_404(RoomInvite.objects.select_related('invited_user'), token=token)
         guest_refresh = None
@@ -54,5 +58,25 @@ class AcceptInviteView(APIView):
             guest_refresh = refresh
         membership = accept_invite(invite=invite, user=user)
         data = {'room_id': str(membership.room_id), 'membership_id': str(membership.id)}
+        if invite.creates_connection and invite.created_by_id != user.id:
+            from apps.connections.models import ConnectionRequest
+            from apps.connections.services import canonical_thread_for_users
+            connection = ConnectionRequest.objects.filter(
+                Q(requester=invite.created_by, recipient=user) | Q(requester=user, recipient=invite.created_by)
+            ).first()
+            if not connection:
+                connection = ConnectionRequest.objects.create(
+                    requester=invite.created_by, recipient=user,
+                    status=ConnectionRequest.Status.ACCEPTED,
+                    source=ConnectionRequest.Source.PRIVATE_INVITE,
+                    room=invite.room, last_experience=invite.room.title,
+                    responded_at=timezone.now(),
+                )
+            elif connection.status != ConnectionRequest.Status.ACCEPTED:
+                connection.status = ConnectionRequest.Status.ACCEPTED
+                connection.responded_at = timezone.now()
+                connection.save(update_fields=('status', 'responded_at'))
+            thread = canonical_thread_for_users(invite.created_by_id, user.id)
+            data.update({'connection_id': str(connection.id), 'thread_id': str(thread.id)})
         response = Response({'data': data})
         return set_auth_cookies(response, guest_refresh) if guest_refresh else response

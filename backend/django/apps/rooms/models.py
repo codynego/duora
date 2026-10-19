@@ -66,6 +66,7 @@ class RoomInvite(models.Model):
     room = models.ForeignKey(Room, on_delete=models.CASCADE, related_name='invites')
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='room_invites')
     invited_user = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name='direct_room_invites')
+    creates_connection = models.BooleanField(default=False)
     token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     expires_at = models.DateTimeField()
     accepted_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name='accepted_room_invites')

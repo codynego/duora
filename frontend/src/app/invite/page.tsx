@@ -25,7 +25,7 @@ export default function InvitePage() {
     if (!token) return setError('Sign in to create a private invitation.');
     setCreating(true); setError(''); setCopied(false);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_DUORA_API_URL ?? 'http://127.0.0.1:8000'}/api/v1/rooms/private/`, { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ experience: experience.key }) });
+      const response = await fetch(`${process.env.NEXT_PUBLIC_DUORA_API_URL ?? 'http://127.0.0.1:8000'}/api/v1/rooms/private/`, { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ experience: experience.key, connect_on_accept: new URLSearchParams(window.location.search).get('connect') === 'true' }) });
       const body = await response.json() as { data?: { room?: { code?: string }; invite?: { token?: string } }; detail?: string };
       if (!response.ok || !body.data?.invite?.token || !body.data.room?.code) throw new Error(body.detail ?? 'We could not create that private room.');
       setInviteUrl(`${window.location.origin}/i/${body.data.invite.token}`);

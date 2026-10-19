@@ -104,7 +104,7 @@ class CreatePrivateRoomView(APIView):
                 starts_at = timezone.make_aware(starts_at, timezone.get_current_timezone())
             if starts_at <= timezone.now():
                 raise ValidationError({'starts_at': 'Choose a time in the future, or start the experience now.'})
-        room, invite = create_private_room(user=request.user, experience=request.data.get('experience', ''), topic=request.data.get('topic', ''), discussion_description=request.data.get('discussion_description', ''), starts_at=starts_at, invited_user=invited_user)
+        room, invite = create_private_room(user=request.user, experience=request.data.get('experience', ''), topic=request.data.get('topic', ''), discussion_description=request.data.get('discussion_description', ''), starts_at=starts_at, invited_user=invited_user, creates_connection=bool(request.data.get('connect_on_accept', False)))
         return Response({'data': {
             'room': {'id': str(room.id), 'code': room.code, 'title': room.title},
             'invite': {'token': str(invite.token), 'expires_at': invite.expires_at},
