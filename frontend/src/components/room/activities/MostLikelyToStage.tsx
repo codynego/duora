@@ -136,14 +136,14 @@ export default function MostLikelyToStage({
         {/* Phase 1: Private Voting on Participants */}
         {phase === 'voting' && (
           <div className="mt-6 max-w-2xl">
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-3">
               {players.map((p) => {
                 const isSelected = selectedTarget === p.name;
                 return (
                   <button
                     key={p.id}
                     onClick={() => handleVote(p.name)}
-                    className={`flex flex-col items-center gap-2.5 rounded-2xl border p-4 transition ${
+                    className={`flex flex-col items-center gap-2 rounded-2xl border p-3 transition sm:gap-2.5 sm:p-4 ${
                       isSelected
                         ? 'border-spark-coral bg-[#fff0f3] ring-2 ring-spark-coral'
                         : 'border-dark-950/10 bg-white hover:border-dark-950/25'

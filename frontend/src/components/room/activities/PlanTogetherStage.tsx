@@ -97,7 +97,7 @@ export default function PlanTogetherStage({
               {/* Budget */}
               <div>
                 <span className="text-xs font-bold text-dark-950">1. Budget</span>
-                <div className="mt-2 flex gap-2">
+                <div className="mt-2 grid grid-cols-3 gap-2">
                   {(['$', '$$', '$$$'] as const).map((b) => (
                     <button
                       key={b}
@@ -137,7 +137,7 @@ export default function PlanTogetherStage({
               {/* Time */}
               <div>
                 <span className="text-xs font-bold text-dark-950">3. Time window</span>
-                <div className="mt-2 flex gap-2">
+                <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
                   {['Quick 1–2 hours', 'Full evening', 'Weekend day'].map((t) => (
                     <button
                       key={t}
@@ -155,8 +155,8 @@ export default function PlanTogetherStage({
               </div>
             </div>
 
-            <div className="mt-6 flex items-center justify-between text-xs text-[#6F6470]">
-              <span className="flex items-center gap-1.5">
+            <div className="mt-6 flex flex-col gap-3 text-xs text-[#6F6470] sm:flex-row sm:items-center sm:justify-between">
+              <span className="flex items-start gap-1.5 sm:items-center">
                 <Lock className="h-3.5 w-3.5 text-spark-coral" />
                 {partnerName} is also picking their preferences.
               </span>
@@ -164,7 +164,7 @@ export default function PlanTogetherStage({
               <button
                 onClick={handleRevealMatches}
                 disabled={!isFormComplete}
-                className="rounded-full bg-dark-950 px-5 py-2.5 text-xs font-bold text-white transition hover:bg-dark-900 disabled:opacity-40"
+                className="w-full rounded-full bg-dark-950 px-5 py-2.5 text-xs font-bold text-white transition hover:bg-dark-900 disabled:opacity-40 sm:w-auto"
               >
                 Reveal overlap →
               </button>
@@ -226,7 +226,7 @@ export default function PlanTogetherStage({
       </div>
 
       {/* Bottom Controls */}
-      <div className="flex shrink-0 items-center justify-between border-t border-dark-950/8 pt-5">
+      <div className="flex shrink-0 flex-col items-stretch gap-3 border-t border-dark-950/8 pt-5 sm:flex-row sm:items-center sm:justify-between">
         <span className="text-xs text-[#6F6470]">
           Invite-only experience for 2 people.
         </span>
@@ -234,7 +234,7 @@ export default function PlanTogetherStage({
         {phase === 'confirmed' && (
           <button
             onClick={() => onGameStateChange?.({ ...gameState, phase: 'choosing', selectedActivity: null })}
-            className="inline-flex items-center gap-1.5 rounded-full border border-dark-950/15 bg-white px-4 py-2 text-xs font-bold text-dark-950 hover:bg-dark-950/5"
+            className="inline-flex items-center justify-center gap-1.5 rounded-full border border-dark-950/15 bg-white px-4 py-2 text-xs font-bold text-dark-950 hover:bg-dark-950/5"
           >
             Plan another date
           </button>

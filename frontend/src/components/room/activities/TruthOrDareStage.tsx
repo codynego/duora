@@ -138,22 +138,30 @@ export default function TruthOrDareStage({
               {isMyTurn ? 'Will you answer a question or take on a challenge?' : `Waiting for ${activePlayer.name} to choose...`}
             </p>
 
-            <div className="mx-auto mt-5 max-w-xl text-left">
-              <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-dark-950/45">Question style</p>
-              <div className="mt-2 grid gap-2 sm:grid-cols-3">
-                <button disabled={!isMyTurn} onClick={() => handleQuestionMode('system')} className={`rounded-xl border px-3 py-2 text-left text-xs font-bold ${questionMode === 'system' ? 'border-spark-coral bg-[#fff0f3] text-spark-coral' : 'border-dark-950/10 bg-white'}`}>System prompt<span className="mt-1 block text-[10px] font-normal text-[#6F6470]">Curated question</span></button>
-                <button disabled={!isMyTurn} onClick={() => handleQuestionMode('custom')} className={`rounded-xl border px-3 py-2 text-left text-xs font-bold ${questionMode === 'custom' ? 'border-spark-coral bg-[#fff0f3] text-spark-coral' : 'border-dark-950/10 bg-white'}`}><PenLine className="mr-1 inline h-3 w-3" />My question<span className="mt-1 block text-[10px] font-normal text-[#6F6470]">Ask your own</span></button>
-                <button disabled={!isMyTurn || audience !== 'adults'} onClick={() => handleQuestionMode('adult')} className={`rounded-xl border px-3 py-2 text-left text-xs font-bold ${questionMode === 'adult' ? 'border-spark-coral bg-[#fff0f3] text-spark-coral' : 'border-dark-950/10 bg-white'} disabled:cursor-not-allowed disabled:opacity-40`}>18+ raw<span className="mt-1 block text-[10px] font-normal text-[#6F6470]">Adults only · consent first</span></button>
+            <details className="mx-auto mt-5 max-w-xl rounded-2xl border border-dark-950/10 bg-white/70 text-left">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-xs font-bold text-dark-950 [&::-webkit-details-marker]:hidden">
+                <span>Prompt options</span>
+                <span className="text-[10px] font-semibold text-spark-coral">
+                  {questionMode === 'system' ? 'Curated question' : questionMode === 'custom' ? 'Your question' : '18+ raw'}
+                </span>
+              </summary>
+              <div className="border-t border-dark-950/8 p-3">
+                <p className="mb-2 text-[10px] font-semibold leading-4 text-[#6F6470]">Choose where the prompt comes from. These options only affect the player whose turn it is.</p>
+                <div className="grid gap-2 sm:grid-cols-3">
+                  <button type="button" disabled={!isMyTurn} onClick={() => handleQuestionMode('system')} className={`min-w-0 rounded-xl border px-3 py-2.5 text-left text-xs font-bold ${questionMode === 'system' ? 'border-spark-coral bg-[#fff0f3] text-spark-coral' : 'border-dark-950/10 bg-white'}`}>System prompt<span className="mt-1 block text-[10px] font-normal leading-4 text-[#6F6470]">Curated question</span></button>
+                  <button type="button" disabled={!isMyTurn} onClick={() => handleQuestionMode('custom')} className={`min-w-0 rounded-xl border px-3 py-2.5 text-left text-xs font-bold ${questionMode === 'custom' ? 'border-spark-coral bg-[#fff0f3] text-spark-coral' : 'border-dark-950/10 bg-white'}`}><PenLine className="mr-1 inline h-3 w-3" />My question<span className="mt-1 block text-[10px] font-normal leading-4 text-[#6F6470]">Ask your own</span></button>
+                  <button type="button" disabled={!isMyTurn || audience !== 'adults'} onClick={() => handleQuestionMode('adult')} className={`min-w-0 rounded-xl border px-3 py-2.5 text-left text-xs font-bold ${questionMode === 'adult' ? 'border-spark-coral bg-[#fff0f3] text-spark-coral' : 'border-dark-950/10 bg-white'} disabled:cursor-not-allowed disabled:opacity-40`}>18+ raw<span className="mt-1 block text-[10px] font-normal leading-4 text-[#6F6470]">Adults only · consent first</span></button>
+                </div>
+                {questionMode === 'custom' && <input value={customQuestionInput} onChange={(event) => setCustomQuestionInput(event.target.value)} disabled={!isMyTurn} maxLength={240} placeholder="Write the question you want to ask..." className="mt-2 w-full rounded-xl border border-dark-950/15 bg-white px-3 py-2.5 text-xs outline-none focus:border-spark-coral disabled:bg-dark-950/5" />}
+                {audience === 'all' && <p className="mt-2 text-[10px] leading-4 text-[#6F6470]">This room is open to everyone, so 18+ prompts are unavailable.</p>}
               </div>
-              {questionMode === 'custom' && <input value={customQuestionInput} onChange={(event) => setCustomQuestionInput(event.target.value)} disabled={!isMyTurn} maxLength={240} placeholder="Write the question you want to ask..." className="mt-2 w-full rounded-xl border border-dark-950/15 bg-white px-3 py-2.5 text-xs outline-none focus:border-spark-coral disabled:bg-dark-950/5" />}
-              {audience === 'all' && <p className="mt-2 text-[10px] text-[#6F6470]">This room is open to everyone, so 18+ prompts are unavailable.</p>}
-            </div>
+            </details>
 
-            <div className="mx-auto mt-7 grid max-w-md grid-cols-2 gap-4">
+            <div className="mx-auto mt-6 grid w-full max-w-md grid-cols-2 gap-3 sm:mt-7 sm:gap-4">
               <button
                 disabled={!isMyTurn}
                 onClick={() => handleSelectChoice('truth')}
-                className="group flex flex-col items-center gap-3 rounded-3xl border border-dark-950/10 bg-white p-6 transition hover:border-[#3b7d56] hover:bg-[#f4faf6] hover:shadow-lg"
+                className="group flex min-h-[154px] flex-col items-center justify-center gap-3 rounded-3xl border border-dark-950/10 bg-white p-4 transition hover:border-[#3b7d56] hover:bg-[#f4faf6] hover:shadow-lg sm:min-h-0 sm:p-6"
               >
                 <span className="grid h-12 w-12 place-items-center rounded-2xl bg-[#eef7f1] text-[#3b7d56] transition group-hover:scale-110">
                   <HelpCircle className="h-6 w-6" />
@@ -165,7 +173,7 @@ export default function TruthOrDareStage({
               <button
                 disabled={!isMyTurn}
                 onClick={() => handleSelectChoice('dare')}
-                className="group flex flex-col items-center gap-3 rounded-3xl border border-dark-950/10 bg-white p-6 transition hover:border-spark-coral hover:bg-[#fff0f3] hover:shadow-lg"
+                className="group flex min-h-[154px] flex-col items-center justify-center gap-3 rounded-3xl border border-dark-950/10 bg-white p-4 transition hover:border-spark-coral hover:bg-[#fff0f3] hover:shadow-lg sm:min-h-0 sm:p-6"
               >
                 <span className="grid h-12 w-12 place-items-center rounded-2xl bg-[#fff0f3] text-spark-coral transition group-hover:scale-110">
                   <Zap className="h-6 w-6" />
@@ -191,11 +199,11 @@ export default function TruthOrDareStage({
             </h1>
 
             {status === 'active' && (
-              <div className="mt-8 flex flex-wrap items-center gap-3">
+              <div className="mt-7 grid gap-2 sm:mt-8 sm:flex sm:flex-wrap sm:items-center sm:gap-3">
                 <button
                   disabled={!isMyTurn}
                   onClick={handleComplete}
-                  className="inline-flex items-center gap-2 rounded-full bg-[#3b7d56] px-5 py-3 text-xs font-bold text-white transition hover:bg-[#2b6142]"
+                  className="inline-flex items-center justify-center gap-2 rounded-full bg-[#3b7d56] px-5 py-3 text-xs font-bold text-white transition hover:bg-[#2b6142]"
                 >
                   <CheckCircle2 className="h-4 w-4" />
                   Completed challenge
@@ -204,7 +212,7 @@ export default function TruthOrDareStage({
                 <button
                   disabled={!isMyTurn}
                   onClick={handlePass}
-                  className="inline-flex items-center gap-2 rounded-full border border-dark-950/15 bg-white px-5 py-3 text-xs font-bold text-dark-950 transition hover:bg-dark-950/5"
+                  className="inline-flex items-center justify-center gap-2 rounded-full border border-dark-950/15 bg-white px-5 py-3 text-xs font-bold text-dark-950 transition hover:bg-dark-950/5"
                 >
                   <XCircle className="h-4 w-4 text-[#6F6470]" />
                   Pass / Opt out
@@ -229,7 +237,7 @@ export default function TruthOrDareStage({
       </div>
 
       {/* Bottom Controls */}
-      <div className="flex shrink-0 items-center justify-between border-t border-dark-950/8 pt-5">
+      <div className="flex shrink-0 flex-col items-stretch gap-3 border-t border-dark-950/8 pt-5 sm:flex-row sm:items-center sm:justify-between">
         <span className="text-xs text-[#6F6470]">
           Next player: {allPlayers[(turnIndex + 1) % allPlayers.length].name}
         </span>

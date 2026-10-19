@@ -138,10 +138,10 @@ export default function DebateStage({
             <p className="text-xs font-bold uppercase tracking-wider text-dark-950/60">
               Where do you stand?
             </p>
-            <div className="mt-3 grid grid-cols-3 gap-3">
+            <div className="mt-3 grid gap-2 sm:grid-cols-3 sm:gap-3">
               <button
                 onClick={() => handleSelectStance('agree')}
-                className={`flex flex-col items-center justify-center gap-2 rounded-2xl border p-4 transition ${
+                className={`flex items-center justify-start gap-3 rounded-2xl border p-3.5 text-left transition sm:flex-col sm:justify-center sm:gap-2 sm:p-4 sm:text-center ${
                   myStance === 'agree'
                     ? 'border-[#3b7d56] bg-[#eef7f1] text-[#2b6142] ring-2 ring-[#3b7d56]'
                     : 'border-dark-950/10 bg-white hover:border-dark-950/30'
@@ -153,7 +153,7 @@ export default function DebateStage({
 
               <button
                 onClick={() => handleSelectStance('disagree')}
-                className={`flex flex-col items-center justify-center gap-2 rounded-2xl border p-4 transition ${
+                className={`flex items-center justify-start gap-3 rounded-2xl border p-3.5 text-left transition sm:flex-col sm:justify-center sm:gap-2 sm:p-4 sm:text-center ${
                   myStance === 'disagree'
                     ? 'border-spark-coral bg-[#fff0f3] text-spark-coral ring-2 ring-spark-coral'
                     : 'border-dark-950/10 bg-white hover:border-dark-950/30'
@@ -165,7 +165,7 @@ export default function DebateStage({
 
               <button
                 onClick={() => handleSelectStance('depends')}
-                className={`flex flex-col items-center justify-center gap-2 rounded-2xl border p-4 transition ${
+                className={`flex items-center justify-start gap-3 rounded-2xl border p-3.5 text-left transition sm:flex-col sm:justify-center sm:gap-2 sm:p-4 sm:text-center ${
                   myStance === 'depends'
                     ? 'border-spark-amber bg-[#fffbf0] text-[#a16207] ring-2 ring-spark-amber'
                     : 'border-dark-950/10 bg-white hover:border-dark-950/30'

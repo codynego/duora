@@ -128,7 +128,7 @@ export default function SharedChallengesStage({
         </div>
 
         {/* Task Cards */}
-        <div className="mt-6 max-h-[42vh] space-y-2.5 overflow-y-auto pr-1">
+        <div className="mt-6 max-h-[48vh] space-y-2.5 overflow-y-auto pr-1 sm:max-h-[42vh]">
           {tasks.map((task) => {
             const completedByMe = isCompleteFor(task, playerId);
             const completedByPartner = partner ? isCompleteFor(task, partner.id) : false;
@@ -145,7 +145,7 @@ export default function SharedChallengesStage({
                     : 'border-dark-950/10 bg-white hover:border-dark-950/30'
                 }`}
               >
-                <div className="flex items-start justify-between gap-3">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div className="min-w-0">
                     <p className={`text-xs font-bold sm:text-sm ${mutual ? 'text-[#2b6142] line-through' : 'text-dark-950'}`}>
                       {task.title}
@@ -153,7 +153,7 @@ export default function SharedChallengesStage({
                     <p className="mt-1 text-xs text-[#6F6470]">{task.description}</p>
                   </div>
 
-                  <div className="flex shrink-0 items-center gap-2">
+                  <div className="flex items-center gap-2 self-start sm:shrink-0">
                     <span
                       title="Your status"
                       className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold ${
@@ -186,7 +186,7 @@ export default function SharedChallengesStage({
       </div>
 
       {/* Bottom Controls */}
-      <div className="flex shrink-0 items-center justify-between border-t border-dark-950/8 pt-5">
+      <div className="flex shrink-0 flex-col items-stretch gap-3 border-t border-dark-950/8 pt-5 sm:flex-row sm:items-center sm:justify-between">
         <span className="text-xs text-[#6F6470]">
           Tap any challenge to mark your part completed.
         </span>
@@ -196,7 +196,7 @@ export default function SharedChallengesStage({
             onSendReaction('support');
             onSendMessage(`Cheering on our challenge progress! 💪`);
           }}
-          className="inline-flex items-center gap-1.5 rounded-full border border-dark-950/15 bg-white px-4 py-2 text-xs font-bold text-dark-950 hover:bg-dark-950/5"
+          className="inline-flex items-center justify-center gap-1.5 rounded-full border border-dark-950/15 bg-white px-4 py-2 text-xs font-bold text-dark-950 hover:bg-dark-950/5"
         >
           <Sparkles className="h-3.5 w-3.5 text-spark-coral" />
           Cheer partner

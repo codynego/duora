@@ -217,8 +217,8 @@ export default function GuidedConversationStage({
               </button>
             </div>
 
-            <div className="mt-4 flex items-center justify-between text-xs text-[#6F6470]">
-              <span className="flex items-center gap-1.5">
+            <div className="mt-4 flex flex-col gap-2 text-xs text-[#6F6470] sm:flex-row sm:items-center sm:justify-between">
+              <span className="flex items-start gap-1.5 sm:items-center">
                 <Lock className="h-3.5 w-3.5 text-spark-coral" />
                 Answers stay hidden until revealed together.
               </span>
@@ -279,8 +279,8 @@ export default function GuidedConversationStage({
       </div>
 
       {/* Bottom Stage Progression Controls */}
-      <div className="mt-auto flex shrink-0 flex-wrap items-center justify-between gap-3 pt-5">
-        <div className="flex items-center gap-2">
+      <div className="mt-auto flex shrink-0 flex-col gap-3 pt-5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           {!showDeeperPrompt && (
             <button
               onClick={() => setShowDeeperPrompt(true)}
@@ -303,7 +303,7 @@ export default function GuidedConversationStage({
         <button
           onClick={handleNextQuestion}
           disabled={!isHost}
-          className="inline-flex items-center gap-2 rounded-full bg-spark-coral px-5 py-2.5 text-xs font-bold text-white transition hover:bg-spark-flame"
+          className="inline-flex items-center justify-center gap-2 rounded-full bg-spark-coral px-5 py-2.5 text-xs font-bold text-white transition hover:bg-spark-flame"
         >
           <span>{isHost ? 'Next question' : 'Host controls next question'}</span>
           <ArrowRight className="h-4 w-4" />

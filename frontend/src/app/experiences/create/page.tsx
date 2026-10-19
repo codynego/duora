@@ -307,7 +307,12 @@ function CreateExperienceFlow() {
         if (!inviteToken)
           throw new Error("The invite link could not be created.");
         setInviteUrl(`${window.location.origin}/i/${inviteToken}`);
-      } else router.push("/discover");
+      } else {
+        // Include a fresh navigation key so Discover does not reuse the
+        // previous route snapshot after publishing a new room.
+        router.push(`/discover?created=${Date.now()}`);
+        router.refresh();
+      }
     } catch (reason) {
       setError(
         reason instanceof Error

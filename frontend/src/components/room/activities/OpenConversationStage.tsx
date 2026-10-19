@@ -144,12 +144,12 @@ export default function OpenConversationStage({
           <p className="text-xs font-bold uppercase tracking-wider text-dark-950/45">
             Suggested angles to explore:
           </p>
-          <div className="mt-2.5 flex flex-wrap gap-2">
+          <div className="mt-2.5 grid gap-2 sm:flex sm:flex-wrap">
             {currentTopic.suggestedAngles.map((angle, idx) => (
               <button
                 key={idx}
                 onClick={() => handleAngleClick(angle, idx)}
-                className={`group flex items-center gap-2 rounded-2xl border px-3.5 py-2 text-left text-xs transition ${
+                className={`group flex w-full items-center gap-2 rounded-2xl border px-3.5 py-2.5 text-left text-xs transition sm:w-auto sm:py-2 ${
                   activeAngleIndex === idx
                     ? 'border-spark-coral bg-[#fff0f3] text-spark-coral font-bold'
                     : 'border-dark-950/10 bg-white/70 text-dark-950/80 hover:border-dark-950/25 hover:bg-white'
@@ -168,11 +168,11 @@ export default function OpenConversationStage({
       </div>
 
       {/* Subtle Bottom Controls (No aggressive 'Next' button) */}
-      <div className="mt-auto flex shrink-0 flex-wrap items-center justify-between gap-3 pt-5">
-        <div className="flex items-center gap-2">
+      <div className="mt-auto flex shrink-0 flex-col gap-3 pt-5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <button
             onClick={handleNextTopic}
-            className="inline-flex items-center gap-2 rounded-full border border-dark-950/15 bg-white px-4 py-2.5 text-xs font-bold text-dark-950 transition hover:border-dark-950/35 hover:bg-dark-950/5"
+            className="inline-flex items-center justify-center gap-2 rounded-full border border-dark-950/15 bg-white px-4 py-2.5 text-xs font-bold text-dark-950 transition hover:border-dark-950/35 hover:bg-dark-950/5"
           >
             <RefreshCw className="h-3.5 w-3.5 text-[#6F6470]" />
             Change topic

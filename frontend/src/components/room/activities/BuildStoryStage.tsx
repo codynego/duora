@@ -89,7 +89,7 @@ export default function BuildStoryStage({
         </p>
 
         {/* Scrollable Story Canvas */}
-        <div className="mt-3 max-h-[38vh] min-h-[140px] overflow-y-auto rounded-3xl border border-dark-950/8 bg-white/70 p-5 leading-relaxed text-dark-950 shadow-inner sm:p-7">
+        <div className="mt-3 max-h-[30vh] min-h-[140px] overflow-y-auto rounded-3xl border border-dark-950/8 bg-white/70 p-4 leading-relaxed text-dark-950 shadow-inner sm:max-h-[38vh] sm:p-7">
           <p className="text-sm sm:text-base leading-relaxed">
             {story.map((chunk, idx) => (
               <span key={idx} className="mr-2 inline">
@@ -111,7 +111,7 @@ export default function BuildStoryStage({
             <label className="block text-xs font-semibold text-[#6F6470]">
               Add the next sentence to continue the story:
             </label>
-            <div className="mt-2 flex gap-2">
+            <div className="mt-2 flex flex-col gap-2 sm:flex-row">
               <input
                 type="text"
                 value={mySentence}
@@ -123,7 +123,7 @@ export default function BuildStoryStage({
               <button
                 type="submit"
                 disabled={!isMyTurn || !mySentence.trim()}
-                className="inline-flex items-center gap-1.5 rounded-2xl bg-dark-950 px-5 py-3 text-xs font-bold text-white transition hover:bg-dark-900 disabled:opacity-40"
+                className="inline-flex w-full items-center justify-center gap-1.5 rounded-2xl bg-dark-950 px-5 py-3 text-xs font-bold text-white transition hover:bg-dark-900 disabled:opacity-40 sm:w-auto"
               >
                 <span>Add</span>
                 <Send className="h-3.5 w-3.5" />
@@ -138,7 +138,7 @@ export default function BuildStoryStage({
       </div>
 
       {/* Bottom Controls */}
-      <div className="flex shrink-0 items-center justify-between border-t border-dark-950/8 pt-5">
+      <div className="flex shrink-0 flex-col items-stretch gap-3 border-t border-dark-950/8 pt-5 sm:flex-row sm:items-center sm:justify-between">
         <span className="text-xs text-[#6F6470]">
           {isMyTurn ? 'Your turn — add one sentence.' : `${activePlayer.name} is writing the next sentence.`}
         </span>
@@ -147,7 +147,7 @@ export default function BuildStoryStage({
           onClick={() => {
             onGameStateChange?.({ ...gameState, story: [], finished: false });
           }}
-          className="inline-flex items-center gap-1.5 rounded-full border border-dark-950/15 bg-white px-3.5 py-2 text-xs font-bold text-dark-950 transition hover:bg-dark-950/5"
+          className="inline-flex items-center justify-center gap-1.5 rounded-full border border-dark-950/15 bg-white px-3.5 py-2 text-xs font-bold text-dark-950 transition hover:bg-dark-950/5"
         >
           <BookOpen className="h-3.5 w-3.5 text-spark-coral" />
           Start new story

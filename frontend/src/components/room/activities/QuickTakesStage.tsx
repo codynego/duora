@@ -104,10 +104,10 @@ export default function QuickTakesStage({
         </h1>
 
         {/* Reaction Action Buttons */}
-        <div className="mx-auto mt-8 flex max-w-md items-center justify-center gap-3">
+        <div className="mx-auto mt-7 grid w-full max-w-md gap-2 sm:mt-8 sm:flex sm:items-center sm:justify-center sm:gap-3">
           <button
             onClick={() => handleReact('agree')}
-            className={`flex items-center gap-2 rounded-full border px-5 py-3 text-xs font-bold transition sm:text-sm ${
+            className={`flex w-full items-center justify-center gap-2 rounded-2xl border px-5 py-3 text-xs font-bold transition sm:w-auto sm:rounded-full sm:text-sm ${
               myReaction === 'agree'
                 ? 'border-[#3b7d56] bg-[#eef7f1] text-[#2b6142] ring-2 ring-[#3b7d56]'
                 : 'border-dark-950/12 bg-white text-dark-950 hover:border-dark-950/30'
@@ -119,7 +119,7 @@ export default function QuickTakesStage({
 
           <button
             onClick={() => handleReact('disagree')}
-            className={`flex items-center gap-2 rounded-full border px-5 py-3 text-xs font-bold transition sm:text-sm ${
+            className={`flex w-full items-center justify-center gap-2 rounded-2xl border px-5 py-3 text-xs font-bold transition sm:w-auto sm:rounded-full sm:text-sm ${
               myReaction === 'disagree'
                 ? 'border-spark-coral bg-[#fff0f3] text-spark-coral ring-2 ring-spark-coral'
                 : 'border-dark-950/12 bg-white text-dark-950 hover:border-dark-950/30'
@@ -131,7 +131,7 @@ export default function QuickTakesStage({
 
           <button
             onClick={() => handleReact('depends')}
-            className={`flex items-center gap-2 rounded-full border px-5 py-3 text-xs font-bold transition sm:text-sm ${
+            className={`flex w-full items-center justify-center gap-2 rounded-2xl border px-5 py-3 text-xs font-bold transition sm:w-auto sm:rounded-full sm:text-sm ${
               myReaction === 'depends'
                 ? 'border-spark-amber bg-[#fffbf0] text-[#a16207] ring-2 ring-spark-amber'
                 : 'border-dark-950/12 bg-white text-dark-950 hover:border-dark-950/30'

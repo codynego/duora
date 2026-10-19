@@ -144,7 +144,7 @@ export default function GuessMyAnswerStage({
                 key={option}
                 disabled={phase === 'revealed'}
                 onClick={() => handleSelectOption(option)}
-                className={`flex items-center justify-between rounded-2xl border p-4 text-left transition ${
+                className={`flex min-h-[4.5rem] items-center justify-between gap-3 rounded-2xl border p-3.5 text-left transition sm:p-4 ${
                   isCorrect
                     ? 'border-[#3b7d56] bg-[#eef7f1] text-[#2b6142] ring-2 ring-[#3b7d56]'
                     : isWrongGuess

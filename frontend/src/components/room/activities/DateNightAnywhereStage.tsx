@@ -91,7 +91,7 @@ export default function DateNightAnywhereStage({
               Pick your answer and see if your partner aligns with your travel mood.
             </p>
 
-            <div className="mt-6 grid grid-cols-2 gap-3">
+            <div className="mt-6 grid gap-2.5 sm:grid-cols-2 sm:gap-3">
               <button
                 onClick={() => setPlayAnswer('Tokyo')}
                 className={`rounded-2xl border p-4 text-left transition ${
