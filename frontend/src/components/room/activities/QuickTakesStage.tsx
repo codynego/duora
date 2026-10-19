@@ -61,7 +61,7 @@ export default function QuickTakesStage({
   const myReaction = allReactions[playerId] ?? null;
 
   const currentTake = QUICK_TAKES[takeIndex % QUICK_TAKES.length];
-  const customTopic = typeof gameState.customTopic === 'string' && gameState.customTopic.trim() ? gameState.customTopic : null;
+  const customTopic = takeIndex === 0 && typeof gameState.customTopic === 'string' && gameState.customTopic.trim() ? gameState.customTopic : null;
   const totalTakes = QUICK_TAKES.length;
 
   const handleReact = (reaction: TakeReaction) => {
@@ -70,7 +70,7 @@ export default function QuickTakesStage({
 
   const handleNextTake = () => {
     if (!isHost) return;
-    onGameStateChange?.({ ...gameState, takeIndex: (takeIndex + 1) % totalTakes, reactions: {} });
+    onGameStateChange?.({ ...gameState, takeIndex: (takeIndex + 1) % totalTakes, reactions: {}, customTopic: '' });
   };
 
   const counts = Object.values(allReactions).reduce(

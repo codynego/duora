@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { Sparkles, ArrowRight, Lightbulb, MessageSquarePlus, RefreshCw, Compass } from 'lucide-react';
 import { BaseStageProps } from '../types';
 import { ADDITIONAL_OPEN_TOPICS } from './additional-game-content';
+import { interestPrompt } from './interest-prompts';
 
 interface TopicItem {
   id: string;
@@ -78,16 +79,21 @@ export default function OpenConversationStage({
   onPromptChat,
   gameState = {},
   onGameStateChange,
+  interestTags,
+  initialTopic,
 }: BaseStageProps) {
   const topicIndex = typeof gameState.topicIndex === 'number' ? gameState.topicIndex : 0;
   const [activeAngleIndex, setActiveAngleIndex] = useState<number | null>(null);
 
-  const currentTopic = DEFAULT_TOPICS[topicIndex % DEFAULT_TOPICS.length];
-  const customTopic = typeof gameState.customTopic === 'string' && gameState.customTopic.trim() ? gameState.customTopic : null;
+  const defaultTopic = DEFAULT_TOPICS[topicIndex % DEFAULT_TOPICS.length];
+  const customTopic = topicIndex === 0 && typeof gameState.customTopic === 'string' && gameState.customTopic.trim() ? gameState.customTopic : null;
+  const personalizedPrompt = topicIndex > 0 ? interestPrompt(interestTags, topicIndex - 1) : null;
+  const currentTopic = personalizedPrompt ? { ...defaultTopic, topic: personalizedPrompt, category: `Based on your shared interests: ${interestTags?.[0] ?? 'Conversation'}` } : defaultTopic;
+  const firstTopic = topicIndex === 0 ? (customTopic ?? initialTopic) : null;
 
   const handleNextTopic = () => {
     setActiveAngleIndex(null);
-    onGameStateChange?.({ ...gameState, topicIndex: (topicIndex + 1) % DEFAULT_TOPICS.length });
+    onGameStateChange?.({ ...gameState, topicIndex: (topicIndex + 1) % DEFAULT_TOPICS.length, customTopic: '' });
   };
 
   const handleAngleClick = (angle: string, index: number) => {
@@ -130,10 +136,10 @@ export default function OpenConversationStage({
           A TOPIC FOR THE ROOM
         </p>
         <h1 className="mt-3 max-w-3xl break-words text-pretty text-[clamp(1.6rem,4.4vw,2.85rem)] font-bold leading-[1.12] tracking-[-0.04em] text-dark-950">
-          “{customTopic ?? currentTopic.topic}”
+          “{firstTopic ?? currentTopic.topic}”
         </h1>
 
-        {!customTopic && currentTopic.context && (
+        {!firstTopic && currentTopic.context && (
           <p className="mt-4 max-w-2xl text-sm leading-relaxed text-[#6F6470] sm:text-base">
             {currentTopic.context}
           </p>

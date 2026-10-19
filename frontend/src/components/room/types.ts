@@ -59,6 +59,8 @@ export interface BaseStageProps {
   onSendReaction: (kind: ReactionKind) => void;
   onPromptChat?: (promptText: string) => void;
   onAdvanceActivity?: (action: string, payload?: unknown) => void;
+  interestTags?: string[];
+  initialTopic?: string;
 }
 
 export function currentPlayerId(participants: RoomParticipant[]) {

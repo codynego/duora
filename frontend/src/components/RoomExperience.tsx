@@ -98,6 +98,7 @@ export default function RoomExperience({
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [wrapPeople, setWrapPeople] = useState<{ id: string; name: string; initial: string; is_you?: boolean; is_host?: boolean; ready?: boolean }[]>([]);
   const [lobbyMeta, setLobbyMeta] = useState({ membersCount: 0, maxMembers: 0, readyCount: 0, allReady: false });
+  const [sharedInterests, setSharedInterests] = useState<string[]>([]);
   const [selfReady, setSelfReady] = useState(false);
   const [readySubmitting, setReadySubmitting] = useState(false);
   const [nextStepStatus, setNextStepStatus] = useState('');
@@ -120,9 +121,7 @@ export default function RoomExperience({
   const [previewEvents, setPreviewEvents] = useState<RoomEvent[]>([]);
   const roomEvents = roomId ? events : previewEvents;
   const savedRoomTopic = isTalk && roomName.trim() && !DEFAULT_TALK_ROOM_NAMES.has(roomName.trim()) ? roomName.trim() : null;
-  const displayedGameState = savedRoomTopic && typeof gameState.customTopic !== 'string'
-    ? { ...gameState, customTopic: savedRoomTopic }
-    : gameState;
+  const displayedGameState = gameState;
 
   useEffect(() => {
     const sharedTemplate = gameState.template;
@@ -146,7 +145,7 @@ export default function RoomExperience({
 
   function setHostTopic() {
     const nextTopic = window.prompt('Set a new topic for the room:', typeof displayedGameState.customTopic === 'string' ? displayedGameState.customTopic : '');
-    if (nextTopic?.trim()) void updateGameState({ ...gameState, customTopic: nextTopic.trim() });
+    if (nextTopic?.trim()) void updateGameState({ ...gameState, customTopic: nextTopic.trim(), topicIndex: 0, questionIndex: 0, statementIndex: 0, takeIndex: 0 });
   }
 
   // Together is strictly 2 people (You + 1 Partner)
@@ -327,6 +326,7 @@ export default function RoomExperience({
         setWrapPeople(body.data);
         setSelfReady(Boolean(body.data.find((person: { is_you?: boolean; ready?: boolean }) => person.is_you)?.ready));
         setLobbyMeta({ membersCount: body.meta?.members_count ?? body.data.length, maxMembers: body.meta?.max_members ?? 0, readyCount: body.meta?.ready_count ?? 0, allReady: Boolean(body.meta?.all_ready) });
+        if (Array.isArray(body.meta?.shared_interests)) setSharedInterests(body.meta.shared_interests.filter((interest: unknown): interest is string => typeof interest === 'string'));
         const nextStatus = body.meta?.room_status;
         if (nextStatus === 'scheduled' || nextStatus === 'open' || nextStatus === 'active') setRoomStatus(nextStatus);
         if (typeof body.meta?.starts_at === 'string') setActiveStartsAt(body.meta.starts_at);
@@ -695,6 +695,8 @@ export default function RoomExperience({
           onSendMessage={sendChatMessage}
           onSendReaction={sendReaction}
           onPromptChat={handlePromptChat}
+          initialTopic={savedRoomTopic ?? undefined}
+          interestTags={sharedInterests}
         />
       )}
 
@@ -709,6 +711,8 @@ export default function RoomExperience({
           onSendMessage={sendChatMessage}
           onSendReaction={sendReaction}
           onPromptChat={handlePromptChat}
+          initialTopic={savedRoomTopic ?? undefined}
+          interestTags={sharedInterests}
         />
       )}
 

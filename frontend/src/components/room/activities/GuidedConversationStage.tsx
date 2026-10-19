@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { BaseStageProps, currentPlayerId } from '../types';
 import { ADDITIONAL_GUIDED_QUESTIONS } from './additional-game-content';
+import { interestPrompt } from './interest-prompts';
 
 interface QuestionItem {
   id: string;
@@ -79,6 +80,8 @@ export default function GuidedConversationStage({
   onPromptChat,
   gameState = {},
   onGameStateChange,
+  interestTags,
+  initialTopic,
 }: BaseStageProps) {
   const questionIndex = typeof gameState.questionIndex === 'number' ? gameState.questionIndex : 0;
   const phase = gameState.phase === 'revealed' ? 'revealed' : 'responding';
@@ -90,8 +93,11 @@ export default function GuidedConversationStage({
   const [showDeeperPrompt, setShowDeeperPrompt] = useState(false);
   const [selectedResponseName, setSelectedResponseName] = useState<string | null>(null);
 
-  const currentQ = QUESTIONS[questionIndex % QUESTIONS.length];
-  const customTopic = typeof gameState.customTopic === 'string' && gameState.customTopic.trim() ? gameState.customTopic : null;
+  const baseQuestion = QUESTIONS[questionIndex % QUESTIONS.length];
+  const customTopic = questionIndex === 0 && typeof gameState.customTopic === 'string' && gameState.customTopic.trim() ? gameState.customTopic : null;
+  const personalizedPrompt = questionIndex > 0 ? interestPrompt(interestTags, questionIndex - 1) : null;
+  const currentQ = personalizedPrompt ? { ...baseQuestion, prompt: personalizedPrompt } : baseQuestion;
+  const firstQuestion = questionIndex === 0 ? (customTopic ?? initialTopic) : null;
   const totalQuestions = QUESTIONS.length;
   const responseNames = participants.length ? participants.map((person) => person.isYou ? 'You' : person.name) : ['You'];
   const sampleResponses = Object.values(currentQ.sampleResponses).reduce<Record<string, string>>((responses, answer, index) => {
@@ -118,7 +124,7 @@ export default function GuidedConversationStage({
 
   const handleNextQuestion = () => {
     if (!isHost) return;
-    onGameStateChange?.({ ...gameState, questionIndex: (questionIndex + 1) % totalQuestions, phase: 'responding', submissions: {}, answers: {} });
+    onGameStateChange?.({ ...gameState, questionIndex: (questionIndex + 1) % totalQuestions, phase: 'responding', submissions: {}, answers: {}, customTopic: '' });
     setMyAnswer('');
     setShowDeeperPrompt(false);
     setSelectedResponseName(null);
@@ -183,13 +189,13 @@ export default function GuidedConversationStage({
         </p>
 
         <h1 className="mt-2.5 max-w-3xl break-words text-pretty text-[clamp(1.5rem,4.2vw,2.75rem)] font-bold leading-[1.14] tracking-[-0.035em] text-dark-950">
-          {customTopic ?? currentQ.prompt}
+          {firstQuestion ?? currentQ.prompt}
         </h1>
 
         {showDeeperPrompt && (
           <div className="mt-4 rounded-2xl border border-spark-coral/25 bg-[#fff6f2] p-4 text-xs leading-relaxed text-dark-950 sm:text-sm">
             <span className="font-bold text-spark-coral">Deeper reflection: </span>
-            {customTopic ? 'Use the new host topic as the room’s next question.' : currentQ.deeperPrompt}
+            {firstQuestion ? 'Use the room’s opening topic as the starting point.' : currentQ.deeperPrompt}
           </div>
         )}
 

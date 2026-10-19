@@ -13,6 +13,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import Q
+from collections import Counter
 from .models import Moment, Room, RoomActivity, RoomAnswer, RoomGameState, RoomMembership, RoomNextStep
 from .serializers import PublicRoomCreateSerializer, RoomSerializer
 from .services import create_private_room, create_public_room, join_room, start_room_if_ready
@@ -267,6 +268,15 @@ class RoomParticipantsView(APIView):
         # the roster in precisely the same order.
         memberships = room.memberships.filter(disposition=RoomMembership.Disposition.PRESENT).select_related('user').order_by('joined_at', 'user_id')
         members = [{'id': str(item.user_id), 'name': item.user.get_full_name().strip() or item.user.username, 'initial': (item.user.get_full_name().strip() or item.user.username)[:1].upper(), 'is_you': item.user_id == request.user.id, 'is_host': item.user_id == room.created_by_id, 'ready': item.ready_at is not None} for item in memberships]
+        # Share only an aggregate, never an individual's preference list. It
+        # gives the room a useful direction for its next conversation prompt.
+        from apps.matching.models import DiscoveryProfile
+        interest_counts = Counter(
+            interest
+            for interests in DiscoveryProfile.objects.filter(user_id__in=[item.user_id for item in memberships]).values_list('interests', flat=True)
+            for interest in (interests if isinstance(interests, list) else [])
+        )
+        shared_interests = [interest for interest, _count in interest_counts.most_common(3)]
         return Response({'data': members, 'meta': {
             'members_count': len(members),
             'max_members': room.max_members,
@@ -274,6 +284,7 @@ class RoomParticipantsView(APIView):
             'all_ready': bool(members) and all(member['ready'] for member in members),
             'room_status': room.status,
             'starts_at': room.starts_at,
+            'shared_interests': shared_interests,
         }})
 
 

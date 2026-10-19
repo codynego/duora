@@ -63,7 +63,7 @@ export default function DebateStage({
   const myStance = allVotes[playerId] ?? null;
 
   const currentStatement = STATEMENTS[statementIndex % STATEMENTS.length];
-  const customTopic = typeof gameState.customTopic === 'string' && gameState.customTopic.trim() ? gameState.customTopic : null;
+  const customTopic = statementIndex === 0 && typeof gameState.customTopic === 'string' && gameState.customTopic.trim() ? gameState.customTopic : null;
 
   const handleSelectStance = (stance: Stance) => {
     onGameStateChange?.({ ...gameState, statementIndex, phase: 'voting', votes: { ...allVotes, [playerId]: stance } });
@@ -76,7 +76,7 @@ export default function DebateStage({
 
   const handleNextStatement = () => {
     if (!isHost) return;
-    onGameStateChange?.({ ...gameState, statementIndex: (statementIndex + 1) % STATEMENTS.length, phase: 'voting', votes: {} });
+    onGameStateChange?.({ ...gameState, statementIndex: (statementIndex + 1) % STATEMENTS.length, phase: 'voting', votes: {}, customTopic: '' });
   };
 
   const voteCounts = Object.values(allVotes).reduce(
