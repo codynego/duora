@@ -154,9 +154,6 @@ export default function WordBattleStage({
       </div>
 
       <div className="mt-auto flex shrink-0 flex-col gap-4 pt-5">
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-          {roster.map((person) => <div key={person.id} className={`flex items-center justify-between rounded-2xl px-3 py-2 text-xs ${person.id === activePlayer.id ? 'bg-[#fff0f3] text-spark-coral' : 'bg-dark-950/5 text-dark-950/70'}`}><span className="flex min-w-0 items-center gap-2"><span className="grid h-6 w-6 shrink-0 place-items-center rounded-full text-[10px] font-bold text-white" style={{ background: person.color }}>{person.initial}</span><span className="truncate">{person.isYou ? 'You' : person.name}</span></span><span className="font-bold">{scores[person.id] ?? 0}</span></div>)}
-        </div>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><span className="text-xs text-[#6F6470]">Every player gets 30 seconds. A valid answer passes the turn automatically.</span><button onClick={advanceTurn} disabled={!isMyTurn} className="inline-flex items-center justify-center gap-2 rounded-full bg-dark-950 px-5 py-2.5 text-xs font-bold text-white transition hover:bg-dark-900 disabled:cursor-not-allowed disabled:opacity-40"><span>Pass turn</span><ArrowRight className="h-4 w-4" /></button></div>
       </div>
     </section>

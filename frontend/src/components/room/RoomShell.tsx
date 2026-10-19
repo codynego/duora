@@ -133,6 +133,7 @@ export default function RoomShell({
   connected,
   participants,
   currentTemplate,
+  gameState,
   onSelectTemplate,
   onReaction,
   onSendMessage,
@@ -196,6 +197,9 @@ export default function RoomShell({
   };
 
   const currentTemplateMeta = TEMPLATE_LABELS[currentTemplate];
+  const participantScores = currentTemplate === 'word_battle' && gameState?.scores && typeof gameState.scores === 'object'
+    ? gameState.scores as Record<string, number>
+    : null;
 
   return (
     <div className="relative flex h-[100dvh] flex-col overflow-hidden bg-[#16101c] text-white">
@@ -388,6 +392,11 @@ export default function RoomShell({
             </div>
             {person.isSpeaking && (
               <Volume2 className="h-3 w-3 shrink-0 animate-pulse text-spark-coral" />
+            )}
+            {participantScores && (
+              <span className="shrink-0 rounded-full bg-white/10 px-2 py-1 text-[10px] font-bold text-white/80">
+                {participantScores[person.id] ?? 0}
+              </span>
             )}
           </div>
         ))}

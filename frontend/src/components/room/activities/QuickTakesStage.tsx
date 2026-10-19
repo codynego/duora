@@ -62,6 +62,7 @@ export default function QuickTakesStage({
   const allReactions: Record<string, TakeReaction> = { ...((gameState.reactions as Record<string, TakeReaction> | undefined) ?? {}) };
   const myReaction = allReactions[playerId] ?? null;
   const [customTake, setCustomTake] = useState('');
+  const [showCustomTake, setShowCustomTake] = useState(false);
   const deckInitialized = React.useRef(false);
 
   // Keep prompts in editorial order. The saved index lets later sessions
@@ -116,7 +117,11 @@ export default function QuickTakesStage({
         <span className="text-xs text-[#6F6470]">React fast. Don’t overthink it.</span>
       </div>
 
-      <form onSubmit={handleCustomTake} className="mx-auto flex w-full max-w-2xl flex-col gap-2 border-b border-dark-950/8 pb-5 sm:flex-row">
+      <button type="button" onClick={() => setShowCustomTake((visible) => !visible)} className="mx-auto mb-3 inline-flex rounded-full border border-dark-950/12 bg-white px-4 py-2.5 text-xs font-bold text-dark-950 sm:hidden">
+        {showCustomTake ? 'Hide your take' : 'Add your own hot take'}
+      </button>
+
+      <form onSubmit={handleCustomTake} className={`${showCustomTake ? 'flex' : 'hidden'} mx-auto w-full max-w-2xl flex-col gap-2 border-b border-dark-950/8 pb-5 sm:flex sm:flex-row`}>
           <input
             value={customTake}
             onChange={(event) => setCustomTake(event.target.value)}
