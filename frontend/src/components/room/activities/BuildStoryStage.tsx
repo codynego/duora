@@ -145,12 +145,14 @@ export default function BuildStoryStage({
 
         <button
           onClick={() => {
+            if (!isHost) return;
             onGameStateChange?.({ ...gameState, story: [], finished: false });
           }}
+          disabled={!isHost}
           className="inline-flex items-center justify-center gap-1.5 rounded-full border border-dark-950/15 bg-white px-3.5 py-2 text-xs font-bold text-dark-950 transition hover:bg-dark-950/5"
         >
           <BookOpen className="h-3.5 w-3.5 text-spark-coral" />
-          Start new story
+          {isHost ? 'Start new story' : 'Host controls new story'}
         </button>
       </div>
     </section>

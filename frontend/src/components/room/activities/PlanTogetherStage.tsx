@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import {
   CalendarHeart,
   Sparkles,
@@ -12,7 +12,7 @@ import {
   DollarSign,
   HeartHandshake,
 } from 'lucide-react';
-import { BaseStageProps } from '../types';
+import { BaseStageProps, currentPlayerId } from '../types';
 import { ADDITIONAL_DATE_PLANS } from './additional-game-content';
 
 interface PlanPrefs {
@@ -38,14 +38,28 @@ export default function PlanTogetherStage({
   onGameStateChange,
 }: BaseStageProps) {
   const phase = gameState.phase === 'matched' || gameState.phase === 'confirmed' ? gameState.phase : 'choosing';
-  const [myBudget, setMyBudget] = useState<'$' | '$$' | '$$$' | null>(null);
-  const [myMood, setMyMood] = useState<string | null>(null);
-  const [myTime, setMyTime] = useState<string | null>(null);
+  const playerId = currentPlayerId(participants);
+  const preferences = (gameState.preferences as Record<string, Partial<PlanPrefs>> | undefined) ?? {};
+  const preferenceReady = (gameState.preferenceReady as Record<string, boolean> | undefined) ?? {};
+  const myPreferences = preferences[playerId] ?? {};
+  const myBudget = myPreferences.budget ?? null;
+  const myMood = myPreferences.mood ?? null;
+  const myTime = myPreferences.time ?? null;
   const selectedActivity = typeof gameState.selectedActivity === 'string' ? gameState.selectedActivity : null;
 
   const partnerName = participants.find((person) => !person.isYou)?.name ?? 'your partner';
 
+  const savePreference = (next: Partial<PlanPrefs>) => {
+    const nextPreferences = { ...myPreferences, ...next };
+    onGameStateChange?.({
+      ...gameState,
+      preferences: { ...preferences, [playerId]: nextPreferences },
+      preferenceReady: { ...preferenceReady, [playerId]: Boolean(nextPreferences.budget && nextPreferences.mood && nextPreferences.time) },
+    });
+  };
+
   const handleRevealMatches = () => {
+    if (!isHost || !isFormComplete || !everyoneReady) return;
     onGameStateChange?.({ ...gameState, phase: 'matched' });
     onSendReaction('support');
     onSendMessage(`✨ Plan matching revealed for ${partnerName} & You!`);
@@ -57,7 +71,13 @@ export default function PlanTogetherStage({
     onSendMessage(`🎉 Date plan agreed & saved: “${activity}”!`);
   };
 
-  const isFormComplete = myBudget && myMood && myTime;
+  const isFormComplete = Boolean(myBudget && myMood && myTime);
+  const playersWhoNeedToChoose = participants.some((person) => person.isYou)
+    ? participants.map((person) => person.id)
+    : [playerId];
+  const everyoneReady = playersWhoNeedToChoose.every((id) => {
+    return Boolean(preferenceReady[id]);
+  });
 
   return (
     <section className="game-stage game-stage--plan flex h-full min-h-0 flex-1 flex-col justify-between overflow-hidden rounded-[32px] bg-[#fffdfa] p-6 text-dark-950 shadow-[0_20px_60px_rgba(0,0,0,.2)] sm:p-9 lg:p-11">
@@ -101,7 +121,7 @@ export default function PlanTogetherStage({
                   {(['$', '$$', '$$$'] as const).map((b) => (
                     <button
                       key={b}
-                      onClick={() => setMyBudget(b)}
+                      onClick={() => savePreference({ budget: b })}
                       className={`flex-1 rounded-xl border p-2.5 text-xs font-bold transition ${
                         myBudget === b
                           ? 'border-spark-coral bg-[#fff0f3] text-spark-coral ring-1 ring-spark-coral'
@@ -121,7 +141,7 @@ export default function PlanTogetherStage({
                   {['Stay-in & cozy', 'Out & about', 'Food & drinks', 'Adventure'].map((m) => (
                     <button
                       key={m}
-                      onClick={() => setMyMood(m)}
+                      onClick={() => savePreference({ mood: m })}
                       className={`rounded-xl border p-2.5 text-xs font-semibold transition ${
                         myMood === m
                           ? 'border-spark-coral bg-[#fff0f3] text-spark-coral ring-1 ring-spark-coral'
@@ -141,7 +161,7 @@ export default function PlanTogetherStage({
                   {['Quick 1–2 hours', 'Full evening', 'Weekend day'].map((t) => (
                     <button
                       key={t}
-                      onClick={() => setMyTime(t)}
+                      onClick={() => savePreference({ time: t })}
                       className={`flex-1 rounded-xl border p-2.5 text-xs font-semibold transition ${
                         myTime === t
                           ? 'border-spark-coral bg-[#fff0f3] text-spark-coral ring-1 ring-spark-coral'
@@ -158,15 +178,15 @@ export default function PlanTogetherStage({
             <div className="mt-6 flex flex-col gap-3 text-xs text-[#6F6470] sm:flex-row sm:items-center sm:justify-between">
               <span className="flex items-start gap-1.5 sm:items-center">
                 <Lock className="h-3.5 w-3.5 text-spark-coral" />
-                {partnerName} is also picking their preferences.
+                {everyoneReady ? 'Both preference sets are ready to compare.' : `${partnerName} is also picking their preferences.`}
               </span>
 
               <button
                 onClick={handleRevealMatches}
-                disabled={!isFormComplete}
+                disabled={!isHost || !isFormComplete || !everyoneReady}
                 className="w-full rounded-full bg-dark-950 px-5 py-2.5 text-xs font-bold text-white transition hover:bg-dark-900 disabled:opacity-40 sm:w-auto"
               >
-                Reveal overlap →
+                {isHost ? everyoneReady ? 'Reveal overlap →' : 'Waiting for both choices' : 'Host reveals overlap'}
               </button>
             </div>
           </div>

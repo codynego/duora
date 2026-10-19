@@ -13,20 +13,26 @@ body { margin: 0; background: var(--canvas); color: var(--ink); font-family: 'DM
 .soft-shadow { box-shadow: 0 20px 50px rgba(40, 29, 50, .09); }
 .section-label { font-size: .7rem; font-weight: 700; letter-spacing: .15em; text-transform: uppercase; color: #F05A78; }
 
-/* One scroll context for every live game. Individual stages can grow on small
-   screens without being clipped by the viewport or fighting the room shell. */
+/* Desktop games live inside a fixed room frame. Their content scrolls inside
+   that frame, rather than expanding beneath the room controls. */
 .room-stage-stage {
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
 }
 
 .room-stage-stage > section {
-  min-height: 100% !important;
-  height: auto !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  max-height: 100%;
   flex: 1 1 auto;
-  overflow: visible !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
   border-radius: clamp(1.25rem, 3vw, 2rem) !important;
   padding: clamp(1.1rem, 3vw, 2.75rem) !important;
+}
+
+.room-stage-stage > section > div:nth-child(2) {
+  min-width: 0;
 }
 
 .room-stage-stage > section > div:first-child {
@@ -97,6 +103,66 @@ body { margin: 0; background: var(--canvas); color: var(--ink); font-family: 'DM
   min-height: 2.75rem;
 }
 
+/* Shared feedback: an action should acknowledge the tap before the network does. */
+button,
+a[href],
+[role="button"] {
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 150ms ease, box-shadow 150ms ease, opacity 150ms ease, background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+
+button:not(:disabled):active,
+a[href]:active,
+[role="button"]:active {
+  transform: scale(.975);
+}
+
+button:focus-visible,
+a[href]:focus-visible,
+[role="button"]:focus-visible {
+  outline: 3px solid rgba(240, 90, 120, .32);
+  outline-offset: 3px;
+}
+
+.button-loading:disabled {
+  cursor: wait;
+  pointer-events: none;
+}
+
+.button-spinner {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  flex: 0 0 auto;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 999px;
+  animation: duora-spin .65s linear infinite;
+}
+
+.page-loading-mark {
+  display: grid;
+  width: 2.75rem;
+  height: 2.75rem;
+  place-items: center;
+  border-radius: 1rem;
+  background: #281d32;
+  color: #fff;
+  box-shadow: 0 12px 30px rgba(40, 29, 50, .16);
+}
+
+.page-loading-mark::after {
+  content: "";
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid rgba(255,255,255,.9);
+  border-right-color: transparent;
+  border-radius: 999px;
+  animation: duora-spin .65s linear infinite;
+}
+
+@keyframes duora-spin { to { transform: rotate(360deg); } }
+
 .room-stage-stage h1,
 .room-stage-stage h2,
 .room-stage-stage h3 {
@@ -110,6 +176,9 @@ body { margin: 0; background: var(--canvas); color: var(--ink); font-family: 'DM
 
   .room-stage-stage > section {
     min-height: auto !important;
+    height: auto !important;
+    max-height: none;
+    overflow: visible !important;
     border-radius: 1.25rem !important;
     box-shadow: 0 14px 36px rgba(0, 0, 0, .16) !important;
   }

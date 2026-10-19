@@ -35,9 +35,11 @@ class InvitePreviewView(APIView):
 class AcceptInviteView(APIView):
     permission_classes = [AllowAny]
     def post(self, request, token):
-        invite = get_object_or_404(RoomInvite, token=token)
+        invite = get_object_or_404(RoomInvite.objects.select_related('invited_user'), token=token)
         guest_tokens = None
         user = request.user
+        if invite.invited_user_id and (not user.is_authenticated or invite.invited_user_id != user.id):
+            raise ValidationError({'invite': 'This room was created for a specific connection.'})
         if not user.is_authenticated:
             guest_name = str(request.data.get('guest_name', '')).strip()
             if not 2 <= len(guest_name) <= 60:

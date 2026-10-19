@@ -65,7 +65,7 @@ EXPERIENCE_INTENTS = {
 
 
 @transaction.atomic
-def create_private_room(*, user, experience: str, topic: str = '', discussion_description: str = '', starts_at=None):
+def create_private_room(*, user, experience: str, topic: str = '', discussion_description: str = '', starts_at=None, invited_user=None):
     try:
         title, description, duration_minutes, max_members = PRIVATE_EXPERIENCES[experience]
     except KeyError as error:
@@ -91,7 +91,7 @@ def create_private_room(*, user, experience: str, topic: str = '', discussion_de
         created_by=user,
     )
     RoomMembership.objects.create(room=room, user=user)
-    invite = RoomInvite.objects.create(room=room, created_by=user, expires_at=timezone.now() + timedelta(hours=24))
+    invite = RoomInvite.objects.create(room=room, created_by=user, invited_user=invited_user, expires_at=timezone.now() + timedelta(hours=24))
     return room, invite
 
 

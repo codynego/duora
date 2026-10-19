@@ -72,6 +72,17 @@ class CreatePrivateRoomView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
+        invited_user = None
+        connection_id = request.data.get('connection_id')
+        if connection_id:
+            from apps.connections.models import ConnectionRequest
+            connection = ConnectionRequest.objects.filter(
+                id=connection_id,
+                status=ConnectionRequest.Status.ACCEPTED,
+            ).filter(Q(requester=request.user) | Q(recipient=request.user)).first()
+            if not connection:
+                raise ValidationError({'connection_id': 'Choose one of your active connections.'})
+            invited_user = connection.recipient if connection.requester_id == request.user.id else connection.requester
         starts_at = request.data.get('starts_at') or None
         if starts_at:
             starts_at = parse_datetime(starts_at)
@@ -81,7 +92,7 @@ class CreatePrivateRoomView(APIView):
                 starts_at = timezone.make_aware(starts_at, timezone.get_current_timezone())
             if starts_at <= timezone.now():
                 raise ValidationError({'starts_at': 'Choose a time in the future, or start the experience now.'})
-        room, invite = create_private_room(user=request.user, experience=request.data.get('experience', ''), topic=request.data.get('topic', ''), discussion_description=request.data.get('discussion_description', ''), starts_at=starts_at)
+        room, invite = create_private_room(user=request.user, experience=request.data.get('experience', ''), topic=request.data.get('topic', ''), discussion_description=request.data.get('discussion_description', ''), starts_at=starts_at, invited_user=invited_user)
         return Response({'data': {
             'room': {'id': str(room.id), 'code': room.code, 'title': room.title},
             'invite': {'token': str(invite.token), 'expires_at': invite.expires_at},
@@ -196,7 +207,16 @@ class RoomGameStateView(APIView):
     def get(self, request, room_id):
         room = _member_room(room_id, request.user)
         state, _ = RoomGameState.objects.get_or_create(room=room)
-        return Response({'data': state.state, 'updated_at': state.updated_at})
+        visible_state = dict(state.state) if isinstance(state.state, dict) else {}
+        reveal_phase = visible_state.get('phase') in {'revealed', 'matched', 'confirmed'}
+        private_maps = {'answers', 'votes', 'predictions', 'preferences'}
+        if not reveal_phase:
+            for key in private_maps:
+                values = visible_state.get(key)
+                if isinstance(values, dict):
+                    own_value = values.get(str(request.user.id))
+                    visible_state[key] = {str(request.user.id): own_value} if own_value is not None else {}
+        return Response({'data': visible_state, 'updated_at': state.updated_at})
 
     @transaction.atomic
     def patch(self, request, room_id):
@@ -207,17 +227,33 @@ class RoomGameStateView(APIView):
         next_state = request.data.get('state')
         if not isinstance(next_state, dict):
             raise ValidationError({'state': 'Game state must be an object.'})
+        if 'template' in next_state and next_state.get('template') != state.state.get('template') and room.created_by_id != request.user.id:
+            raise ValidationError({'template': 'Only the room host can change the active game.'})
 
         current_state = state.state if isinstance(state.state, dict) else {}
-        map_keys = {'answers', 'submissions', 'votes', 'predictions', 'reactions', 'scores'}
+        map_keys = {'answers', 'submissions', 'votes', 'predictions', 'reactions', 'scores', 'preferences', 'preferenceReady', 'answerReady', 'taskCompletions'}
+        private_input_maps = {'answers', 'votes', 'predictions', 'preferences'}
         advance_keys = {'questionIndex', 'statementIndex', 'takeIndex', 'roundIndex', 'round', 'turnIndex', 'chapter'}
         advances_round = any(key in next_state and next_state.get(key) != current_state.get(key) for key in advance_keys)
+        for key in private_input_maps:
+            values = next_state.get(key)
+            if not isinstance(values, dict) or not values:
+                continue
+            own_key = str(request.user.id)
+            next_state[key] = {own_key: values[own_key]} if own_key in values else {}
         merged_state = dict(current_state)
         for key, value in next_state.items():
             if key in map_keys and isinstance(value, dict) and isinstance(current_state.get(key), dict):
                 # Player actions merge by participant key, while an explicit
                 # empty map on a new prompt/round clears the old responses.
-                merged_state[key] = value if advances_round and not value else {**current_state[key], **value}
+                if advances_round and not value:
+                    merged_state[key] = value
+                else:
+                    merged_value = {**current_state[key], **value}
+                    for nested_key, nested_value in value.items():
+                        if isinstance(nested_value, dict) and isinstance(current_state[key].get(nested_key), dict):
+                            merged_value[nested_key] = {**current_state[key][nested_key], **nested_value}
+                    merged_state[key] = merged_value
             else:
                 merged_state[key] = value
         state.state = merged_state

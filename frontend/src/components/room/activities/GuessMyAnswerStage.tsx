@@ -59,6 +59,7 @@ export default function GuessMyAnswerStage({
   const playerId = currentPlayerId(participants);
   const predictions = (gameState.predictions && typeof gameState.predictions === 'object' ? gameState.predictions : {}) as Record<string, string>;
   const answers = (gameState.answers && typeof gameState.answers === 'object' ? gameState.answers : {}) as Record<string, string>;
+  const answerReady = (gameState.answerReady && typeof gameState.answerReady === 'object' ? gameState.answerReady : {}) as Record<string, boolean>;
   const myPrediction = predictions[playerId] ?? null;
 
   const currentQ = GUESS_QUESTIONS[questionIndex % GUESS_QUESTIONS.length];
@@ -71,20 +72,20 @@ export default function GuessMyAnswerStage({
 
   const handleSelectOption = (opt: string) => {
     if (isTarget) {
-      onGameStateChange?.({ ...gameState, questionIndex, phase: 'predicting', answers: { ...answers, [target.id]: opt } });
+      onGameStateChange?.({ ...gameState, questionIndex, phase: 'predicting', answers: { ...answers, [target.id]: opt }, answerReady: { ...answerReady, [target.id]: true } });
       return;
     }
     onGameStateChange?.({ ...gameState, questionIndex, phase: 'predicting', predictions: { ...predictions, [playerId]: opt } });
   };
 
   const handleReveal = () => {
-    if (!isHost || !actualAnswer) return;
+    if (!isHost || !answerReady[target.id]) return;
     onGameStateChange?.({ ...gameState, questionIndex, phase: 'revealed' });
   };
 
   const handleNextRound = () => {
     if (!isHost) return;
-    onGameStateChange?.({ ...gameState, questionIndex: (questionIndex + 1) % GUESS_QUESTIONS.length, phase: 'predicting', predictions: {}, answers: {} });
+    onGameStateChange?.({ ...gameState, questionIndex: (questionIndex + 1) % GUESS_QUESTIONS.length, phase: 'predicting', predictions: {}, answers: {}, answerReady: {} });
   };
 
   return (
@@ -183,7 +184,7 @@ export default function GuessMyAnswerStage({
 
             <button
               onClick={handleReveal}
-              disabled={!isHost || !actualAnswer}
+              disabled={!isHost || !answerReady[target.id]}
               className="font-bold text-spark-coral hover:underline disabled:cursor-not-allowed disabled:opacity-40"
             >
               {isHost ? 'Reveal answer & matches →' : 'Waiting for the host to reveal →'}

@@ -67,24 +67,25 @@ export default function SharedChallengesStage({
   gameState = {},
   onGameStateChange,
 }: BaseStageProps) {
-  const tasks = Array.isArray(gameState.tasks) ? gameState.tasks as ChallengeTask[] : ALL_TASKS.map((task) => ({ ...task, completedByYou: false, completedByPartner: false }));
+  const tasks = ALL_TASKS;
+  const taskCompletions = (gameState.taskCompletions as Record<string, Record<string, boolean>> | undefined) ?? {};
   const playerId = currentPlayerId(participants);
   const partner = participants.find((person) => !person.isYou);
   const partnerName = partner?.name ?? 'your partner';
-  const isCompleteFor = (task: ChallengeTask, id: string) => task.completedBy?.[id] ?? (id === 'you' ? Boolean(task.completedByYou) : false);
+  const isCompleteFor = (task: ChallengeTask, id: string) => Boolean(taskCompletions[task.id]?.[id]);
 
   const toggleMyTask = (taskId: string) => {
-    onGameStateChange?.({ ...gameState, tasks: tasks.map((t) => {
-        if (t.id === taskId) {
-          const nextState = !isCompleteFor(t, playerId);
-          if (nextState) {
-            onSendReaction('cheer');
-            onSendMessage(`✅ You checked off: “${t.title}”`);
-          }
-          return { ...t, completedBy: { ...(t.completedBy ?? {}), [playerId]: nextState } };
-        }
-        return t;
-      }) });
+    const task = tasks.find((item) => item.id === taskId);
+    if (!task) return;
+    const nextState = !isCompleteFor(task, playerId);
+    if (nextState) {
+      onSendReaction('cheer');
+      onSendMessage(`✅ You checked off: “${task.title}”`);
+    }
+    onGameStateChange?.({
+      ...gameState,
+      taskCompletions: { ...taskCompletions, [taskId]: { ...(taskCompletions[taskId] ?? {}), [playerId]: nextState } },
+    });
   };
 
   const completedCount = tasks.filter((t) => isCompleteFor(t, playerId) && partner && isCompleteFor(t, partner.id)).length;

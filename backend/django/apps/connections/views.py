@@ -2,6 +2,7 @@ from datetime import timedelta
 
 from django.utils import timezone
 from django.db.models import Q
+from django.db import transaction
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -68,6 +69,28 @@ class ConnectionDecisionView(APIView):
         connection.responded_at = timezone.now()
         connection.save(update_fields=('status', 'responded_at'))
         return Response(ConnectionRequestSerializer(connection, context={'request': request}).data)
+
+
+class ConnectionThreadStartView(APIView):
+    """Open the durable direct chat available to an accepted connection."""
+    permission_classes = [IsAuthenticated]
+
+    @transaction.atomic
+    def post(self, request, connection_id):
+        connection = ConnectionRequest.objects.filter(
+            id=connection_id,
+            status=ConnectionRequest.Status.ACCEPTED,
+        ).filter(Q(requester=request.user) | Q(recipient=request.user)).first()
+        if not connection:
+            return Response({'detail': 'Connection not found.'}, status=status.HTTP_404_NOT_FOUND)
+        other_id = connection.recipient_id if connection.requester_id == request.user.id else connection.requester_id
+        if SafetyExclusion.objects.filter(Q(user=request.user, excluded_user_id=other_id) | Q(user_id=other_id, excluded_user=request.user)).exists():
+            return Response({'detail': 'This connection is not available for chat.'}, status=status.HTTP_403_FORBIDDEN)
+        one, two = sorted((request.user.id, other_id))
+        thread = ConnectionThread.objects.filter(room__isnull=True, user_one_id=one, user_two_id=two).first()
+        if not thread:
+            thread = ConnectionThread.objects.create(user_one_id=one, user_two_id=two)
+        return Response({'data': {'id': str(thread.id)}}, status=status.HTTP_201_CREATED)
 
 
 class ThreadsView(APIView):

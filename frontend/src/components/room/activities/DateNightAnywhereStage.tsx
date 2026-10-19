@@ -37,6 +37,7 @@ export default function DateNightAnywhereStage({
   const partnerName = participants.find((person) => !person.isYou)?.name ?? 'your partner';
 
   const handleNextChapter = () => {
+    if (!isHost) return;
     if (chapter < 3) {
       onGameStateChange?.({ ...gameState, chapter: chapter + 1 });
       onSendReaction('support');
@@ -44,6 +45,7 @@ export default function DateNightAnywhereStage({
   };
 
   const handleFinish = (memory: string) => {
+    if (!isHost) return;
     onGameStateChange?.({ ...gameState, chapter: 3, savedMemory: memory });
     onSendReaction('cheer');
     onSendMessage(`💌 Date Night takeaway saved: “${memory}”`);
@@ -154,6 +156,7 @@ export default function DateNightAnywhereStage({
                 <button
                   key={memory}
                   onClick={() => handleFinish(memory)}
+                  disabled={!isHost}
                   className={`flex w-full items-center justify-between rounded-2xl border p-4 text-left transition ${
                     savedMemory === memory
                       ? 'border-[#3b7d56] bg-[#eef7f1] text-[#2b6142] ring-1 ring-[#3b7d56]'
@@ -178,9 +181,10 @@ export default function DateNightAnywhereStage({
         {chapter < 3 ? (
           <button
             onClick={handleNextChapter}
+            disabled={!isHost}
             className="inline-flex items-center gap-2 rounded-full bg-spark-coral px-5 py-2.5 text-xs font-bold text-white transition hover:bg-spark-flame"
           >
-            <span>Continue journey</span>
+            <span>{isHost ? 'Continue journey' : 'Host controls journey'}</span>
             <ArrowRight className="h-4 w-4" />
           </button>
         ) : (

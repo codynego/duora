@@ -117,12 +117,22 @@ export default function RoomExperience({
     : gameState;
 
   useEffect(() => {
+    const sharedTemplate = gameState.template;
+    if (typeof sharedTemplate === 'string') setTemplate(sharedTemplate as ExperienceTemplate);
+  }, [gameState.template]);
+
+  useEffect(() => {
+    // Keep compatibility with rooms that were switched before template state
+    // became durable. New switches are driven by the shared game state above.
+    if (typeof gameState.template === 'string') return;
     const latestTemplate = [...roomEvents].reverse().find((event) => event.event === 'prompt.skipped' && typeof event.payload?.template === 'string')?.payload?.template;
     if (latestTemplate) setTemplate(latestTemplate as ExperienceTemplate);
-  }, [roomEvents]);
+  }, [gameState.template, roomEvents]);
 
   function selectTemplate(nextTemplate: ExperienceTemplate) {
+    if (!isRoomHost) return;
     setTemplate(nextTemplate);
+    void updateGameState({ template: nextTemplate });
     void send('prompt.skipped', { template: nextTemplate });
   }
 
@@ -591,7 +601,7 @@ export default function RoomExperience({
       connected={connected}
       participants={roomParticipants}
       currentTemplate={template}
-      onSelectTemplate={selectTemplate}
+      onSelectTemplate={isRoomHost ? selectTemplate : undefined}
       onReaction={sendReaction}
       onSendMessage={sendChatMessage}
       onEndRoom={() => setView('wrap')}
@@ -607,7 +617,7 @@ export default function RoomExperience({
           roomId={roomId}
           gameState={displayedGameState}
           onGameStateChange={updateGameState}
-          isHost={true}
+          isHost={isRoomHost}
           participants={roomParticipants}
           onSendMessage={sendChatMessage}
           onSendReaction={sendReaction}
@@ -621,7 +631,7 @@ export default function RoomExperience({
           roomId={roomId}
           gameState={displayedGameState}
           onGameStateChange={updateGameState}
-          isHost={true}
+          isHost={isRoomHost}
           participants={roomParticipants}
           onSendMessage={sendChatMessage}
           onSendReaction={sendReaction}
@@ -635,7 +645,7 @@ export default function RoomExperience({
           roomId={roomId}
           gameState={displayedGameState}
           onGameStateChange={updateGameState}
-          isHost={true}
+          isHost={isRoomHost}
           participants={roomParticipants}
           onSendMessage={sendChatMessage}
           onSendReaction={sendReaction}
@@ -649,7 +659,7 @@ export default function RoomExperience({
           roomId={roomId}
           gameState={displayedGameState}
           onGameStateChange={updateGameState}
-          isHost={true}
+          isHost={isRoomHost}
           participants={roomParticipants}
           onSendMessage={sendChatMessage}
           onSendReaction={sendReaction}
@@ -664,7 +674,7 @@ export default function RoomExperience({
           roomId={roomId}
           gameState={gameState}
           onGameStateChange={updateGameState}
-          isHost={true}
+          isHost={isRoomHost}
           participants={roomParticipants}
           onSendMessage={sendChatMessage}
           onSendReaction={sendReaction}
@@ -678,7 +688,7 @@ export default function RoomExperience({
           roomId={roomId}
           gameState={gameState}
           onGameStateChange={updateGameState}
-          isHost={true}
+          isHost={isRoomHost}
           audience={audience}
           participants={roomParticipants}
           onSendMessage={sendChatMessage}
@@ -693,7 +703,7 @@ export default function RoomExperience({
           roomId={roomId}
           gameState={gameState}
           onGameStateChange={updateGameState}
-          isHost={true}
+          isHost={isRoomHost}
           participants={roomParticipants}
           onSendMessage={sendChatMessage}
           onSendReaction={sendReaction}
@@ -707,7 +717,7 @@ export default function RoomExperience({
           roomId={roomId}
           gameState={gameState}
           onGameStateChange={updateGameState}
-          isHost={true}
+          isHost={isRoomHost}
           participants={roomParticipants}
           onSendMessage={sendChatMessage}
           onSendReaction={sendReaction}
@@ -721,7 +731,7 @@ export default function RoomExperience({
           roomId={roomId}
           gameState={gameState}
           onGameStateChange={updateGameState}
-          isHost={true}
+          isHost={isRoomHost}
           participants={roomParticipants}
           onSendMessage={sendChatMessage}
           onSendReaction={sendReaction}
@@ -736,7 +746,7 @@ export default function RoomExperience({
           roomId={roomId}
           gameState={gameState}
           onGameStateChange={updateGameState}
-          isHost={true}
+          isHost={isRoomHost}
           participants={roomParticipants}
           onSendMessage={sendChatMessage}
           onSendReaction={sendReaction}
@@ -750,7 +760,7 @@ export default function RoomExperience({
           roomId={roomId}
           gameState={gameState}
           onGameStateChange={updateGameState}
-          isHost={true}
+          isHost={isRoomHost}
           participants={roomParticipants}
           onSendMessage={sendChatMessage}
           onSendReaction={sendReaction}
@@ -764,7 +774,7 @@ export default function RoomExperience({
           roomId={roomId}
           gameState={gameState}
           onGameStateChange={updateGameState}
-          isHost={true}
+          isHost={isRoomHost}
           participants={roomParticipants}
           onSendMessage={sendChatMessage}
           onSendReaction={sendReaction}

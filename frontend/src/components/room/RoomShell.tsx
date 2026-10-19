@@ -155,7 +155,9 @@ export default function RoomShell({
   useEffect(() => {
     if (!latestReaction) return;
     setActiveReactionToast(latestReaction);
-    const timer = window.setTimeout(() => setActiveReactionToast(null), 3000);
+    // Feedback should feel immediate, not sit over the game surface.
+    const duration = window.matchMedia('(max-width: 640px)').matches ? 900 : 1200;
+    const timer = window.setTimeout(() => setActiveReactionToast(null), duration);
     return () => window.clearTimeout(timer);
   }, [latestReaction]);
 
@@ -165,7 +167,11 @@ export default function RoomShell({
       return;
     }
     setActiveChatBubble(latestChat);
-    const timer = window.setTimeout(() => setActiveChatBubble(null), 4000);
+    const isScoreUpdate = String(latestChat.payload?.message ?? '').startsWith('⚡ Word Battle:');
+    const duration = isScoreUpdate
+      ? window.matchMedia('(max-width: 640px)').matches ? 800 : 1000
+      : window.matchMedia('(max-width: 640px)').matches ? 1400 : 1800;
+    const timer = window.setTimeout(() => setActiveChatBubble(null), duration);
     return () => window.clearTimeout(timer);
   }, [latestChat, chatOpen]);
 

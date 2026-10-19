@@ -160,6 +160,9 @@ export default function CreateExperiencePage() {
 function CreateExperienceFlow() {
   const router = useRouter();
   const search = useSearchParams();
+  const connectionId = search.get("connection");
+  const connectionName = search.get("connectionName")?.trim() || "your connection";
+  const isDirectConnectionRoom = Boolean(connectionId);
   const selectedByUrl = experiences.find(
     (item) => item.key === search.get("experience"),
   );
@@ -274,7 +277,7 @@ function CreateExperienceFlow() {
         : {};
       const body =
         visibility === "private"
-          ? { experience: experience.key, ...details, ...schedule }
+          ? { experience: experience.key, ...details, ...schedule, ...(connectionId ? { connection_id: connectionId } : {}) }
           : {
               experience: experience.key,
               tone,
@@ -439,8 +442,9 @@ function CreateExperienceFlow() {
                 <button
                   disabled={creating}
                   onClick={createRoom}
-                  className="inline-flex items-center gap-2 rounded-full bg-spark-coral px-6 py-3 text-sm font-bold text-white transition hover:bg-spark-flame disabled:opacity-50"
+                  className="button-loading inline-flex items-center gap-2 rounded-full bg-spark-coral px-6 py-3 text-sm font-bold text-white transition hover:bg-spark-flame disabled:opacity-50"
                 >
+                  {creating && <span className="button-spinner" />}
                   {creating ? "Creating invite…" : "Generate private invite link"}
                   <ArrowRight className="h-4 w-4" />
                 </button>
@@ -450,9 +454,9 @@ function CreateExperienceFlow() {
           {((step === 3 && category !== "talk" && category !== "together") || (step === 4 && category === "talk")) && (
             <>
               <p className="max-w-lg text-sm leading-6 text-[#6F6470]">
-                Choose who can find this room.
+                {isDirectConnectionRoom ? `This room is reserved for ${connectionName}. It will never appear in Discover.` : "Choose who can find this room."}
               </p>
-              <div className="mt-4 grid gap-2.5 sm:grid-cols-2">
+              <div className={`mt-4 grid gap-2.5 ${isDirectConnectionRoom ? "" : "sm:grid-cols-2"}`}>
                 <button
                   onClick={() => setVisibility("private")}
                   className={`group rounded-2xl border px-4 py-3.5 text-left transition ${
@@ -465,13 +469,13 @@ function CreateExperienceFlow() {
                     <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-spark-coral/10 text-spark-coral">
                       <LockKeyhole className="h-4 w-4" />
                     </span>
-                    <b className="text-sm font-bold text-dark-950">Private invitation</b>
+                    <b className="text-sm font-bold text-dark-950">{isDirectConnectionRoom ? `Playing with ${connectionName}` : "Private invitation"}</b>
                   </div>
                   <span className="mt-2 block text-xs leading-relaxed text-[#6F6470]">
-                    Create one private link for someone you choose.
+                    {isDirectConnectionRoom ? "Only this mutual connection can accept the invite." : "Create one private link for someone you choose."}
                   </span>
                 </button>
-                <button
+                {!isDirectConnectionRoom && <button
                   onClick={() => setVisibility("public")}
                   className={`group rounded-2xl border px-4 py-3.5 text-left transition ${
                     visibility === "public"
@@ -488,7 +492,7 @@ function CreateExperienceFlow() {
                   <span className="mt-2 block text-xs leading-relaxed text-[#6F6470]">
                     Publish a small room where people can find it in Discover.
                   </span>
-                </button>
+                </button>}
               </div>
               <ScheduleFields mode={startMode} setMode={setStartMode} date={scheduledDate} setDate={setScheduledDate} time={scheduledTime} setTime={setScheduledTime} />
             </>
@@ -569,7 +573,7 @@ function CreateExperienceFlow() {
                   label="Room type"
                   value={
                     visibility === "private"
-                      ? "Private invitation"
+                      ? isDirectConnectionRoom ? `Private room with ${connectionName}` : "Private invitation"
                       : "Public room"
                   }
                 />
@@ -596,7 +600,7 @@ function CreateExperienceFlow() {
           {inviteUrl && (
             <div className="mt-7 rounded-2xl bg-dark-950 p-5 text-white">
               <p className="text-xs font-bold tracking-[.14em] text-spark-rose">
-                PRIVATE LINK READY
+                {isDirectConnectionRoom ? `INVITE READY FOR ${connectionName.toUpperCase()}` : "PRIVATE LINK READY"}
               </p>
               <p className="mt-2 break-all text-sm">{inviteUrl}</p>
               <button
@@ -604,7 +608,7 @@ function CreateExperienceFlow() {
                 className="mt-4 inline-flex items-center gap-2 rounded-full bg-spark-coral px-4 py-2.5 text-sm font-bold"
               >
                 <Link2 className="h-4 w-4" />
-                Copy link
+                {isDirectConnectionRoom ? "Copy invite link" : "Copy link"}
               </button>
             </div>
           )}
@@ -642,8 +646,9 @@ function CreateExperienceFlow() {
                 <button
                   disabled={creating}
                   onClick={createRoom}
-                  className="inline-flex items-center gap-2 rounded-full bg-spark-coral px-5 py-3 text-sm font-bold text-white disabled:opacity-60"
+                  className="button-loading inline-flex items-center gap-2 rounded-full bg-spark-coral px-5 py-3 text-sm font-bold text-white disabled:opacity-60"
                 >
+                  {creating && <span className="button-spinner" />}
                   {creating
                     ? "Creating…"
                     : visibility === "public"
