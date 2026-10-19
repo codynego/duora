@@ -166,7 +166,10 @@ def join_room(*, room: Room, user) -> RoomMembership:
         start_room_if_ready(locked_room)
         membership.room = locked_room
         return membership
-    if locked_room.status not in {Room.Status.OPEN, Room.Status.SCHEDULED}:
+    # A former participant may return to an active room while its timer is
+    # still running. New participants remain blocked once play has started.
+    can_return_to_active_room = membership is not None and locked_room.status == Room.Status.ACTIVE
+    if locked_room.status not in {Room.Status.OPEN, Room.Status.SCHEDULED} and not can_return_to_active_room:
         raise PermissionDenied('This room is no longer available to join.')
     active_members = locked_room.memberships.filter(disposition=RoomMembership.Disposition.PRESENT).count()
     if active_members >= locked_room.max_members:
