@@ -115,7 +115,7 @@ export default function Home() {
 
         <section className="mt-10 grid gap-5 lg:grid-cols-2">
           <Link
-            href="/experiences/create"
+            href="/experiences/create?mode=private"
             className="group rounded-[28px] bg-dark-950 p-7 text-white transition hover:-translate-y-1 hover:shadow-xl sm:p-9"
           >
             <div className="flex items-start justify-between">

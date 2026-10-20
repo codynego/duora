@@ -402,7 +402,7 @@ function CreateExperienceFlow() {
                 {categories.map((item) => <button key={item.key} type="button" onClick={() => setQuickCategory(item.key)} className={`rounded-full px-4 py-2 text-xs font-bold transition ${quickCategory === item.key ? "bg-dark-950 text-white" : "bg-dark-950/5 text-[#6F6470] hover:bg-dark-950/10"}`}>{item.title}</button>)}
               </div>
               {selectedByUrl ? <div className="mt-6 rounded-2xl border border-spark-coral/25 bg-[#fff5f6] p-5"><p className="text-xs font-bold uppercase tracking-[.14em] text-spark-coral">Selected experience</p><h2 className="mt-2 text-xl font-bold tracking-[-.04em]">{selectedByUrl.title}</h2><p className="mt-2 text-sm leading-6 text-[#6F6470]">{selectedByUrl.detail}</p><button type="button" disabled={creating} onClick={() => void createRoom(selectedByUrl, "private")} className="button-loading mt-5 inline-flex items-center gap-2 rounded-full bg-spark-coral px-5 py-3 text-sm font-bold text-white disabled:opacity-60">{creating && <span className="button-spinner" />}{creating ? "Creating invite…" : "Create private invite link"}<ArrowRight className="h-4 w-4" /></button></div> : <div className="mt-6 grid gap-2.5">{experiences.filter((item) => item.category === quickCategory).map((item) => <button key={item.key} type="button" disabled={creating} onClick={() => void createRoom(item, "private")} className="group rounded-2xl border border-dark-950/10 px-4 py-4 text-left transition hover:-translate-y-0.5 hover:border-spark-coral hover:bg-[#fffaf8] disabled:cursor-wait disabled:opacity-60 sm:px-5"><span className="flex items-center justify-between gap-4"><span className="min-w-0"><b className="block text-sm font-bold tracking-tight text-dark-950">{item.title}</b><span className="mt-1 block text-xs leading-relaxed text-[#6F6470]">{item.detail}</span><span className="mt-2 block text-[11px] font-semibold text-spark-coral">Private · {item.duration} · Up to {item.limit} people</span></span>{creating ? <span className="button-spinner text-spark-coral" /> : <ArrowRight className="h-4 w-4 shrink-0 text-spark-coral/60 transition group-hover:translate-x-0.5 group-hover:text-spark-coral" />}</span></button>)}</div>}
-              <div className="mt-8 border-t border-dark-950/8 pt-5"><button type="button" onClick={() => { setCreationMode("public"); setCategory(quickCategory); setStep(1); }} className="inline-flex items-center gap-2 text-sm font-bold text-dark-950 hover:text-spark-coral">Host a public room instead <ArrowRight className="h-4 w-4" /></button><p className="mt-1 text-xs leading-5 text-[#6F6470]">Add a tone, capacity, and start time so people can find it in Discover.</p></div>
+              <div className="mt-8 border-t border-dark-950/8 pt-5"><button type="button" onClick={() => { setCreationMode("public"); setVisibility("public"); setCategory(quickCategory); setStep(1); }} className="inline-flex items-center gap-2 text-sm font-bold text-dark-950 hover:text-spark-coral">Host a public room instead <ArrowRight className="h-4 w-4" /></button><p className="mt-1 text-xs leading-5 text-[#6F6470]">Add a tone, capacity, and start time so people can find it in Discover.</p></div>
             </>
           )}
           {creationMode === "public" && step === 1 && (
@@ -491,9 +491,9 @@ function CreateExperienceFlow() {
           {((step === 3 && category !== "talk" && category !== "together") || (step === 4 && category === "talk")) && (
             <>
               <p className="max-w-lg text-sm leading-6 text-[#6F6470]">
-                {isDirectConnectionRoom ? `This room is reserved for ${connectionName}. It will never appear in Discover.` : "Choose who can find this room."}
+                {creationMode === "public" ? "This room will be listed in Discover for people who are looking for the same kind of moment." : isDirectConnectionRoom ? `This room is reserved for ${connectionName}. It will never appear in Discover.` : "Choose who can find this room."}
               </p>
-              <div className={`mt-4 grid gap-2.5 ${isDirectConnectionRoom ? "" : "sm:grid-cols-2"}`}>
+              {creationMode !== "public" && <div className={`mt-4 grid gap-2.5 ${isDirectConnectionRoom ? "" : "sm:grid-cols-2"}`}>
                 <button
                   onClick={() => setVisibility("private")}
                   className={`group rounded-2xl border px-4 py-3.5 text-left transition ${
@@ -530,7 +530,7 @@ function CreateExperienceFlow() {
                     Publish a small room where people can find it in Discover.
                   </span>
                 </button>}
-              </div>
+              </div>}
               <ScheduleFields mode={startMode} setMode={setStartMode} date={scheduledDate} setDate={setScheduledDate} time={scheduledTime} setTime={setScheduledTime} />
               <DurationFields value={durationMinutes} onChange={setDurationMinutes} />
             </>
