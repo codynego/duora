@@ -40,6 +40,33 @@ type Category = (typeof categories)[number]["key"];
 
 const experiences = [
   {
+    key: "predict-my-answer",
+    title: "Predict My Answer",
+    category: "play",
+    detail: "Take turns guessing what the other person would say. The reveal does the opening for you.",
+    flow: "Answer privately, make your prediction, and reveal the answers together.",
+    limit: 2,
+    duration: "8 minutes",
+  },
+  {
+    key: "better-question",
+    title: "The Better Question",
+    category: "talk",
+    detail: "Skip the usual small talk with prompts that give a conversation somewhere to go.",
+    flow: "Answer a thoughtful opening prompt, reveal together, and follow the conversation where it goes.",
+    limit: 4,
+    duration: "15 minutes",
+  },
+  {
+    key: "make-a-plan",
+    title: "Make a Plan",
+    category: "together",
+    detail: "Turn shared taste into one specific thing you could actually do together.",
+    flow: "Compare preferences privately, find overlap, and save one practical idea.",
+    limit: 2,
+    duration: "10 minutes",
+  },
+  {
     key: "most-likely-to",
     title: "Most Likely To",
     category: "play",
@@ -166,6 +193,7 @@ function CreateExperienceFlow() {
   const selectedByUrl = experiences.find(
     (item) => item.key === search.get("experience"),
   );
+  const requestedMode = search.get("mode") === "public" ? "public" : "private";
   const queryCategory = search.get("category");
   const initialCategory: Category =
     selectedByUrl?.category ??
@@ -173,7 +201,7 @@ function CreateExperienceFlow() {
       ? (queryCategory as Category)
       : "play");
   const [category, setCategory] = useState<Category>(initialCategory);
-  const [creationMode, setCreationMode] = useState<"private" | "public">("private");
+  const [creationMode, setCreationMode] = useState<"private" | "public">(requestedMode);
   const [quickCategory, setQuickCategory] = useState<Category>(initialCategory);
   const [selected, setSelected] = useState(() =>
     Math.max(
@@ -184,10 +212,10 @@ function CreateExperienceFlow() {
       ),
     ),
   );
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(selectedByUrl && requestedMode === "public" ? 3 : 1);
   const [talkTopic, setTalkTopic] = useState("");
   const [talkDescription, setTalkDescription] = useState("");
-  const [visibility, setVisibility] = useState<"private" | "public">("private");
+  const [visibility, setVisibility] = useState<"private" | "public">(requestedMode);
   const [tone, setTone] = useState("Easygoing");
   const [audience, setAudience] = useState("adults");
   const [maxMembers, setMaxMembers] = useState(2);
@@ -373,9 +401,7 @@ function CreateExperienceFlow() {
               <div className="flex flex-wrap gap-2">
                 {categories.map((item) => <button key={item.key} type="button" onClick={() => setQuickCategory(item.key)} className={`rounded-full px-4 py-2 text-xs font-bold transition ${quickCategory === item.key ? "bg-dark-950 text-white" : "bg-dark-950/5 text-[#6F6470] hover:bg-dark-950/10"}`}>{item.title}</button>)}
               </div>
-              <div className="mt-6 grid gap-2.5">
-                {experiences.filter((item) => item.category === quickCategory).map((item) => <button key={item.key} type="button" disabled={creating} onClick={() => void createRoom(item, "private")} className="group rounded-2xl border border-dark-950/10 px-4 py-4 text-left transition hover:-translate-y-0.5 hover:border-spark-coral hover:bg-[#fffaf8] disabled:cursor-wait disabled:opacity-60 sm:px-5"><span className="flex items-center justify-between gap-4"><span className="min-w-0"><b className="block text-sm font-bold tracking-tight text-dark-950">{item.title}</b><span className="mt-1 block text-xs leading-relaxed text-[#6F6470]">{item.detail}</span><span className="mt-2 block text-[11px] font-semibold text-spark-coral">Private · {item.duration} · Up to {item.limit} people</span></span>{creating ? <span className="button-spinner text-spark-coral" /> : <ArrowRight className="h-4 w-4 shrink-0 text-spark-coral/60 transition group-hover:translate-x-0.5 group-hover:text-spark-coral" />}</span></button>)}
-              </div>
+              {selectedByUrl ? <div className="mt-6 rounded-2xl border border-spark-coral/25 bg-[#fff5f6] p-5"><p className="text-xs font-bold uppercase tracking-[.14em] text-spark-coral">Selected experience</p><h2 className="mt-2 text-xl font-bold tracking-[-.04em]">{selectedByUrl.title}</h2><p className="mt-2 text-sm leading-6 text-[#6F6470]">{selectedByUrl.detail}</p><button type="button" disabled={creating} onClick={() => void createRoom(selectedByUrl, "private")} className="button-loading mt-5 inline-flex items-center gap-2 rounded-full bg-spark-coral px-5 py-3 text-sm font-bold text-white disabled:opacity-60">{creating && <span className="button-spinner" />}{creating ? "Creating invite…" : "Create private invite link"}<ArrowRight className="h-4 w-4" /></button></div> : <div className="mt-6 grid gap-2.5">{experiences.filter((item) => item.category === quickCategory).map((item) => <button key={item.key} type="button" disabled={creating} onClick={() => void createRoom(item, "private")} className="group rounded-2xl border border-dark-950/10 px-4 py-4 text-left transition hover:-translate-y-0.5 hover:border-spark-coral hover:bg-[#fffaf8] disabled:cursor-wait disabled:opacity-60 sm:px-5"><span className="flex items-center justify-between gap-4"><span className="min-w-0"><b className="block text-sm font-bold tracking-tight text-dark-950">{item.title}</b><span className="mt-1 block text-xs leading-relaxed text-[#6F6470]">{item.detail}</span><span className="mt-2 block text-[11px] font-semibold text-spark-coral">Private · {item.duration} · Up to {item.limit} people</span></span>{creating ? <span className="button-spinner text-spark-coral" /> : <ArrowRight className="h-4 w-4 shrink-0 text-spark-coral/60 transition group-hover:translate-x-0.5 group-hover:text-spark-coral" />}</span></button>)}</div>}
               <div className="mt-8 border-t border-dark-950/8 pt-5"><button type="button" onClick={() => { setCreationMode("public"); setCategory(quickCategory); setStep(1); }} className="inline-flex items-center gap-2 text-sm font-bold text-dark-950 hover:text-spark-coral">Host a public room instead <ArrowRight className="h-4 w-4" /></button><p className="mt-1 text-xs leading-5 text-[#6F6470]">Add a tone, capacity, and start time so people can find it in Discover.</p></div>
             </>
           )}
