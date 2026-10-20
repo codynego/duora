@@ -120,8 +120,8 @@ def create_public_room(*, user, experience: str, tone: str, audience: str, max_m
         title, description, default_duration, experience_max_members = PRIVATE_EXPERIENCES[experience]
     except KeyError as error:
         raise ValidationError({'experience': 'Choose a supported experience.'}) from error
-    if max_members > experience_max_members:
-        raise ValidationError({'max_members': f'{title} supports up to {experience_max_members} people.'})
+    if max_members > 10:
+        raise ValidationError({'max_members': 'Public rooms support up to 10 people.'})
     try:
         duration_minutes = default_duration if duration_minutes is None else int(duration_minutes)
     except (TypeError, ValueError) as error:

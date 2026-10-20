@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import PwaRuntime from '@/components/PwaRuntime';
+import PwaStartup from '@/components/PwaStartup';
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://duorah.vercel.app';
 
@@ -43,6 +44,7 @@ export default function RootLayout({
     <html lang="en">
       <body className="min-h-screen bg-white text-dark-950 antialiased">
         {children}
+        <PwaStartup />
         <PwaRuntime />
       </body>
     </html>

@@ -2,9 +2,10 @@ from rest_framework.generics import RetrieveUpdateAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
+from apps.rooms.models import Room
 from .models import DiscoveryProfile
 from .serializers import DiscoveryProfileSerializer
-from .services import recommend_room
+from .services import leave_auto_match, recommend_room, request_auto_match
 from apps.rooms.serializers import RoomSerializer
 
 
@@ -36,3 +37,18 @@ class RoomRecommendationView(APIView):
             reasons.append(profile.interests[0].lower())
         reason = 'Matches your saved preferences.' if not reasons else f"Picked for you because you like {' · '.join(reasons[:2])}."
         return Response({'data': RoomSerializer(room).data, 'reason': reason})
+
+
+class AutoMatchView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        room_code = str(request.data.get('room_code', '')).strip()
+        room = Room.objects.filter(code=room_code).first()
+        if not room:
+            return Response({'detail': 'That room could not be found.'}, status=404)
+        return Response({'data': request_auto_match(user=request.user, room=room)})
+
+    def delete(self, request):
+        leave_auto_match(user=request.user)
+        return Response(status=204)

@@ -1,8 +1,12 @@
-from django.db import models
+from datetime import timedelta
+
+from django.db import models, transaction
 from django.db.models import Count, Q
 from django.utils import timezone
+from apps.connections.models import ConnectionRequest
 from apps.moderation.models import SafetyExclusion
 from apps.rooms.models import Room, RoomMembership
+from .models import AutoMatchQueue, DiscoveryProfile
 
 
 def recommend_room(*, user, profile):
@@ -66,3 +70,60 @@ def recommend_room(*, user, profile):
         if not member_ids.intersection(excluded_users):
             return room
     return None
+
+
+@transaction.atomic
+def request_auto_match(*, user, room):
+    """Queue a joined discovery-room member or create a consent request."""
+    now = timezone.now()
+    if not room.is_discovery_room or room.status == Room.Status.ENDED:
+        return {'status': 'unavailable', 'reason': 'Auto-match is only available in discovery rooms.'}
+    if not RoomMembership.objects.filter(room=room, user=user, disposition=RoomMembership.Disposition.PRESENT).exists():
+        return {'status': 'unavailable', 'reason': 'Join the room before using Auto-match.'}
+
+    profile, _ = DiscoveryProfile.objects.get_or_create(user=user)
+    if profile.intents and room.intent not in profile.intents:
+        return {'status': 'unavailable', 'reason': 'This room is outside your saved discovery preferences.'}
+
+    AutoMatchQueue.objects.filter(user=user, expires_at__lte=now).delete()
+    candidates = AutoMatchQueue.objects.select_for_update().select_related('user').filter(
+        room=room,
+        intent=room.intent,
+        expires_at__gt=now,
+    ).exclude(user=user).order_by('created_at')
+
+    for candidate in candidates:
+        other = candidate.user
+        if SafetyExclusion.objects.filter(
+            Q(user=user, excluded_user=other) | Q(user=other, excluded_user=user),
+        ).exists():
+            continue
+        if ConnectionRequest.objects.filter(
+            Q(requester=user, recipient=other) | Q(requester=other, recipient=user),
+            status__in=[ConnectionRequest.Status.PENDING, ConnectionRequest.Status.ACCEPTED],
+        ).exists():
+            continue
+        AutoMatchQueue.objects.filter(user_id__in=[user.id, other.id]).delete()
+        connection = ConnectionRequest.objects.create(
+            requester=user,
+            recipient=other,
+            source=ConnectionRequest.Source.PUBLIC_ROOM,
+            room=room,
+            last_experience=room.experience,
+        )
+        return {
+            'status': 'matched',
+            'request_id': str(connection.id),
+            'person': {'id': other.id, 'name': other.get_username(), 'initial': (other.get_username()[:1] or '?').upper()},
+        }
+
+    AutoMatchQueue.objects.update_or_create(
+        user=user,
+        defaults={'room': room, 'intent': room.intent, 'expires_at': now + timedelta(minutes=15)},
+    )
+    return {'status': 'waiting'}
+
+
+@transaction.atomic
+def leave_auto_match(*, user):
+    AutoMatchQueue.objects.filter(user=user).delete()

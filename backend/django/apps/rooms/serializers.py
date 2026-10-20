@@ -22,7 +22,7 @@ class PublicRoomCreateSerializer(serializers.Serializer):
     ))
     tone = serializers.ChoiceField(choices=('Easygoing', 'Playful', 'Thoughtful', 'Flirty'))
     audience = serializers.ChoiceField(choices=Room.Audience.values, default=Room.Audience.ADULTS)
-    max_members = serializers.IntegerField(min_value=2, max_value=6)
+    max_members = serializers.IntegerField(min_value=2, max_value=10)
     city = serializers.CharField(max_length=100, required=False, allow_blank=True)
     topic = serializers.CharField(max_length=120, required=False, allow_blank=True)
     discussion_description = serializers.CharField(max_length=500, required=False, allow_blank=True)
@@ -35,6 +35,6 @@ class PublicRoomCreateSerializer(serializers.Serializer):
         return value
 
     def validate_max_members(self, value):
-        if value not in {2, 4, 6}:
-            raise serializers.ValidationError('Choose 2, 4, or 6 people.')
+        if value not in {2, 4, 6, 8, 10}:
+            raise serializers.ValidationError('Choose 2, 4, 6, 8, or 10 people.')
         return value

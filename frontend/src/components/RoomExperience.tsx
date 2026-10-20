@@ -7,12 +7,14 @@ import {
   ArrowLeft,
   ArrowRight,
   ShieldCheck,
+  Sparkles,
   UsersRound,
 } from 'lucide-react';
 import { useRoomActivity } from '@/lib/use-room-activity';
 import { getAccessToken } from '@/lib/auth';
 import { useRoomGameState } from '@/lib/use-room-game-state';
 import RoomShell from './room/RoomShell';
+import AutoMatchRequestNotice from './AutoMatchRequestNotice';
 import { ExperienceTemplate, RoomParticipant, ReactionKind, RoomEvent } from './room/types';
 import OpenConversationStage from './room/activities/OpenConversationStage';
 import GuidedConversationStage from './room/activities/GuidedConversationStage';
@@ -51,6 +53,7 @@ interface RoomExperienceProps {
   maxMembers?: number;
   roomStatus?: 'scheduled' | 'open' | 'active';
   isDiscoveryRoom?: boolean;
+  autoJoin?: boolean;
 }
 
 function templateForExperience(experience?: string): ExperienceTemplate {
@@ -84,6 +87,7 @@ export default function RoomExperience({
   maxMembers = 4,
   roomStatus: initialRoomStatus = 'active',
   isDiscoveryRoom = false,
+  autoJoin = false,
 }: RoomExperienceProps) {
   const [view, setView] = useState<'overview' | 'arrival' | 'live' | 'wrap'>('overview');
   const [clock, setClock] = useState(() => Date.now());
@@ -101,12 +105,15 @@ export default function RoomExperience({
   const [sharedInterests, setSharedInterests] = useState<string[]>([]);
   const [selfReady, setSelfReady] = useState(false);
   const [readySubmitting, setReadySubmitting] = useState(false);
+  const [autoMatchState, setAutoMatchState] = useState<'idle' | 'joining' | 'waiting' | 'matched' | 'error'>('idle');
+  const [autoMatchMessage, setAutoMatchMessage] = useState('');
   const [nextStepStatus, setNextStepStatus] = useState('');
   const [nextStepThreadId, setNextStepThreadId] = useState('');
   const [nextStepPending, setNextStepPending] = useState('');
   const [nextStepChoices, setNextStepChoices] = useState<Record<string, 'continue_chat' | 'reconnect' | 'end'>>({});
   const chatInitialized = useRef(false);
   const seenChatIds = useRef(new Set<string>());
+  const autoJoinStarted = useRef(false);
   const router = useRouter();
 
   const isTalk = mode === 'talk';
@@ -230,6 +237,41 @@ export default function RoomExperience({
       setJoinError(error instanceof Error ? error.message : 'This room cannot be joined right now.');
     } finally {
       setJoining(false);
+    }
+  }
+
+  useEffect(() => {
+    if (!autoJoin || autoJoinStarted.current || !roomId) return;
+    autoJoinStarted.current = true;
+    void joinRoom();
+  }, [autoJoin, roomId]);
+
+  async function requestAutoMatch() {
+    const token = await getAccessToken();
+    if (!token || !roomCode) return;
+    setAutoMatchState('joining');
+    setAutoMatchMessage('');
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_DUORA_API_URL ?? 'http://127.0.0.1:8000'}/api/v1/discovery/auto-match/`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ room_code: roomCode }),
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(body.detail ?? 'Auto-match is unavailable right now.');
+      const result = body.data ?? {};
+      if (result.status === 'matched') {
+        setAutoMatchState('matched');
+        setAutoMatchMessage('A match request has been sent. They can choose whether to continue.');
+      } else if (result.status === 'waiting') {
+        setAutoMatchState('waiting');
+        setAutoMatchMessage('You’re in the queue. We’ll let you know when someone compatible is available.');
+      } else {
+        throw new Error(result.reason ?? 'Auto-match is unavailable right now.');
+      }
+    } catch (error) {
+      setAutoMatchState('error');
+      setAutoMatchMessage(error instanceof Error ? error.message : 'Auto-match is unavailable right now.');
     }
   }
 
@@ -457,7 +499,7 @@ export default function RoomExperience({
   // --- 2. ARRIVAL VIEW ---
   if (view === 'arrival') {
     return (
-      <main className="grid min-h-screen place-items-center bg-[#fffdfc] px-5 text-dark-950">
+      <><main className="grid min-h-screen place-items-center bg-[#fffdfc] px-5 text-dark-950">
         <section className="w-full max-w-lg text-center">
           <Link href="/discover" className="absolute left-5 top-6 inline-flex items-center gap-2 text-sm font-bold text-[#6F6470]">
             <ArrowLeft className="h-4 w-4" />
@@ -635,11 +677,19 @@ export default function RoomExperience({
             </div>
           </div>
 
+          {isDiscoveryRoom && joined && <div className="mt-4 rounded-[24px] border border-spark-coral/20 bg-[#fff5f6] p-5 text-left">
+            <div className="flex items-start gap-3">
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white text-spark-coral"><Sparkles className="h-4 w-4" /></span>
+              <div className="min-w-0 flex-1"><p className="text-sm font-bold text-dark-950">Want to meet one person from this room?</p><p className="mt-1 text-xs leading-5 text-[#6F6470]">Auto-match sends a private request. Nothing becomes a connection unless they choose to continue too.</p></div>
+            </div>
+            {autoMatchState === 'idle' || autoMatchState === 'error' || autoMatchState === 'joining' ? <button type="button" disabled={autoMatchState === 'joining'} onClick={() => void requestAutoMatch()} className="mt-4 inline-flex items-center gap-2 rounded-full bg-dark-950 px-4 py-2.5 text-xs font-bold text-white disabled:opacity-60">{autoMatchState === 'joining' ? 'Looking for someone…' : 'Auto-match me'}<ArrowRight className="h-3.5 w-3.5" /></button> : <p className="mt-4 rounded-xl bg-white px-3 py-2.5 text-xs font-semibold leading-5 text-dark-950">{autoMatchMessage}</p>}
+          </div>}
+
           <p className="mt-7 text-xs font-semibold text-[#6F6470]">
             {waitingForSchedule ? 'You’ll enter automatically once everyone has joined and the scheduled time arrives.' : 'You’ll enter automatically when everyone has joined.'}
           </p>
         </section>
-      </main>
+      </main><AutoMatchRequestNotice enabled={isDiscoveryRoom && joined} /></>
     );
   }
 
@@ -669,7 +719,7 @@ export default function RoomExperience({
 
   // --- 4. LIVE VIEW WITH ROOM SHELL & PLUGGABLE STAGES ---
   return (
-    <RoomShell
+    <><RoomShell
       roomName={roomName}
       isHost={isRoomHost}
       onSetTopic={isTalk ? setHostTopic : undefined}
@@ -691,6 +741,7 @@ export default function RoomExperience({
       onToggleChat={toggleChat}
       unreadCount={unreadMessages}
     >
+      <AutoMatchRequestNotice enabled={isDiscoveryRoom && joined} />
       {/* Talk Templates */}
       {template === 'open_talk' && (
         <OpenConversationStage
@@ -866,6 +917,6 @@ export default function RoomExperience({
           onPromptChat={handlePromptChat}
         />
       )}
-    </RoomShell>
+    </RoomShell></>
   );
 }

@@ -35,3 +35,16 @@ class DiscoveryProfile(models.Model):
         allowed = {choice.value for choice in self.Intent}
         if not set(self.intents).issubset(allowed):
             raise ValueError('Unsupported discovery intent.')
+
+
+class AutoMatchQueue(models.Model):
+    """A short-lived opt-in queue for people asking to meet someone now."""
+
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='auto_match_queue')
+    room = models.ForeignKey('rooms.Room', on_delete=models.CASCADE, related_name='auto_match_queue')
+    intent = models.CharField(max_length=20)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+
+    class Meta:
+        indexes = [models.Index(fields=('room', 'intent', 'expires_at'))]

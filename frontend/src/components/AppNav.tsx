@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Bell, Compass, House, MessageCircle, PlayCircle, UserRound, UsersRound } from 'lucide-react';
+import AutoMatchRequestNotice from '@/components/AutoMatchRequestNotice';
 import { useCurrentUser } from '@/lib/current-user';
 
 const navigation = [
@@ -17,6 +18,7 @@ export default function AppNav() {
   const { user, ready } = useCurrentUser();
   const displayName = user?.display_name ?? '';
   const initial = displayName.slice(0, 1).toUpperCase();
+
   return (
     <>
       <header className="sticky top-0 z-40 flex h-[68px] items-center justify-between border-b border-dark-950/8 bg-white/95 px-5 backdrop-blur md:hidden">
@@ -53,6 +55,7 @@ export default function AppNav() {
           <Link href={user ? '/profile' : '/login'} className={`flex min-w-[58px] flex-col items-center gap-1 rounded-xl px-2 py-1.5 text-[10px] font-bold transition ${pathname === '/profile' ? 'text-spark-coral' : 'text-dark-950/50 hover:text-dark-950'}`}><UserRound className="h-5 w-5" strokeWidth={pathname === '/profile' ? 2.25 : 1.85} />{user ? 'Profile' : 'Sign in'}</Link>
         </div>
       </nav>
+      <AutoMatchRequestNotice enabled={ready && Boolean(user)} />
     </>
   );
 }

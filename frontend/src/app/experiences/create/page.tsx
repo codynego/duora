@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -212,13 +212,13 @@ function CreateExperienceFlow() {
       ),
     ),
   );
-  const [step, setStep] = useState(selectedByUrl && requestedMode === "public" ? 3 : 1);
+  const [step, setStep] = useState(selectedByUrl && requestedMode === "public" ? 2 : 1);
   const [talkTopic, setTalkTopic] = useState("");
   const [talkDescription, setTalkDescription] = useState("");
   const [visibility, setVisibility] = useState<"private" | "public">(requestedMode);
   const [tone, setTone] = useState("Easygoing");
   const [audience, setAudience] = useState("adults");
-  const [maxMembers, setMaxMembers] = useState(2);
+  const [maxMembers, setMaxMembers] = useState(4);
   const [city, setCity] = useState("");
   const [startMode, setStartMode] = useState<"now" | "scheduled">("now");
   const [scheduledDate, setScheduledDate] = useState("");
@@ -228,20 +228,21 @@ function CreateExperienceFlow() {
   const [error, setError] = useState("");
   const [inviteUrl, setInviteUrl] = useState("");
   const [privateRoomId, setPrivateRoomId] = useState("");
+  const inviteReadyRef = useRef<HTMLDivElement | null>(null);
   const experience = experiences[selected];
   const family = categories.find((item) => item.key === category)!;
   const choices = experiences.filter((item) => item.category === category);
-  const capacities = [2, 4, 6].filter((value) => value <= experience.limit);
+  const capacities = [2, 4, 6, 8, 10].filter((value) => creationMode === "public" ? value <= 10 : value <= experience.limit);
   const totalSteps =
-    category === "together"
-      ? 3
-      : visibility === "public"
-        ? category === "talk"
-          ? 6
-          : 5
-        : 4;
+    creationMode === "public" ? 3 : category === "together" ? 3 : visibility === "public" ? category === "talk" ? 6 : 5 : 4;
   const stepName =
-    step === 1
+    creationMode === "public"
+      ? step === 1
+        ? "Choose an experience"
+        : step === 2
+          ? "Shape the room"
+          : "Review"
+      : step === 1
       ? "Choose an experience family"
       : step === 2
         ? `Choose a ${family.title.toLowerCase()} experience`
@@ -258,9 +259,16 @@ function CreateExperienceFlow() {
               : "Room details";
   const scheduleLabel = startMode === "now" ? "Starts now" : scheduledDate && scheduledTime ? `${scheduledDate} at ${scheduledTime}` : "Schedule not set";
 
+  useEffect(() => {
+    if (!inviteUrl || !inviteReadyRef.current) return;
+    window.requestAnimationFrame(() => {
+      inviteReadyRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+  }, [inviteUrl]);
+
   function chooseExperience(index: number) {
     setSelected(index);
-    setMaxMembers(Math.min(maxMembers, experiences[index].limit));
+    setMaxMembers(creationMode === "public" ? Math.max(4, Math.min(maxMembers, 10)) : Math.min(maxMembers, experiences[index].limit));
   }
   function chooseCategory(next: Category) {
     const index = experiences.findIndex((item) => item.category === next);
@@ -407,11 +415,12 @@ function CreateExperienceFlow() {
           )}
           {creationMode === "public" && step === 1 && (
             <>
-              <p className="max-w-lg text-sm leading-6 text-[#6F6470]">What kind of moment do you want to make?</p>
-              <div className="mt-7 grid gap-2 sm:grid-cols-2">{categories.map((item) => <button key={item.key} onClick={() => chooseCategory(item.key)} className="rounded-2xl border border-dark-950/10 p-4 text-left transition hover:border-spark-coral hover:bg-[#fffaf8]"><b className="block text-sm">{item.title}</b><span className="mt-1 block text-xs leading-5 text-[#6F6470]">{item.detail}</span></button>)}</div>
+              <p className="max-w-lg text-sm leading-6 text-[#6F6470]">Choose the moment you want people to join. You can tune the room after this.</p>
+              <div className="mt-6 flex flex-wrap gap-2">{categories.filter((item) => item.key !== "together").map((item) => <button key={item.key} type="button" onClick={() => setQuickCategory(item.key)} className={`rounded-full px-4 py-2 text-xs font-bold transition ${quickCategory === item.key ? "bg-dark-950 text-white" : "bg-dark-950/5 text-[#6F6470] hover:bg-dark-950/10"}`}>{item.title}</button>)}</div>
+              <div className="mt-6 grid gap-2.5">{experiences.filter((item) => item.category === quickCategory).map((item) => { const index = experiences.indexOf(item); return <button key={item.key} type="button" onClick={() => { setCategory(item.category); chooseExperience(index); setStep(2); }} className="group rounded-2xl border border-dark-950/10 px-4 py-4 text-left transition hover:-translate-y-0.5 hover:border-spark-coral hover:bg-[#fffaf8] sm:px-5"><span className="flex items-center justify-between gap-4"><span className="min-w-0"><b className="block text-sm font-bold tracking-tight text-dark-950">{item.title}</b><span className="mt-1 block text-xs leading-relaxed text-[#6F6470]">{item.detail}</span><span className="mt-2 block text-[11px] font-semibold text-spark-coral">Public · up to 10 people · {item.duration}</span></span><ArrowRight className="h-4 w-4 shrink-0 text-spark-coral/60 transition group-hover:translate-x-0.5 group-hover:text-spark-coral" /></span></button>; })}</div>
             </>
           )}
-          {step === 3 && category === "talk" && (
+          {step === (creationMode === "public" ? 2 : 3) && category === "talk" && (
             <>
               <p className="max-w-lg text-sm leading-6 text-[#6F6470]">Give the room a clear subject so everyone knows what they are stepping into.</p>
               <div className="mt-7 grid gap-5">
@@ -420,7 +429,7 @@ function CreateExperienceFlow() {
               </div>
             </>
           )}
-          {step === 2 && (
+          {creationMode !== "public" && step === 2 && (
             <>
               <button onClick={() => setStep(1)} className="text-xs font-bold text-[#6F6470]">← Change family</button>
               <p className="mt-5 text-[10px] font-bold tracking-[.14em] text-spark-coral">{family.title.toUpperCase()}</p>
@@ -535,7 +544,7 @@ function CreateExperienceFlow() {
               <DurationFields value={durationMinutes} onChange={setDurationMinutes} />
             </>
           )}
-          {((step === 4 && category !== "talk") || (step === 5 && category === "talk")) && visibility === "public" && (
+          {creationMode === "public" && step === 2 && category !== "together" && (
             <>
               <p className="max-w-lg text-sm leading-6 text-[#6F6470]">
                 Set a few boundaries so the right people know what they are
@@ -637,7 +646,7 @@ function CreateExperienceFlow() {
             </>
           )}
           {inviteUrl && (
-            <div className="mt-7 rounded-2xl bg-dark-950 p-5 text-white">
+            <div ref={inviteReadyRef} className="mt-7 scroll-mt-24 rounded-2xl bg-dark-950 p-5 text-white">
               <p className="text-xs font-bold tracking-[.14em] text-spark-rose">
                 {isDirectConnectionRoom ? `INVITE READY FOR ${connectionName.toUpperCase()}` : "PRIVATE LINK READY"}
               </p>
