@@ -2,13 +2,14 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Bell, Compass, House, MessageCircle, PlayCircle, UserRound, UsersRound } from 'lucide-react';
+import { Bell, Bot, Compass, House, MessageCircle, PlayCircle, UserRound, UsersRound } from 'lucide-react';
 import { useCurrentUser } from '@/lib/current-user';
 
 const navigation = [
   { label: 'Home', href: '/home', icon: House },
   { label: 'Discover', href: '/discover', icon: Compass },
   { label: 'Experiences', href: '/experiences', icon: PlayCircle },
+  { label: 'Duorah AI', href: '/ai', icon: Bot },
   { label: 'Connections', href: '/connections', icon: MessageCircle },
 ];
 
