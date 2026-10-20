@@ -53,7 +53,7 @@ export default function SignupPage() {
     try {
       await signUp(username, password, confirm, gender);
       const requestedPath = new URLSearchParams(window.location.search).get('next');
-      const destination = requestedPath?.startsWith('/i/') ? requestedPath : '/onboarding';
+      const destination = requestedPath?.startsWith('/i/') ? requestedPath : '/home';
       router.replace(destination);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unable to create your account.';
@@ -70,7 +70,7 @@ export default function SignupPage() {
   return (
     <AuthShell
       title="Start with a small hello."
-      description="Your preferences stay private and help Duorah make better room recommendations."
+      description="Start with a small hello. You can personalize your recommendations whenever you’re ready."
       footer={<>Already have an account? <Link href="/login" className="font-bold text-spark-coral">Sign in</Link></>}
     >
       <form onSubmit={submit} className="mt-8 space-y-4">

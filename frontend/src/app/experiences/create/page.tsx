@@ -173,6 +173,8 @@ function CreateExperienceFlow() {
       ? (queryCategory as Category)
       : "play");
   const [category, setCategory] = useState<Category>(initialCategory);
+  const [creationMode, setCreationMode] = useState<"private" | "public">("private");
+  const [quickCategory, setQuickCategory] = useState<Category>(initialCategory);
   const [selected, setSelected] = useState(() =>
     Math.max(
       0,
@@ -182,7 +184,7 @@ function CreateExperienceFlow() {
       ),
     ),
   );
-  const [step, setStep] = useState(selectedByUrl ? 3 : 1);
+  const [step, setStep] = useState(1);
   const [talkTopic, setTalkTopic] = useState("");
   const [talkDescription, setTalkDescription] = useState("");
   const [visibility, setVisibility] = useState<"private" | "public">("private");
@@ -247,13 +249,14 @@ function CreateExperienceFlow() {
     chooseExperience(index);
     setStep(category === "talk" ? 3 : 3);
   }
-  async function createRoom() {
+  async function createRoom(experienceOverride = experience, roomVisibility = visibility) {
     const token = await getAccessToken();
     if (!token) {
       setError("Sign in to create an experience.");
       return;
     }
-    if (category === "talk" && (!talkTopic.trim() || !talkDescription.trim())) {
+    const roomCategory = experienceOverride.category;
+    if (roomCategory === "talk" && roomVisibility === "public" && (!talkTopic.trim() || !talkDescription.trim())) {
       setError("Add a topic and a short discussion description first.");
       setStep(3);
       return;
@@ -268,20 +271,20 @@ function CreateExperienceFlow() {
       const api =
         process.env.NEXT_PUBLIC_DUORA_API_URL ?? "http://127.0.0.1:8000";
       const details =
-        category === "talk"
+        roomCategory === "talk"
           ? {
-              topic: talkTopic.trim(),
-              discussion_description: talkDescription.trim(),
+              topic: talkTopic.trim() || experienceOverride.title,
+              discussion_description: talkDescription.trim() || experienceOverride.detail,
             }
           : {};
       const schedule = startMode === "scheduled"
         ? { starts_at: new Date(`${scheduledDate}T${scheduledTime}`).toISOString() }
         : {};
       const body =
-        visibility === "private"
-          ? { experience: experience.key, duration_minutes: durationMinutes, ...details, ...schedule, ...(connectionId ? { connection_id: connectionId } : {}) }
+        roomVisibility === "private"
+          ? { experience: experienceOverride.key, duration_minutes: durationMinutes, ...details, ...schedule, ...(connectionId ? { connection_id: connectionId } : {}) }
           : {
-              experience: experience.key,
+              experience: experienceOverride.key,
               duration_minutes: durationMinutes,
               tone,
               audience,
@@ -291,7 +294,7 @@ function CreateExperienceFlow() {
               ...schedule,
             };
       const response = await fetch(
-        `${api}/api/v1/rooms/${visibility === "private" ? "private" : "public"}/`,
+        `${api}/api/v1/rooms/${roomVisibility === "private" ? "private" : "public"}/`,
         {
           method: "POST",
           headers: {
@@ -308,7 +311,7 @@ function CreateExperienceFlow() {
             Object.values(data).flat().join(" ") ??
             "Could not create this experience.",
         );
-      if (visibility === "private") {
+      if (roomVisibility === "private") {
         const inviteToken = data?.data?.invite?.token;
         const roomId = data?.data?.room?.id;
         if (!inviteToken || !roomId)
@@ -349,40 +352,37 @@ function CreateExperienceFlow() {
           Experiences
         </Link>
         <section className="mt-8">
-          <div className="flex items-center justify-between">
-            <p className="section-label">Create an experience</p>
-            <p className="text-xs font-bold text-[#6F6470]">
-              Step {step} of {totalSteps}
-            </p>
-          </div>
-          <div
-            className="mt-3 grid gap-1.5"
-            style={{
-              gridTemplateColumns: `repeat(${totalSteps}, minmax(0, 1fr))`,
-            }}
-          >
-            {Array.from({ length: totalSteps }, (_, index) => (
-              <span
-                key={index}
-                className={`h-1 rounded-full ${index + 1 <= step ? "bg-spark-coral" : "bg-dark-950/10"}`}
-              />
-            ))}
-          </div>
-          <h1 className="mt-7 text-3xl font-bold tracking-[-.06em] sm:text-5xl">
-            {stepName}
-          </h1>
+          {creationMode === "public" ? <>
+            <div className="flex items-center justify-between">
+              <p className="section-label">Host a public room</p>
+              <p className="text-xs font-bold text-[#6F6470]">Step {step} of {totalSteps}</p>
+            </div>
+            <div className="mt-3 grid gap-1.5" style={{ gridTemplateColumns: `repeat(${totalSteps}, minmax(0, 1fr))` }}>
+              {Array.from({ length: totalSteps }, (_, index) => <span key={index} className={`h-1 rounded-full ${index + 1 <= step ? "bg-spark-coral" : "bg-dark-950/10"}`} />)}
+            </div>
+            <h1 className="mt-7 text-3xl font-bold tracking-[-.06em] sm:text-5xl">{stepName}</h1>
+          </> : <>
+            <p className="section-label">Send a private invite</p>
+            <h1 className="mt-3 max-w-2xl text-3xl font-bold tracking-[-.06em] sm:text-5xl">Pick a moment. We’ll make the link.</h1>
+            <p className="mt-3 max-w-xl text-sm leading-6 text-[#6F6470]">Choose an experience and Duorah will create a private room that starts right away. No setup or review screen.</p>
+          </>}
         </section>
         <section className="mt-8 rounded-[30px] border border-dark-950/10 bg-white p-5 shadow-[0_16px_50px_rgba(40,29,50,.06)] sm:p-8">
-          {step === 1 && (
+          {creationMode === "private" && step === 1 && (
+            <>
+              <div className="flex flex-wrap gap-2">
+                {categories.map((item) => <button key={item.key} type="button" onClick={() => setQuickCategory(item.key)} className={`rounded-full px-4 py-2 text-xs font-bold transition ${quickCategory === item.key ? "bg-dark-950 text-white" : "bg-dark-950/5 text-[#6F6470] hover:bg-dark-950/10"}`}>{item.title}</button>)}
+              </div>
+              <div className="mt-6 grid gap-2.5">
+                {experiences.filter((item) => item.category === quickCategory).map((item) => <button key={item.key} type="button" disabled={creating} onClick={() => void createRoom(item, "private")} className="group rounded-2xl border border-dark-950/10 px-4 py-4 text-left transition hover:-translate-y-0.5 hover:border-spark-coral hover:bg-[#fffaf8] disabled:cursor-wait disabled:opacity-60 sm:px-5"><span className="flex items-center justify-between gap-4"><span className="min-w-0"><b className="block text-sm font-bold tracking-tight text-dark-950">{item.title}</b><span className="mt-1 block text-xs leading-relaxed text-[#6F6470]">{item.detail}</span><span className="mt-2 block text-[11px] font-semibold text-spark-coral">Private · {item.duration} · Up to {item.limit} people</span></span>{creating ? <span className="button-spinner text-spark-coral" /> : <ArrowRight className="h-4 w-4 shrink-0 text-spark-coral/60 transition group-hover:translate-x-0.5 group-hover:text-spark-coral" />}</span></button>)}
+              </div>
+              <div className="mt-8 border-t border-dark-950/8 pt-5"><button type="button" onClick={() => { setCreationMode("public"); setCategory(quickCategory); setStep(1); }} className="inline-flex items-center gap-2 text-sm font-bold text-dark-950 hover:text-spark-coral">Host a public room instead <ArrowRight className="h-4 w-4" /></button><p className="mt-1 text-xs leading-5 text-[#6F6470]">Add a tone, capacity, and start time so people can find it in Discover.</p></div>
+            </>
+          )}
+          {creationMode === "public" && step === 1 && (
             <>
               <p className="max-w-lg text-sm leading-6 text-[#6F6470]">What kind of moment do you want to make?</p>
-              <div className="mt-7 grid gap-2 sm:grid-cols-2">
-                {categories.map((item) => (
-                  <button key={item.key} onClick={() => chooseCategory(item.key)} className="rounded-2xl border border-dark-950/10 p-4 text-left transition hover:border-spark-coral hover:bg-[#fffaf8]">
-                    <b className="block text-sm">{item.title}</b><span className="mt-1 block text-xs leading-5 text-[#6F6470]">{item.detail}</span>
-                  </button>
-                ))}
-              </div>
+              <div className="mt-7 grid gap-2 sm:grid-cols-2">{categories.map((item) => <button key={item.key} onClick={() => chooseCategory(item.key)} className="rounded-2xl border border-dark-950/10 p-4 text-left transition hover:border-spark-coral hover:bg-[#fffaf8]"><b className="block text-sm">{item.title}</b><span className="mt-1 block text-xs leading-5 text-[#6F6470]">{item.detail}</span></button>)}</div>
             </>
           )}
           {step === 3 && category === "talk" && (
@@ -452,7 +452,7 @@ function CreateExperienceFlow() {
               <div className="mt-8 flex justify-end">
                 <button
                   disabled={creating}
-                  onClick={createRoom}
+                  onClick={() => void createRoom()}
                   className="button-loading inline-flex items-center gap-2 rounded-full bg-spark-coral px-6 py-3 text-sm font-bold text-white transition hover:bg-spark-flame disabled:opacity-50"
                 >
                   {creating && <span className="button-spinner" />}
@@ -638,7 +638,7 @@ function CreateExperienceFlow() {
               {error}
             </p>
           )}
-          <footer className="mt-8 flex items-center justify-between gap-3 border-t border-dark-950/8 pt-5">
+          {creationMode === "public" && <footer className="mt-8 flex items-center justify-between gap-3 border-t border-dark-950/8 pt-5">
             {step > 1 ? (
               <button
                 onClick={() => {
@@ -666,7 +666,7 @@ function CreateExperienceFlow() {
               !inviteUrl && (
                 <button
                   disabled={creating}
-                  onClick={createRoom}
+                  onClick={() => void createRoom()}
                   className="button-loading inline-flex items-center gap-2 rounded-full bg-spark-coral px-5 py-3 text-sm font-bold text-white disabled:opacity-60"
                 >
                   {creating && <span className="button-spinner" />}
@@ -679,7 +679,7 @@ function CreateExperienceFlow() {
                 </button>
               )
             )}
-          </footer>
+          </footer>}
         </section>
       </main>
     </div>

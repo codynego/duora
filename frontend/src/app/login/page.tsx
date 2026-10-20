@@ -5,9 +5,7 @@ import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Eye, EyeOff } from 'lucide-react';
 import AuthShell from '@/components/AuthShell';
-import { getAccessToken, logIn } from '@/lib/auth';
-
-const api = process.env.NEXT_PUBLIC_DUORA_API_URL ?? 'http://127.0.0.1:8000';
+import { logIn } from '@/lib/auth';
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');
@@ -23,14 +21,8 @@ export default function LoginPage() {
     setError('');
     try {
       await logIn(username, password);
-      const token = await getAccessToken();
-      const response = await fetch(`${api}/api/v1/discovery/me/`, {
-        credentials: 'include',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const profile = response.ok ? await response.json() : null;
       const requestedPath = new URLSearchParams(window.location.search).get('next');
-      const destination = requestedPath?.startsWith('/') ? requestedPath : (profile?.onboarding_completed ? '/home' : '/onboarding');
+      const destination = requestedPath?.startsWith('/') ? requestedPath : '/home';
       router.replace(destination);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to sign in.');

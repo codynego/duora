@@ -5,7 +5,6 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowRight,
-  Bot,
   CalendarDays,
   Clock3,
   HeartHandshake,
@@ -110,7 +109,7 @@ export default function Home() {
             href="/onboarding"
             className="inline-flex items-center gap-2 text-sm font-semibold text-spark-coral hover:text-[#d94767]"
           >
-            Refine your preferences <ArrowRight className="h-4 w-4" />
+            Personalize your recommendations <ArrowRight className="h-4 w-4" />
           </Link>
         </section>
 
@@ -164,14 +163,6 @@ export default function Home() {
             </span>
           </Link>
         </section>
-
-        <Link href="/ai" className="group mt-5 flex flex-col justify-between gap-5 overflow-hidden rounded-[28px] bg-[#fff0f3] p-7 transition hover:-translate-y-1 hover:shadow-xl sm:flex-row sm:items-center sm:p-9">
-          <div className="flex items-start gap-4">
-            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-spark-coral"><Bot className="h-6 w-6" /></span>
-            <div><p className="text-sm font-semibold text-spark-coral">NOBODY AROUND RIGHT NOW?</p><h2 className="mt-2 text-2xl font-bold tracking-[-.05em]">Play with Duorah AI.</h2><p className="mt-2 max-w-xl text-sm leading-6 text-[#6F6470]">Your always-available game partner for quick choices, playful guesses, and conversations with somewhere to go.</p></div>
-          </div>
-          <span className="inline-flex shrink-0 items-center gap-2 text-sm font-bold text-spark-coral">Start a game <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" /></span>
-        </Link>
 
         {user && (
           <section className="mt-16">
