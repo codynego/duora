@@ -13,6 +13,7 @@ class ConnectionRequest(models.Model):
 
     class Source(models.TextChoices):
         PUBLIC_ROOM = 'public_room', 'Public room'
+        AUTO_MATCH = 'auto_match', 'Auto-match'
         PRIVATE_INVITE = 'private_invite', 'Private invite'
         PROFILE = 'profile', 'Profile'
 

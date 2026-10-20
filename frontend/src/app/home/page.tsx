@@ -13,6 +13,7 @@ import {
   UsersRound,
 } from "lucide-react";
 import AppNav from "@/components/AppNav";
+import AutoMatchPanel from "@/components/AutoMatchPanel";
 import { getAccessToken } from "@/lib/auth";
 import { useCurrentUser } from "@/lib/current-user";
 
@@ -163,6 +164,8 @@ export default function Home() {
             </span>
           </Link>
         </section>
+
+        <div className="mt-6"><AutoMatchPanel /></div>
 
         {user && (
           <section className="mt-16">

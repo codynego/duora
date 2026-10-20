@@ -73,27 +73,26 @@ def recommend_room(*, user, profile):
 
 
 @transaction.atomic
-def request_auto_match(*, user, room):
-    """Queue a joined discovery-room member or create a consent request."""
+def request_auto_match(*, user):
+    """Queue a person by shared interests or create a consent request."""
     now = timezone.now()
-    if not room.is_discovery_room or room.status == Room.Status.ENDED:
-        return {'status': 'unavailable', 'reason': 'Auto-match is only available in discovery rooms.'}
-    if not RoomMembership.objects.filter(room=room, user=user, disposition=RoomMembership.Disposition.PRESENT).exists():
-        return {'status': 'unavailable', 'reason': 'Join the room before using Auto-match.'}
-
     profile, _ = DiscoveryProfile.objects.get_or_create(user=user)
-    if profile.intents and room.intent not in profile.intents:
-        return {'status': 'unavailable', 'reason': 'This room is outside your saved discovery preferences.'}
+    if not profile.intents or not profile.interests:
+        return {'status': 'unavailable', 'reason': 'Add an intent and at least one interest before using Auto-match.'}
+    intent = profile.intents[0]
+    interests = set(profile.interests)
 
     AutoMatchQueue.objects.filter(user=user, expires_at__lte=now).delete()
     candidates = AutoMatchQueue.objects.select_for_update().select_related('user').filter(
-        room=room,
-        intent=room.intent,
+        intent=intent,
         expires_at__gt=now,
     ).exclude(user=user).order_by('created_at')
 
     for candidate in candidates:
         other = candidate.user
+        shared_interests = interests.intersection(candidate.interests or [])
+        if not shared_interests:
+            continue
         if SafetyExclusion.objects.filter(
             Q(user=user, excluded_user=other) | Q(user=other, excluded_user=user),
         ).exists():
@@ -107,19 +106,19 @@ def request_auto_match(*, user, room):
         connection = ConnectionRequest.objects.create(
             requester=user,
             recipient=other,
-            source=ConnectionRequest.Source.PUBLIC_ROOM,
-            room=room,
-            last_experience=room.experience,
+            source=ConnectionRequest.Source.AUTO_MATCH,
+            last_experience=f"Shared interest: {sorted(shared_interests)[0]}",
         )
         return {
             'status': 'matched',
             'request_id': str(connection.id),
+            'shared_interest': sorted(shared_interests)[0],
             'person': {'id': other.id, 'name': other.get_username(), 'initial': (other.get_username()[:1] or '?').upper()},
         }
 
     AutoMatchQueue.objects.update_or_create(
         user=user,
-        defaults={'room': room, 'intent': room.intent, 'expires_at': now + timedelta(minutes=15)},
+        defaults={'room': None, 'intent': intent, 'interests': list(interests), 'expires_at': now + timedelta(minutes=15)},
     )
     return {'status': 'waiting'}
 
