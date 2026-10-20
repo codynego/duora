@@ -14,7 +14,7 @@ export type CurrentUser = {
 const api = process.env.NEXT_PUBLIC_DUORA_API_URL ?? 'http://127.0.0.1:8000';
 
 export async function getCurrentUser(): Promise<CurrentUser | null> {
-  const token = await getAccessToken();
+  const token = await getAccessToken({ redirectOnFailure: false });
   if (!token) return null;
   const response = await fetch(`${api}/api/v1/auth/me/`, { headers: { Authorization: `Bearer ${token}` } });
   if (!response.ok) return null;

@@ -1,11 +1,14 @@
+from django.db.models import Q
+from django.utils import timezone
 from rest_framework.generics import RetrieveUpdateAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
-from .models import DiscoveryProfile
+from .models import AutoMatchQueue, DiscoveryProfile
 from .serializers import DiscoveryProfileSerializer
 from .services import leave_auto_match, recommend_room, request_auto_match
 from apps.rooms.serializers import RoomSerializer
+from apps.connections.models import ConnectionRequest, ConnectionThread
 
 
 class MyDiscoveryProfileView(RetrieveUpdateAPIView):
@@ -43,6 +46,24 @@ class AutoMatchView(APIView):
 
     def post(self, request):
         return Response({'data': request_auto_match(user=request.user)})
+
+    def get(self, request):
+        queue = AutoMatchQueue.objects.filter(user=request.user, expires_at__gt=timezone.now()).first()
+        if queue:
+            return Response({'data': {'status': 'waiting'}})
+        match = ConnectionRequest.objects.filter(
+            requester=request.user,
+            source=ConnectionRequest.Source.AUTO_MATCH,
+            status=ConnectionRequest.Status.PENDING,
+        ).select_related('recipient').order_by('-created_at').first()
+        if match:
+            thread = ConnectionThread.objects.filter(
+                Q(user_one=request.user, user_two=match.recipient) |
+                Q(user_one=match.recipient, user_two=request.user),
+                room__isnull=True,
+            ).order_by('-created_at').first()
+            return Response({'data': {'status': 'matched', 'request_id': str(match.id), 'thread_id': str(thread.id) if thread else None}})
+        return Response({'data': {'status': 'idle'}})
 
     def delete(self, request):
         leave_auto_match(user=request.user)

@@ -14,9 +14,10 @@ export default function ConnectionChatStartPage({ params }: { params: { connecti
   useEffect(() => {
     let active = true;
     async function start() {
+      const route = await Promise.resolve(params);
       const token = await getAccessToken();
       if (!token) return router.replace('/login');
-      const response = await fetch(`${api}/api/v1/connections/${params.connectionId}/thread/`, {
+      const response = await fetch(`${api}/api/v1/connections/${route.connectionId}/thread/`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -29,7 +30,7 @@ export default function ConnectionChatStartPage({ params }: { params: { connecti
     }
     void start();
     return () => { active = false; };
-  }, [params.connectionId, router]);
+  }, [params, router]);
 
-  return <main className="grid min-h-screen place-items-center bg-[#fffdfc] px-5 text-dark-950"><div className="text-center"><LoaderCircle className="mx-auto h-7 w-7 animate-spin text-spark-coral" /><p className="mt-4 text-sm font-bold">Opening your private chat…</p>{error && <p role="alert" className="mt-3 max-w-sm text-sm text-spark-coral">{error}</p>}</div></main>;
+  return <main className="grid min-h-screen place-items-center bg-[#fffdfc] px-5 text-dark-950"><div className="text-center">{error ? <><p role="alert" className="max-w-sm text-sm font-semibold text-spark-coral">{error}</p><button type="button" onClick={() => window.location.reload()} className="mt-4 rounded-full bg-dark-950 px-4 py-2.5 text-xs font-bold text-white">Try again</button></> : <><LoaderCircle className="mx-auto h-7 w-7 animate-spin text-spark-coral" /><p className="mt-4 text-sm font-bold">Opening your private chat…</p></>}</div></main>;
 }

@@ -4,6 +4,7 @@ from django.db import models, transaction
 from django.db.models import Count, Q
 from django.utils import timezone
 from apps.connections.models import ConnectionRequest
+from apps.connections.services import canonical_thread_for_users
 from apps.moderation.models import SafetyExclusion
 from apps.rooms.models import Room, RoomMembership
 from .models import AutoMatchQueue, DiscoveryProfile
@@ -109,9 +110,11 @@ def request_auto_match(*, user):
             source=ConnectionRequest.Source.AUTO_MATCH,
             last_experience=f"Shared interest: {sorted(shared_interests)[0]}",
         )
+        thread = canonical_thread_for_users(user.id, other.id)
         return {
             'status': 'matched',
             'request_id': str(connection.id),
+            'thread_id': str(thread.id),
             'shared_interest': sorted(shared_interests)[0],
             'person': {'id': other.id, 'name': other.get_username(), 'initial': (other.get_username()[:1] or '?').upper()},
         }

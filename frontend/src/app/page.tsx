@@ -2,6 +2,7 @@
 
 import { ArrowRight, CalendarDays, HeartHandshake, MessageCircle, Play, Sparkles, Users } from 'lucide-react';
 import Navbar from '@/components/Navbar';
+import { useCurrentUser } from '@/lib/current-user';
 
 const ways = [
   { title: 'Send a private experience.', text: 'Pick an activity, share one link, and give the two of you a natural way to begin.', icon: HeartHandshake },
@@ -27,6 +28,9 @@ const stages = [
 ];
 
 export default function HomePage() {
+  const { user, ready } = useCurrentUser();
+  const startHref = ready && user ? '/home' : '/login';
+
   return (
     <div className="min-h-screen overflow-x-hidden bg-white text-dark-950">
       <Navbar />
@@ -40,7 +44,7 @@ export default function HomePage() {
               <h1 className="mt-5 text-[3.2rem] font-bold leading-[1.02] tracking-[-.065em] text-dark-950 sm:text-7xl">Better conversations start with something to do together.</h1>
               <p className="mt-7 max-w-xl text-base leading-8 text-[#6F6470] sm:text-lg">Choose a game, prompt, or plan. Invite someone you know or join a small room—then keep talking when the connection clicks.</p>
               <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-                <a href="/signup" className="inline-flex items-center justify-center gap-2 rounded-full bg-spark-coral px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-[#d94767]">Start a private experience <ArrowRight className="h-4 w-4" /></a>
+                <a href={startHref} className="inline-flex items-center justify-center gap-2 rounded-full bg-spark-coral px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-[#d94767]">Start a private experience <ArrowRight className="h-4 w-4" /></a>
                 <a href="#experiences" className="inline-flex items-center justify-center rounded-full border border-[#281D32]/15 px-6 py-3.5 text-sm font-semibold text-dark-950 transition hover:border-spark-coral hover:text-spark-coral">Explore experiences</a>
               </div>
               <p className="mt-6 text-sm text-[#6F6470]">Private invitations, small live rooms, and conversations that can continue after.</p>
@@ -72,7 +76,7 @@ export default function HomePage() {
 
         <section className="bg-[#FFF7F2] px-5 py-20 sm:px-8 sm:py-28"><div className="mx-auto max-w-7xl"><div className="max-w-2xl"><p className="section-label">Made for real relationships</p><h2 className="mt-4 text-4xl font-bold tracking-[-.06em] sm:text-5xl">However you arrive, you decide how the connection grows.</h2></div><div className="mt-12 grid gap-x-12 gap-y-9 md:grid-cols-2">{stages.map(([title, text]) => <div key={title} className="flex gap-4"><span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-spark-coral"/><div><h3 className="text-lg font-bold tracking-[-.03em]">{title}</h3><p className="mt-2 text-sm leading-6 text-[#6F6470]">{text}</p></div></div>)}</div></div></section>
 
-        <section id="start" className="px-5 py-24 text-center sm:px-8 sm:py-32"><div className="mx-auto max-w-2xl"><Sparkles className="mx-auto h-6 w-6 text-spark-coral" strokeWidth={1.7}/><h2 className="mt-7 text-4xl font-bold tracking-[-.06em] sm:text-6xl">Start the next conversation with a shared moment.</h2><p className="mt-5 text-lg leading-8 text-[#6F6470]">Choose an experience, invite someone in, or join a room with something worth doing together.</p><a href="/signup" className="mt-9 inline-flex items-center gap-2 rounded-full bg-spark-coral px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-[#d94767]">Start an experience <ArrowRight className="h-4 w-4" /></a></div></section>
+        <section id="start" className="px-5 py-24 text-center sm:px-8 sm:py-32"><div className="mx-auto max-w-2xl"><Sparkles className="mx-auto h-6 w-6 text-spark-coral" strokeWidth={1.7}/><h2 className="mt-7 text-4xl font-bold tracking-[-.06em] sm:text-6xl">Start the next conversation with a shared moment.</h2><p className="mt-5 text-lg leading-8 text-[#6F6470]">Choose an experience, invite someone in, or join a room with something worth doing together.</p><a href={startHref} className="mt-9 inline-flex items-center gap-2 rounded-full bg-spark-coral px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-[#d94767]">Start an experience <ArrowRight className="h-4 w-4" /></a></div></section>
       </main>
       <footer className="border-t border-[#281D32]/10 px-5 py-10 sm:px-8"><div className="mx-auto flex max-w-7xl flex-col justify-between gap-5 text-sm text-[#6F6470] sm:flex-row sm:items-center"><div><span className="font-bold tracking-[-.05em] text-dark-950">Duorah</span><span className="ml-3">More ways to spend time together.</span></div><div className="flex gap-5"><a href="#discover">Why Duorah</a><a href="#experiences">Experiences</a><a href="#">Privacy</a><span>© Duorah</span></div></div></footer>
     </div>

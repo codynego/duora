@@ -61,7 +61,10 @@ class ConnectionDecisionView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, connection_id, decision):
-        connection = ConnectionRequest.objects.filter(id=connection_id, recipient=request.user, status=ConnectionRequest.Status.PENDING).first()
+        connection_query = ConnectionRequest.objects.filter(id=connection_id, status=ConnectionRequest.Status.PENDING)
+        connection = connection_query.filter(recipient=request.user).first()
+        if not connection:
+            connection = connection_query.filter(requester=request.user, source=ConnectionRequest.Source.AUTO_MATCH).first()
         if not connection:
             return Response({'detail': 'Connection request not found.'}, status=status.HTTP_404_NOT_FOUND)
         if decision not in ('accept', 'decline'):
@@ -69,7 +72,11 @@ class ConnectionDecisionView(APIView):
         connection.status = ConnectionRequest.Status.ACCEPTED if decision == 'accept' else ConnectionRequest.Status.DECLINED
         connection.responded_at = timezone.now()
         connection.save(update_fields=('status', 'responded_at'))
-        return Response(ConnectionRequestSerializer(connection, context={'request': request}).data)
+        data = ConnectionRequestSerializer(connection, context={'request': request}).data
+        if connection.source == ConnectionRequest.Source.AUTO_MATCH and connection.status == ConnectionRequest.Status.ACCEPTED:
+            other_id = connection.recipient_id if connection.requester_id == request.user.id else connection.requester_id
+            data['thread_id'] = str(canonical_thread_for_users(request.user.id, other_id).id)
+        return Response(data)
 
 
 class ConnectionThreadStartView(APIView):
@@ -123,7 +130,13 @@ class ThreadMessageView(APIView):
         thread = self._thread(thread_id, request.user)
         if not thread:
             return Response({'detail': 'Connection thread not found.'}, status=status.HTTP_404_NOT_FOUND)
-        return Response({'data': [{'id': str(message.id), 'body': message.body, 'sender_id': message.sender_id, 'is_you': message.sender_id == request.user.id, 'sender': {'name': message.sender.get_full_name().strip() or message.sender.username, 'initial': (message.sender.get_full_name().strip() or message.sender.username)[:1].upper()}, 'created_at': message.created_at} for message in thread.messages.select_related('sender')[:100]]})
+        match = ConnectionRequest.objects.filter(
+            Q(requester=request.user, recipient_id=thread.user_two_id if thread.user_one_id == request.user.id else thread.user_one_id) |
+            Q(recipient=request.user, requester_id=thread.user_two_id if thread.user_one_id == request.user.id else thread.user_one_id),
+            source=ConnectionRequest.Source.AUTO_MATCH,
+            status=ConnectionRequest.Status.PENDING,
+        ).first()
+        return Response({'data': [{'id': str(message.id), 'body': message.body, 'sender_id': message.sender_id, 'is_you': message.sender_id == request.user.id, 'sender': {'name': message.sender.get_full_name().strip() or message.sender.username, 'initial': (message.sender.get_full_name().strip() or message.sender.username)[:1].upper()}, 'created_at': message.created_at} for message in thread.messages.select_related('sender')[:100]], 'match': {'connection_id': str(match.id), 'shared_interest': match.last_experience} if match else None})
 
     def post(self, request, thread_id):
         thread = self._thread(thread_id, request.user)
