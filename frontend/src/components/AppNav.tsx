@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Bell, Clock3, Compass, Heart, MessageCircle, Search, UserPlus, UserRound } from "lucide-react";
+import { Bell, Clock3, Compass, Heart, MessageCircle, Search, UserPlus, UserRound, X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import AutoMatchRequestNotice from "@/components/AutoMatchRequestNotice";
@@ -26,7 +26,7 @@ export default function AppNav({ minimal = false }: { minimal?: boolean }) {
 
   return (
     <>
-      <header className="app-nav-mobile sticky top-0 z-[60] flex h-[68px] items-center justify-between border-b border-[#292630]/10 bg-[#F7F5F0]/95 px-5 backdrop-blur md:hidden">
+      <header className="app-nav-mobile sticky top-0 z-[60] flex h-[68px] items-center justify-between border-b border-[#292630]/10 bg-[#F7F5F0]/95 px-5 md:hidden">
         <Link
           href="/home"
           className="font-serif text-[28px] tracking-[-.075em] text-[#292630]"
@@ -231,7 +231,12 @@ function NotificationBell() {
                 <p className="dashboard-kicker"><span />Your activity</p>
                 <p className="mt-2 text-lg font-bold tracking-[-.03em]">Notifications</p>
               </div>
-              {unread > 0 && <span className="rounded-full bg-[#E9E1F1] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[.12em] text-[#7454A6]">{unread} new</span>}
+              <div className="flex items-center gap-2">
+                {unread > 0 && <span className="rounded-full bg-[#E9E1F1] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[.12em] text-[#7454A6]">{unread} new</span>}
+                <button type="button" onClick={() => setOpen(false)} className="grid h-8 w-8 place-items-center rounded-full text-[#6E6975] transition hover:bg-white hover:text-[#292630] md:hidden" aria-label="Close notifications">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
             </div>
             {unread > 0 && <button type="button" onClick={() => void markRead()} className="mt-3 text-xs font-semibold text-[#7454A6] hover:text-[#553781]">Mark all as read</button>}
           </div>
