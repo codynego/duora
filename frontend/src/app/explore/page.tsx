@@ -253,8 +253,10 @@ export default function ExplorePage() {
                     : "New thought"}
                 </span>
                 <span className="text-xs text-white/65">
-                  {featured.reply_count}{" "}
-                  {featured.reply_count === 1 ? "reply" : "replies"}
+                  {featured.reply_count > 0
+                    ? `${featured.reply_count} ${featured.reply_count === 1 ? "reply" : "replies"}`
+                    : "Be the first to reply"}
+                  {featured.relate_count > 0 && ` · ${featured.relate_count} relates`}
                 </span>
               </div>
               <Link href={`/explore/${featured.id}`} className="group block">
@@ -459,6 +461,14 @@ function ThoughtCard({
           )}
         </div>
       </Link>
+      <div className="mt-5 flex items-center gap-4 text-xs font-semibold text-[#958F9B]">
+        <span>
+          {thought.reply_count > 0
+            ? `${thought.reply_count} ${thought.reply_count === 1 ? "reply" : "replies"}`
+            : "Be the first to reply"}
+        </span>
+        <span>{thought.relate_count} relates</span>
+      </div>
       <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-[#292630]/10 pt-4">
         <button
           type="button"
