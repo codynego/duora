@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from django.db import transaction
 from django.db.models import Count, Q
 from django.utils import timezone
@@ -11,12 +13,38 @@ from .models import DiscussionReply, Question, SavedThought, Thought, ThoughtRea
 from .serializers import QuestionSerializer, ReplyCreateSerializer, ReplySerializer, ThoughtCreateSerializer, ThoughtSerializer
 
 
+def daily_question_window():
+    now = timezone.now()
+    start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    next_reset = start + timedelta(days=1)
+    questions = list(Question.objects.filter(status=Question.Status.PUBLISHED).order_by('published_at', 'created_at', 'id'))
+    question = questions[now.date().toordinal() % len(questions)] if questions else None
+    return question, start, next_reset, now
+
+
 class QuestionListView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
         questions = Question.objects.filter(status=Question.Status.PUBLISHED).order_by('-published_at', '-created_at')[:50]
         return Response({'data': QuestionSerializer(questions, many=True).data})
+
+
+class DailyQuestionView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        question, start, next_reset, now = daily_question_window()
+        if not question:
+            return Response({'data': None, 'server_now': now.isoformat(), 'next_reset_at': next_reset.isoformat()})
+        thought = Thought.objects.filter(author=request.user, question=question, created_at__gte=start, created_at__lt=next_reset).first()
+        return Response({
+            'data': QuestionSerializer(question).data,
+            'answer': ThoughtSerializer(thought, context={'request': request}).data if thought else None,
+            'completed': bool(thought),
+            'server_now': now.isoformat(),
+            'next_reset_at': next_reset.isoformat(),
+        })
 
 
 class MySocialSummaryView(APIView):
@@ -69,6 +97,9 @@ class ThoughtCreateView(APIView):
         question = Question.objects.filter(id=serializer.validated_data['question_id'], status=Question.Status.PUBLISHED).first()
         if not question:
             return Response({'detail': 'That question is not available.'}, status=status.HTTP_404_NOT_FOUND)
+        daily, start, next_reset, _ = daily_question_window()
+        if daily and question.id == daily.id and Thought.objects.filter(author=request.user, question=question, created_at__gte=start, created_at__lt=next_reset).exists():
+            return Response({'detail': 'You have already shared today’s thought.', 'code': 'daily_question_completed'}, status=status.HTTP_409_CONFLICT)
         thought = Thought.objects.create(author=request.user, question=question, body=serializer.validated_data['body'], moderation_status=Thought.ModerationStatus.APPROVED, published_at=timezone.now())
         return Response({'data': ThoughtSerializer(thought, context={'request': request}).data}, status=status.HTTP_201_CREATED)
 

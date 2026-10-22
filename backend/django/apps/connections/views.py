@@ -12,6 +12,7 @@ from .serializers import ConnectionCreateSerializer, ConnectionRequestSerializer
 from .services import canonical_thread_for_users
 from apps.moderation.models import SafetyExclusion
 from apps.rooms.models import Room, RoomMembership, RoomNextStep
+from apps.social.models import IdentityConsent
 
 
 class ConnectionsView(APIView):
@@ -91,6 +92,8 @@ class ConnectionThreadStartView(APIView):
         ).filter(Q(requester=request.user) | Q(recipient=request.user)).first()
         if not connection:
             return Response({'detail': 'Connection not found.'}, status=status.HTTP_404_NOT_FOUND)
+        if not IdentityConsent.objects.filter(connection_request=connection, consented_at__isnull=False, revoked_at__isnull=True).values('user_id').distinct().count() == 2:
+            return Response({'detail': 'Both people must choose to reveal before private chat opens.', 'code': 'reveal_required'}, status=status.HTTP_403_FORBIDDEN)
         other_id = connection.recipient_id if connection.requester_id == request.user.id else connection.requester_id
         if SafetyExclusion.objects.filter(Q(user=request.user, excluded_user_id=other_id) | Q(user_id=other_id, excluded_user=request.user)).exists():
             return Response({'detail': 'This connection is not available for chat.'}, status=status.HTTP_403_FORBIDDEN)
@@ -108,6 +111,13 @@ class ThreadsView(APIView):
             canonical_ids.add(canonical_thread_for_users(thread.user_one_id, thread.user_two_id).id)
         data = []
         for thread in ConnectionThread.objects.filter(id__in=canonical_ids).select_related('user_one', 'user_two').prefetch_related('messages'):
+            connection = ConnectionRequest.objects.filter(
+                Q(requester_id=thread.user_one_id, recipient_id=thread.user_two_id) |
+                Q(requester_id=thread.user_two_id, recipient_id=thread.user_one_id),
+                status=ConnectionRequest.Status.ACCEPTED,
+            ).first()
+            if not connection or IdentityConsent.objects.filter(connection_request=connection, consented_at__isnull=False, revoked_at__isnull=True).values('user_id').distinct().count() != 2:
+                continue
             latest = thread.messages.last()
             data.append({'id': str(thread.id), 'person': {'id': '', 'name': 'Anonymous connection', 'initial': '?'}, 'room': None, 'last_message': latest.body if latest else None, 'last_message_at': thread.last_message_at})
         return Response({'data': data})
@@ -121,9 +131,31 @@ class ThreadMessageView(APIView):
         if not thread or user.id not in {thread.user_one_id, thread.user_two_id}:
             return None
         other_id = thread.user_two_id if thread.user_one_id == user.id else thread.user_one_id
+        connection = ConnectionRequest.objects.filter(
+            Q(requester_id=user.id, recipient_id=other_id) | Q(requester_id=other_id, recipient_id=user.id),
+            status=ConnectionRequest.Status.ACCEPTED,
+        ).first()
+        if not connection or IdentityConsent.objects.filter(connection_request=connection, consented_at__isnull=False, revoked_at__isnull=True).values('user_id').distinct().count() != 2:
+            return None
         if SafetyExclusion.objects.filter(Q(user=user, excluded_user_id=other_id) | Q(user_id=other_id, excluded_user=user)).exists():
             return None
         return canonical_thread_for_users(thread.user_one_id, thread.user_two_id)
+
+
+class IdentityConsentView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, connection_id):
+        connection = ConnectionRequest.objects.filter(id=connection_id, status=ConnectionRequest.Status.ACCEPTED).filter(Q(requester=request.user) | Q(recipient=request.user)).first()
+        if not connection:
+            return Response({'detail': 'Connection not found.'}, status=status.HTTP_404_NOT_FOUND)
+        IdentityConsent.objects.update_or_create(connection_request=connection, user=request.user, defaults={'consented_at': timezone.now(), 'revoked_at': None})
+        ready = IdentityConsent.objects.filter(connection_request=connection, consented_at__isnull=False, revoked_at__isnull=True).values('user_id').distinct().count() == 2
+        data = {'ready': ready}
+        if ready:
+            other_id = connection.recipient_id if connection.requester_id == request.user.id else connection.requester_id
+            data['thread_id'] = str(canonical_thread_for_users(request.user.id, other_id).id)
+        return Response(data, status=status.HTTP_201_CREATED)
 
     def get(self, request, thread_id):
         thread = self._thread(thread_id, request.user)

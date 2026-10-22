@@ -1,9 +1,10 @@
 from django.urls import path
 
-from .views import DiscussionReplyCreateView, ExploreView, MySocialSummaryView, QuestionListView, ThoughtConnectionRequestView, ThoughtCreateView, ThoughtDetailView, ThoughtReactionView, ThoughtSaveView
+from .views import DailyQuestionView, DiscussionReplyCreateView, ExploreView, MySocialSummaryView, QuestionListView, ThoughtConnectionRequestView, ThoughtCreateView, ThoughtDetailView, ThoughtReactionView, ThoughtSaveView
 
 urlpatterns = [
     path('questions/', QuestionListView.as_view()),
+    path('questions/daily/', DailyQuestionView.as_view()),
     path('me/summary/', MySocialSummaryView.as_view()),
     path('explore/', ExploreView.as_view()),
     path('thoughts/', ThoughtCreateView.as_view()),

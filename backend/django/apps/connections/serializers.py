@@ -2,6 +2,7 @@ from django.contrib.auth import get_user_model
 from django.db import models
 from rest_framework import serializers
 from .models import ConnectionRequest, ConnectionThread
+from apps.social.models import IdentityConsent
 
 User = get_user_model()
 
@@ -9,16 +10,19 @@ User = get_user_model()
 class ConnectionRequestSerializer(serializers.ModelSerializer):
     person = serializers.SerializerMethodField()
     thread_id = serializers.SerializerMethodField()
+    my_reveal_consented = serializers.SerializerMethodField()
+    other_reveal_consented = serializers.SerializerMethodField()
+    reveal_ready = serializers.SerializerMethodField()
 
     class Meta:
         model = ConnectionRequest
-        fields = ('id', 'status', 'source', 'last_experience', 'created_at', 'person', 'thread_id')
+        fields = ('id', 'status', 'source', 'last_experience', 'created_at', 'person', 'thread_id', 'my_reveal_consented', 'other_reveal_consented', 'reveal_ready')
 
     def get_person(self, obj):
         return {'id': '', 'name': 'Anonymous connection', 'initial': '?'}
 
     def get_thread_id(self, obj):
-        if obj.source != ConnectionRequest.Source.AUTO_MATCH:
+        if not self.get_reveal_ready(obj):
             return None
         request = self.context['request']
         person_id = obj.recipient_id if obj.requester_id == request.user.id else obj.requester_id
@@ -28,6 +32,26 @@ class ConnectionRequestSerializer(serializers.ModelSerializer):
             room__isnull=True,
         ).order_by('-created_at').first()
         return str(thread.id) if thread else None
+
+    def _consent(self, obj, user_id):
+        return IdentityConsent.objects.filter(connection_request=obj, user_id=user_id, consented_at__isnull=False, revoked_at__isnull=True).exists()
+
+    def get_my_reveal_consented(self, obj):
+        request = self.context.get('request')
+        return bool(request and self._consent(obj, request.user.id))
+
+    def get_other_reveal_consented(self, obj):
+        request = self.context.get('request')
+        if not request:
+            return False
+        other_id = obj.recipient_id if obj.requester_id == request.user.id else obj.requester_id
+        return self._consent(obj, other_id)
+
+    def get_reveal_ready(self, obj):
+        request = self.context.get('request')
+        if not request:
+            return False
+        return self._consent(obj, obj.requester_id) and self._consent(obj, obj.recipient_id)
 
 
 class ConnectionCreateSerializer(serializers.Serializer):
