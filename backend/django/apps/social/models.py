@@ -106,6 +106,15 @@ class DiscussionReply(models.Model):
         indexes = [models.Index(fields=('thought', 'moderation_status', 'created_at'))]
 
 
+class ReplyReaction(models.Model):
+    reply = models.ForeignKey(DiscussionReply, on_delete=models.CASCADE, related_name='reactions')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='social_reply_reactions')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=('reply', 'user'), name='unique_reply_reaction')]
+
+
 class IdentityConsent(models.Model):
     connection_request = models.ForeignKey('connections.ConnectionRequest', on_delete=models.CASCADE, related_name='identity_consents')
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='identity_consents')

@@ -11,7 +11,7 @@ from rest_framework.views import APIView
 
 from apps.connections.models import ConnectionRequest
 from apps.moderation.models import Report, SafetyExclusion
-from .models import DailyQuestionAssignment, DiscussionReply, Question, SavedThought, Thought, ThoughtReaction
+from .models import DailyQuestionAssignment, DiscussionReply, Question, ReplyReaction, SavedThought, Thought, ThoughtReaction
 from .serializers import QuestionSerializer, ReplyCreateSerializer, ReplySerializer, ThoughtCreateSerializer, ThoughtSerializer
 
 
@@ -315,7 +315,7 @@ class ThoughtDetailView(APIView):
         ).select_related('author').order_by('created_at')
         return Response({
             'data': ThoughtSerializer(thought, context={'request': request}).data,
-            'replies': ReplySerializer(replies, many=True).data,
+            'replies': ReplySerializer(replies, many=True, context={'request': request}).data,
             'reply_count': replies.count(),
         })
 
@@ -359,7 +359,24 @@ class DiscussionReplyCreateView(APIView):
         parent_id = serializer.validated_data.get('parent_id')
         parent = thought.replies.filter(id=parent_id).first() if parent_id else None
         reply = DiscussionReply.objects.create(thought=thought, author=request.user, parent=parent, body=serializer.validated_data['body'], moderation_status=DiscussionReply.ModerationStatus.APPROVED)
-        return Response({'data': ReplySerializer(reply).data}, status=status.HTTP_201_CREATED)
+        return Response({'data': ReplySerializer(reply, context={'request': request}).data}, status=status.HTTP_201_CREATED)
+
+
+class DiscussionReplyReactionView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, thought_id, reply_id):
+        reply = DiscussionReply.objects.filter(
+            id=reply_id,
+            thought_id=thought_id,
+            moderation_status=DiscussionReply.ModerationStatus.APPROVED,
+        ).first()
+        if not reply:
+            return Response({'detail': 'Reply not found.'}, status=status.HTTP_404_NOT_FOUND)
+        reaction, created = ReplyReaction.objects.get_or_create(reply=reply, user=request.user)
+        if not created:
+            reaction.delete()
+        return Response({'related': created, 'relate_count': reply.reactions.count()})
 
 
 class ThoughtConnectionRequestView(APIView):

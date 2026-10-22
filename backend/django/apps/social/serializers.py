@@ -72,14 +72,23 @@ class ThoughtCreateSerializer(serializers.Serializer):
 
 class ReplySerializer(serializers.ModelSerializer):
     author = serializers.SerializerMethodField()
+    relate_count = serializers.SerializerMethodField()
+    viewer_related = serializers.SerializerMethodField()
 
     class Meta:
         model = DiscussionReply
-        fields = ('id', 'body', 'author', 'parent', 'created_at')
+        fields = ('id', 'body', 'author', 'parent', 'relate_count', 'viewer_related', 'created_at')
 
     def get_author(self, obj):
         identity = get_or_create_anonymous_identity(obj.author)
         return {'anonymous': True, 'username': identity.username, 'display_name': identity.display_name, 'avatar_variant': identity.avatar_variant, 'label': f'{identity.display_name} · @{identity.username}'}
+
+    def get_relate_count(self, obj):
+        return obj.reactions.count()
+
+    def get_viewer_related(self, obj):
+        request = self.context.get('request')
+        return bool(request and request.user.is_authenticated and obj.reactions.filter(user=request.user).exists())
 
 
 class ReplyCreateSerializer(serializers.Serializer):

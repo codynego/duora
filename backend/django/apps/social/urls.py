@@ -1,6 +1,6 @@
 from django.urls import path
 
-from .views import DailyQuestionView, DiscussionReplyCreateView, ExploreView, MySocialSummaryView, QuestionListView, ThoughtBlockView, ThoughtConnectionRequestView, ThoughtCreateView, ThoughtDeleteView, ThoughtDetailView, ThoughtReactionView, ThoughtReportView, ThoughtSaveView
+from .views import DailyQuestionView, DiscussionReplyCreateView, DiscussionReplyReactionView, ExploreView, MySocialSummaryView, QuestionListView, ThoughtBlockView, ThoughtConnectionRequestView, ThoughtCreateView, ThoughtDeleteView, ThoughtDetailView, ThoughtReactionView, ThoughtReportView, ThoughtSaveView
 
 urlpatterns = [
     path('questions/', QuestionListView.as_view()),
@@ -15,5 +15,6 @@ urlpatterns = [
     path('thoughts/<uuid:thought_id>/relate/', ThoughtReactionView.as_view()),
     path('thoughts/<uuid:thought_id>/save/', ThoughtSaveView.as_view()),
     path('thoughts/<uuid:thought_id>/replies/', DiscussionReplyCreateView.as_view()),
+    path('thoughts/<uuid:thought_id>/replies/<uuid:reply_id>/relate/', DiscussionReplyReactionView.as_view()),
     path('thoughts/<uuid:thought_id>/connect/', ThoughtConnectionRequestView.as_view()),
 ]

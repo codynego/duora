@@ -43,6 +43,9 @@ type Thought = {
 type Reply = {
   id: string;
   body: string;
+  parent: string | null;
+  relate_count: number;
+  viewer_related: boolean;
   author: {
     label: string;
     display_name: string;
@@ -60,6 +63,7 @@ export default function DiscussionPage() {
   const [thought, setThought] = useState<Thought | null>(null);
   const [replies, setReplies] = useState<Reply[]>([]);
   const [reply, setReply] = useState("");
+  const [replyTarget, setReplyTarget] = useState<Reply | null>(null);
   const [sent, setSent] = useState(false);
   const [related, setRelated] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -116,7 +120,7 @@ export default function DiscussionPage() {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ body: reply.trim() }),
+        body: JSON.stringify({ body: reply.trim(), parent_id: replyTarget?.id ?? null }),
       },
     );
     const body = await response.json().catch(() => null);
@@ -126,7 +130,27 @@ export default function DiscussionPage() {
     }
     setReplies((current) => [...current, body.data]);
     setReply("");
+    setReplyTarget(null);
     setThought({ ...thought, reply_count: thought.reply_count + 1 });
+  }
+
+  async function toggleReplyRelate(item: Reply) {
+    if (!thought) return;
+    const token = await getAccessToken();
+    if (!token) return;
+    const response = await fetch(
+      `${api}/api/v1/social/thoughts/${thought.id}/replies/${item.id}/relate/`,
+      { method: "POST", headers: { Authorization: `Bearer ${token}` } },
+    );
+    if (!response.ok) return;
+    const body = await response.json();
+    setReplies((current) =>
+      current.map((replyItem) =>
+        replyItem.id === item.id
+          ? { ...replyItem, viewer_related: Boolean(body.related), relate_count: body.relate_count }
+          : replyItem,
+      ),
+    );
   }
 
   function focusReplyBox() {
@@ -134,6 +158,11 @@ export default function DiscussionPage() {
       document.getElementById("reply-box") ??
       document.getElementById("reply-box-mobile");
     target?.focus();
+  }
+
+  function startReply(item: Reply) {
+    setReplyTarget(item);
+    focusReplyBox();
   }
 
   async function connect() {
@@ -183,7 +212,7 @@ export default function DiscussionPage() {
       <div className="mx-auto grid max-w-6xl grid-cols-1 gap-8 px-5 pb-28 pt-8 sm:px-8 sm:pt-12 md:pb-14 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
         {thought && !loading && (
           <aside
-          className="order-2 hidden rounded-[24px] border border-[#292630]/10 bg-white p-5 shadow-[0_18px_45px_rgba(41,38,48,.06)] lg:sticky lg:top-28 lg:col-start-2 lg:row-start-1 lg:block"
+          className="order-2 hidden rounded-[24px] border border-[#292630]/10 bg-white p-5 shadow-[0_18px_45px_rgba(41,38,48,.06)] lg:sticky lg:top-28 lg:col-start-2 lg:row-start-1 lg:block lg:h-[calc(100vh-8rem)] lg:overflow-y-auto"
           aria-label="Explore different perspectives"
           >
           <p className="dashboard-kicker">
@@ -195,23 +224,31 @@ export default function DiscussionPage() {
           </h2>
           {replies.length ? (
             <div className="mt-5 space-y-3">
-              {replies.slice(0, 4).map((item) => (
-                <Link
+              {replies.map((item) => (
+                <article
                   key={item.id}
-                  href="#reply-box"
-                  className="block rounded-2xl bg-[#F7F5F0] p-3 transition hover:bg-[#E9E1F1]"
+                  className={`rounded-2xl bg-[#F7F5F0] p-3 ${item.parent ? "ml-4 border-l-2 border-[#E9E1F1]" : ""}`}
                 >
                   <div className="flex items-center gap-2 text-xs font-semibold text-[#7454A6]">
                     <AnonymousAvatar
                       variant={item.author.avatar_variant}
                       size="sm"
                     />
-                    <span>{item.author.display_name}</span>
+                    <span>@{item.author.username}</span>
                   </div>
                   <p className="mt-2 line-clamp-3 text-xs leading-5 text-[#6E6975]">
                     “{item.body}”
                   </p>
-                </Link>
+                  <div className="mt-3 flex items-center gap-3 text-[11px] font-semibold text-[#958F9B]">
+                    <button type="button" onClick={() => void toggleReplyRelate(item)} className={`inline-flex items-center gap-1 ${item.viewer_related ? "text-[#7454A6]" : "hover:text-[#7454A6]"}`}>
+                      <Heart className="h-3.5 w-3.5" fill={item.viewer_related ? "currentColor" : "none"} />
+                      {item.relate_count}
+                    </button>
+                    <button type="button" onClick={() => startReply(item)} className="hover:text-[#7454A6]">
+                      Reply
+                    </button>
+                  </div>
+                </article>
               ))}
             </div>
           ) : (
@@ -220,6 +257,12 @@ export default function DiscussionPage() {
             </p>
           )}
           <div className="mt-6 border-t border-[#292630]/10 pt-5">
+            {replyTarget && (
+              <div className="mb-3 flex items-center justify-between rounded-xl bg-[#E9E1F1] px-3 py-2 text-xs text-[#7454A6]">
+                <span>Replying to @{replyTarget.author.username}</span>
+                <button type="button" onClick={() => setReplyTarget(null)} className="font-bold">Cancel</button>
+              </div>
+            )}
             <textarea
               id="reply-box"
               value={reply}
@@ -368,21 +411,27 @@ export default function DiscussionPage() {
                         variant={item.author.avatar_variant}
                         size="sm"
                       />
-                      {item.author.label}
+                      @{item.author.username}
                     </div>
                     <p className="mt-4 text-sm leading-7 text-[#5F5967]">
                       “{item.body}”
                     </p>
-                    <button
-                      type="button"
-                      className="mt-4 inline-flex items-center gap-1.5 text-xs font-semibold text-[#7454A6]"
-                    >
-                      <Heart className="h-3.5 w-3.5" />I relate
-                    </button>
+                    <div className="mt-4 flex items-center gap-4 text-xs font-semibold text-[#7454A6]">
+                      <button type="button" onClick={() => void toggleReplyRelate(item)} className="inline-flex items-center gap-1.5">
+                        <Heart className="h-3.5 w-3.5" fill={item.viewer_related ? "currentColor" : "none"} />{item.relate_count}
+                      </button>
+                      <button type="button" onClick={() => startReply(item)}>Reply</button>
+                    </div>
                   </article>
                 ))}
               </div>
               <div className="mt-6 rounded-[20px] border border-[#292630]/10 bg-white p-4">
+                {replyTarget && (
+                  <div className="mb-3 flex items-center justify-between rounded-xl bg-[#E9E1F1] px-3 py-2 text-xs text-[#7454A6]">
+                    <span>Replying to @{replyTarget.author.username}</span>
+                    <button type="button" onClick={() => setReplyTarget(null)} className="font-bold">Cancel</button>
+                  </div>
+                )}
                 <textarea
                   id="reply-box-mobile"
                   value={reply}
