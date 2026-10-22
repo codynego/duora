@@ -108,9 +108,8 @@ class ThreadsView(APIView):
             canonical_ids.add(canonical_thread_for_users(thread.user_one_id, thread.user_two_id).id)
         data = []
         for thread in ConnectionThread.objects.filter(id__in=canonical_ids).select_related('user_one', 'user_two').prefetch_related('messages'):
-            person = thread.user_two if thread.user_one_id == request.user.id else thread.user_one
             latest = thread.messages.last()
-            data.append({'id': str(thread.id), 'person': {'id': str(person.id), 'name': person.get_full_name().strip() or person.username, 'initial': (person.get_full_name().strip() or person.username)[:1].upper()}, 'room': None, 'last_message': latest.body if latest else None, 'last_message_at': thread.last_message_at})
+            data.append({'id': str(thread.id), 'person': {'id': '', 'name': 'Anonymous connection', 'initial': '?'}, 'room': None, 'last_message': latest.body if latest else None, 'last_message_at': thread.last_message_at})
         return Response({'data': data})
 
 
@@ -136,7 +135,7 @@ class ThreadMessageView(APIView):
             source=ConnectionRequest.Source.AUTO_MATCH,
             status=ConnectionRequest.Status.PENDING,
         ).first()
-        return Response({'data': [{'id': str(message.id), 'body': message.body, 'sender_id': message.sender_id, 'is_you': message.sender_id == request.user.id, 'sender': {'name': message.sender.get_full_name().strip() or message.sender.username, 'initial': (message.sender.get_full_name().strip() or message.sender.username)[:1].upper()}, 'created_at': message.created_at} for message in thread.messages.select_related('sender')[:100]], 'match': {'connection_id': str(match.id), 'shared_interest': match.last_experience} if match else None})
+        return Response({'data': [{'id': str(message.id), 'body': message.body, 'sender_id': message.sender_id, 'is_you': message.sender_id == request.user.id, 'sender': {'name': 'You' if message.sender_id == request.user.id else 'Anonymous connection', 'initial': 'Y' if message.sender_id == request.user.id else '?'}, 'created_at': message.created_at} for message in thread.messages.select_related('sender')[:100]], 'match': {'connection_id': str(match.id), 'shared_interest': match.last_experience} if match else None})
 
     def post(self, request, thread_id):
         thread = self._thread(thread_id, request.user)

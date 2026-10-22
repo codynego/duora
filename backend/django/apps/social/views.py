@@ -7,7 +7,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.connections.models import ConnectionRequest
-from .models import DiscussionReply, Question, Thought, ThoughtReaction
+from .models import DiscussionReply, Question, SavedThought, Thought, ThoughtReaction
 from .serializers import QuestionSerializer, ReplyCreateSerializer, ReplySerializer, ThoughtCreateSerializer, ThoughtSerializer
 
 
@@ -19,6 +19,30 @@ class QuestionListView(APIView):
         return Response({'data': QuestionSerializer(questions, many=True).data})
 
 
+class MySocialSummaryView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        context = {'request': request}
+        answers = Thought.objects.filter(author=request.user, moderation_status=Thought.ModerationStatus.APPROVED, published_at__isnull=False).select_related('question')
+        saved = Thought.objects.filter(saves__user=request.user, moderation_status=Thought.ModerationStatus.APPROVED, published_at__isnull=False).select_related('question').distinct()
+        reactions = Thought.objects.filter(reactions__user=request.user, moderation_status=Thought.ModerationStatus.APPROVED, published_at__isnull=False).select_related('question').distinct()
+        discussions = DiscussionReply.objects.filter(author=request.user, moderation_status=DiscussionReply.ModerationStatus.APPROVED).select_related('thought__question').order_by('-created_at')
+        return Response({
+            'counts': {
+                'thoughts': answers.count(),
+                'saved': saved.count(),
+                'connections': ConnectionRequest.objects.filter(Q(requester=request.user) | Q(recipient=request.user), status=ConnectionRequest.Status.ACCEPTED).count(),
+                'reactions': reactions.count(),
+                'discussions': discussions.count(),
+            },
+            'answers': ThoughtSerializer(answers[:20], many=True, context=context).data,
+            'saved': ThoughtSerializer(saved[:20], many=True, context=context).data,
+            'reactions': ThoughtSerializer(reactions[:20], many=True, context=context).data,
+            'discussions': ReplySerializer(discussions[:20], many=True).data,
+        })
+
+
 class ExploreView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -27,6 +51,8 @@ class ExploreView(APIView):
         queryset = Thought.objects.filter(moderation_status=Thought.ModerationStatus.APPROVED, published_at__isnull=False).select_related('question')
         if category:
             queryset = queryset.filter(question__category=category)
+        if request.query_params.get('saved') == '1':
+            queryset = queryset.filter(saves__user=request.user).distinct()
         profile = getattr(request.user, 'discovery_profile', None)
         interests = set(profile.interests if profile else [])
         thoughts = list(queryset.annotate(reply_total=Count('replies', filter=Q(replies__moderation_status=DiscussionReply.ModerationStatus.APPROVED)))[:100])
@@ -72,6 +98,19 @@ class ThoughtReactionView(APIView):
         if not created:
             reaction.delete()
         return Response({'related': created, 'relate_count': thought.reactions.count()})
+
+
+class ThoughtSaveView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, thought_id):
+        thought = Thought.objects.filter(id=thought_id, moderation_status=Thought.ModerationStatus.APPROVED).first()
+        if not thought:
+            return Response({'detail': 'Thought not found.'}, status=status.HTTP_404_NOT_FOUND)
+        saved, created = SavedThought.objects.get_or_create(thought=thought, user=request.user)
+        if not created:
+            saved.delete()
+        return Response({'saved': created})
 
 
 class DiscussionReplyCreateView(APIView):

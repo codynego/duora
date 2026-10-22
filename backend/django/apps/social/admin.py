@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import DiscussionReply, IdentityConsent, Question, Thought, ThoughtReaction
+from .models import DiscussionReply, IdentityConsent, Question, SavedThought, Thought, ThoughtReaction
 
 
 @admin.register(Question)
@@ -17,4 +17,4 @@ class ThoughtAdmin(admin.ModelAdmin):
     search_fields = ('body',)
 
 
-admin.site.register((ThoughtReaction, DiscussionReply, IdentityConsent))
+admin.site.register((ThoughtReaction, SavedThought, DiscussionReply, IdentityConsent))

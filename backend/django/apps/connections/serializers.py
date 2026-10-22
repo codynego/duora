@@ -15,9 +15,7 @@ class ConnectionRequestSerializer(serializers.ModelSerializer):
         fields = ('id', 'status', 'source', 'last_experience', 'created_at', 'person', 'thread_id')
 
     def get_person(self, obj):
-        request = self.context['request']
-        person = obj.recipient if obj.requester_id == request.user.id else obj.requester
-        return {'id': str(person.id), 'name': person.get_username(), 'initial': (person.get_username()[:1] or '?').upper()}
+        return {'id': '', 'name': 'Anonymous connection', 'initial': '?'}
 
     def get_thread_id(self, obj):
         if obj.source != ConnectionRequest.Source.AUTO_MATCH:

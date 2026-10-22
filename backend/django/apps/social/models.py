@@ -57,6 +57,16 @@ class ThoughtReaction(models.Model):
         constraints = [models.UniqueConstraint(fields=('thought', 'user', 'kind'), name='unique_thought_reaction')]
 
 
+class SavedThought(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    thought = models.ForeignKey(Thought, on_delete=models.CASCADE, related_name='saves')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='saved_thoughts')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=('thought', 'user'), name='unique_saved_thought')]
+
+
 class DiscussionReply(models.Model):
     class ModerationStatus(models.TextChoices):
         PENDING = 'pending', 'Pending'

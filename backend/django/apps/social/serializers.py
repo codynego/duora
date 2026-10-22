@@ -15,11 +15,12 @@ class ThoughtSerializer(serializers.ModelSerializer):
     reply_count = serializers.SerializerMethodField()
     relate_count = serializers.SerializerMethodField()
     viewer_related = serializers.SerializerMethodField()
+    viewer_saved = serializers.SerializerMethodField()
     author = serializers.SerializerMethodField()
 
     class Meta:
         model = Thought
-        fields = ('id', 'question', 'body', 'author', 'reply_count', 'relate_count', 'viewer_related', 'published_at', 'created_at')
+        fields = ('id', 'question', 'body', 'author', 'reply_count', 'relate_count', 'viewer_related', 'viewer_saved', 'published_at', 'created_at')
 
     def get_author(self, _obj):
         return {'anonymous': True, 'label': 'Someone you have not met yet'}
@@ -33,6 +34,10 @@ class ThoughtSerializer(serializers.ModelSerializer):
     def get_viewer_related(self, obj):
         request = self.context.get('request')
         return bool(request and request.user.is_authenticated and obj.reactions.filter(user=request.user).exists())
+
+    def get_viewer_saved(self, obj):
+        request = self.context.get('request')
+        return bool(request and request.user.is_authenticated and obj.saves.filter(user=request.user).exists())
 
 
 class ThoughtCreateSerializer(serializers.Serializer):

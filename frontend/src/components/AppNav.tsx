@@ -1,13 +1,13 @@
 'use client';
 
 import Link from 'next/link';
-import { Bell, Compass, MessageCircle, Search, UserRound } from 'lucide-react';
+import { Bell, House, MessageCircle, Search, UserRound } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import AutoMatchRequestNotice from '@/components/AutoMatchRequestNotice';
 import { useCurrentUser } from '@/lib/current-user';
 
 const navigation = [
-  { label: 'Discover', href: '/home', icon: Compass },
+  { label: 'Home', href: '/home', icon: House },
   { label: 'Explore', href: '/discover', icon: Search },
   { label: 'Connections', href: '/connections', icon: MessageCircle },
   { label: 'Profile', href: '/profile', icon: UserRound },
