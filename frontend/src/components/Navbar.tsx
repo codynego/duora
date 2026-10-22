@@ -3,7 +3,7 @@
 import { Menu, X } from 'lucide-react';
 import { useState } from 'react';
 
-const links = [['Discover', '#discover'], ['Moments', '#discover'], ['How it works', '#how-it-works']];
+const links = [['Discover', '#discover'], ['Moments', '#discover'], ['How it works', '#how-it-works'], ['Install Dorah', '/install']];
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
