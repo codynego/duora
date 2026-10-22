@@ -209,10 +209,10 @@ export default function DiscussionPage() {
   return (
     <div className="min-h-screen bg-[#F7F5F0] text-[#292630] md:pl-[232px]">
       <AppNav />
-      <div className="mx-auto grid max-w-6xl grid-cols-1 gap-8 px-5 pb-28 pt-8 sm:px-8 sm:pt-12 md:pb-14 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
+      <div className="mx-auto grid max-w-none grid-cols-1 gap-8 px-5 pb-28 pt-8 sm:px-8 sm:pt-12 md:pb-14 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start lg:gap-10 lg:pl-8 lg:pr-0 xl:pl-12">
         {thought && !loading && (
           <aside
-          className="order-2 hidden rounded-[24px] border border-[#292630]/10 bg-white p-5 shadow-[0_18px_45px_rgba(41,38,48,.06)] lg:sticky lg:top-28 lg:col-start-2 lg:row-start-1 lg:block lg:h-[calc(100vh-8rem)] lg:overflow-y-auto"
+          className="order-2 hidden min-h-0 flex-col rounded-l-[24px] border border-r-0 border-[#292630]/10 bg-white p-5 shadow-[0_18px_45px_rgba(41,38,48,.06)] lg:sticky lg:top-28 lg:col-start-2 lg:row-start-1 lg:flex lg:h-[calc(100vh-7rem)]"
           aria-label="Explore different perspectives"
           >
           <p className="dashboard-kicker">
@@ -222,6 +222,7 @@ export default function DiscussionPage() {
           <h2 className="dashboard-display mt-4 text-2xl tracking-[-.05em]">
             {replies.length} {replies.length === 1 ? "reply" : "replies"}
           </h2>
+          <div className="min-h-0 flex-1 overflow-y-auto pr-1">
           {replies.length ? (
             <div className="mt-5 space-y-3">
               {replies.map((item) => (
@@ -256,6 +257,7 @@ export default function DiscussionPage() {
               No perspectives yet. Your reply could be the first.
             </p>
           )}
+          </div>
           <div className="mt-6 border-t border-[#292630]/10 pt-5">
             {replyTarget && (
               <div className="mb-3 flex items-center justify-between rounded-xl bg-[#E9E1F1] px-3 py-2 text-xs text-[#7454A6]">
@@ -285,7 +287,7 @@ export default function DiscussionPage() {
           </div>
           </aside>
         )}
-      <main className="order-1 min-w-0 lg:col-start-1 lg:row-start-1">
+      <main className="order-1 min-w-0 lg:col-start-1 lg:row-start-1 lg:w-full lg:max-w-3xl lg:justify-self-center">
         <Link
           href="/explore"
           className="inline-flex items-center gap-2 text-sm font-semibold text-[#6E6975] hover:text-[#292630]"
