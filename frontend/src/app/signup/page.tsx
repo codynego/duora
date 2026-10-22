@@ -7,6 +7,13 @@ import { Eye, EyeOff } from "lucide-react";
 import AuthShell from "@/components/AuthShell";
 import { signUp } from "@/lib/auth";
 
+const months = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+const days = Array.from({ length: 31 }, (_, index) => index + 1);
+const years = Array.from({ length: 100 }, (_, index) => new Date().getFullYear() - 18 - index);
+
 function PasswordField({
   label,
   value,
@@ -61,16 +68,23 @@ export default function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
-  const [dateOfBirth, setDateOfBirth] = useState("");
+  const [birthMonth, setBirthMonth] = useState("");
+  const [birthDay, setBirthDay] = useState("");
+  const [birthYear, setBirthYear] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   async function submit(e: FormEvent) {
     e.preventDefault();
+    if (!birthMonth || !birthDay || !birthYear) {
+      setError("Add your complete date of birth to continue.");
+      return;
+    }
     setLoading(true);
     setError("");
     try {
+      const dateOfBirth = `${birthYear}-${birthMonth}-${birthDay.padStart(2, "0")}`;
       await signUp(email, password, confirm, dateOfBirth);
       const requestedPath = new URLSearchParams(window.location.search).get(
         "next",
@@ -130,17 +144,22 @@ export default function SignupPage() {
         <label className="block text-sm font-bold">
           Date of birth
           <span className="mt-1 block text-xs font-normal text-[#6F6470]">
-            Used for age requirements and safety protections. Duora is for
-            adults 18 and over.
+            Used for age verification and safety. Duora is 18+.
           </span>
-          <input
-            value={dateOfBirth}
-            onChange={(e) => setDateOfBirth(e.target.value)}
-            required
-            type="date"
-            autoComplete="bday"
-            className="duora-form-input mt-2 w-full rounded-xl px-4 py-3 font-normal outline-none"
-          />
+          <span className="mt-2 grid grid-cols-[1.35fr_.85fr_1fr] gap-2">
+            <select value={birthMonth} onChange={(event) => setBirthMonth(event.target.value)} required aria-label="Birth month" className="duora-form-input w-full rounded-xl px-3 py-3 font-normal outline-none">
+              <option value="">Month</option>
+              {months.map((month, index) => <option key={month} value={String(index + 1).padStart(2, "0")}>{month}</option>)}
+            </select>
+            <select value={birthDay} onChange={(event) => setBirthDay(event.target.value)} required aria-label="Birth day" className="duora-form-input w-full rounded-xl px-3 py-3 font-normal outline-none">
+              <option value="">Day</option>
+              {days.map((day) => <option key={day} value={String(day)}>{day}</option>)}
+            </select>
+            <select value={birthYear} onChange={(event) => setBirthYear(event.target.value)} required aria-label="Birth year" className="duora-form-input w-full rounded-xl px-3 py-3 font-normal outline-none">
+              <option value="">Year</option>
+              {years.map((year) => <option key={year} value={String(year)}>{year}</option>)}
+            </select>
+          </span>
         </label>
         {error && (
           <p
