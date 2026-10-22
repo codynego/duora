@@ -253,7 +253,7 @@ export default function DiscussionPage() {
                   variant={thought.author.avatar_variant}
                   size="sm"
                 />
-                {thought.author.label}
+                @{thought.author.username}
                 {thought.common_ground && (
                   <button
                     type="button"

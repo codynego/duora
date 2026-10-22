@@ -62,6 +62,9 @@ export default function ExplorePage() {
   const [error, setError] = useState("");
   const [requestSent, setRequestSent] = useState(false);
   const [commonGroundThought, setCommonGroundThought] = useState<Thought | null>(null);
+  const [feedTab, setFeedTab] = useState<"all" | "mine">("all");
+  const [myThoughts, setMyThoughts] = useState<Thought[]>([]);
+  const [featuredThought, setFeaturedThought] = useState<Thought | null>(null);
 
   useEffect(() => {
     if (ready && !user) router.replace("/login");
@@ -87,6 +90,8 @@ export default function ExplorePage() {
         if (!response.ok)
           throw new Error(body?.detail ?? "Explore could not be loaded.");
         setThoughts(body?.data ?? []);
+        setMyThoughts(body?.my_thoughts ?? []);
+        setFeaturedThought(body?.featured ?? null);
       } catch (reason) {
         setError(
           reason instanceof Error
@@ -102,7 +107,7 @@ export default function ExplorePage() {
 
   const visibleThoughts = useMemo(
     () =>
-      thoughts.filter((thought) => {
+      (feedTab === "mine" ? myThoughts : thoughts).filter((thought) => {
         const haystack =
           `${thought.question.text} ${thought.question.category} ${thought.body}`.toLowerCase();
         const matchesQuery =
@@ -113,11 +118,9 @@ export default function ExplorePage() {
           thought.question.category.toLowerCase() === category.toLowerCase()
         );
       }),
-    [category, query, thoughts],
+    [category, feedTab, myThoughts, query, thoughts],
   );
-  const featured =
-    visibleThoughts.find((thought) => thought.reply_count > 0) ??
-    visibleThoughts[0];
+  const featured = feedTab === "all" ? featuredThought : null;
 
   async function toggleAction(thoughtId: string, action: "relate" | "save") {
     const token = await getAccessToken();
@@ -215,6 +218,10 @@ export default function ExplorePage() {
             </button>
           ))}
         </div>
+        <div className="mt-5 flex w-fit rounded-xl bg-[#292630]/[.06] p-1" role="tablist" aria-label="Explore feed">
+          <button type="button" onClick={() => setFeedTab("all")} aria-selected={feedTab === "all"} className={`rounded-lg px-4 py-2 text-xs font-semibold ${feedTab === "all" ? "bg-white text-[#292630] shadow-sm" : "text-[#6E6975]"}`}>All thoughts</button>
+          <button type="button" onClick={() => setFeedTab("mine")} aria-selected={feedTab === "mine"} className={`rounded-lg px-4 py-2 text-xs font-semibold ${feedTab === "mine" ? "bg-white text-[#292630] shadow-sm" : "text-[#6E6975]"}`}>My thoughts</button>
+        </div>
         {requestSent && (
           <div className="mt-5 flex items-center gap-3 rounded-2xl bg-[#DDE8D2] p-4 text-sm font-semibold text-[#496436]">
             <Check className="h-5 w-5" />
@@ -234,6 +241,8 @@ export default function ExplorePage() {
         )}
         {loading ? (
           <div className="mt-8 h-80 animate-pulse rounded-[24px] bg-[#E9E1F1]" />
+        ) : feedTab === "mine" ? (
+          <ThoughtGrid thoughts={visibleThoughts} onToggle={toggleAction} onConnect={requestConnection} onCommonGround={setCommonGroundThought} title="Your thoughts" emptyTitle="You haven’t shared a thought yet." emptyDetail="Answer a question on Discover and it will appear here." />
         ) : featured ? (
           <>
             <section className="mt-8 rounded-[24px] bg-[#7454A6] p-6 text-white shadow-[0_18px_42px_rgba(116,84,166,.2)] sm:p-8">
@@ -262,9 +271,8 @@ export default function ExplorePage() {
                     className="bg-white/15 text-white"
                   />
                   <span className="font-semibold text-white">
-                    {featured.author.display_name}
+                    @{featured.author.username}
                   </span>
-                  <span>@{featured.author.username}</span>
                 </div>
               </Link>
               <div className="mt-8 flex flex-wrap items-center gap-3 border-t border-white/15 pt-5">
@@ -335,6 +343,8 @@ export default function ExplorePage() {
               </div>
             </section>
           </>
+        ) : visibleThoughts.length ? (
+          <ThoughtGrid thoughts={visibleThoughts} onToggle={toggleAction} onConnect={requestConnection} onCommonGround={setCommonGroundThought} title="More to discover" emptyTitle="" emptyDetail="" />
         ) : (
           <section className="mt-8 rounded-[24px] border border-dashed border-[#292630]/15 bg-white p-10 text-center">
             <MessageCircle className="mx-auto h-6 w-6 text-[#7454A6]" />
@@ -362,6 +372,43 @@ export default function ExplorePage() {
         />
       )}
     </div>
+  );
+}
+
+function ThoughtGrid({
+  thoughts,
+  onToggle,
+  onConnect,
+  onCommonGround,
+  title,
+  emptyTitle,
+  emptyDetail,
+}: {
+  thoughts: Thought[];
+  onToggle: (id: string, action: "relate" | "save") => void;
+  onConnect: (id: string) => void;
+  onCommonGround: (thought: Thought) => void;
+  title: string;
+  emptyTitle: string;
+  emptyDetail: string;
+}) {
+  return (
+    <section className="mt-8">
+      <div className="flex items-end justify-between">
+        <div>
+          <p className="dashboard-kicker"><span />{title}</p>
+          <h2 className="dashboard-display mt-3 text-3xl tracking-[-.055em]">{emptyTitle || "Find a thought that stays with you."}</h2>
+        </div>
+        <span className="hidden text-xs text-[#958F9B] sm:block">{thoughts.length} thoughts</span>
+      </div>
+      {thoughts.length ? (
+        <div className="mt-6 grid gap-4 lg:grid-cols-2">
+          {thoughts.map((thought) => <ThoughtCard key={thought.id} thought={thought} onToggle={onToggle} onConnect={onConnect} onCommonGround={onCommonGround} />)}
+        </div>
+      ) : (
+        <p className="mt-5 rounded-2xl border border-dashed border-[#292630]/15 bg-white p-6 text-sm leading-6 text-[#6E6975]">{emptyDetail}</p>
+      )}
+    </section>
   );
 }
 
@@ -394,9 +441,8 @@ function ThoughtCard({
         <div className="mt-5 flex flex-wrap items-center gap-2 text-xs text-[#958F9B]">
           <AnonymousAvatar variant={thought.author.avatar_variant} size="sm" />
           <span className="font-semibold text-[#5F5967]">
-            {thought.author.display_name}
+            @{thought.author.username}
           </span>
-          <span>@{thought.author.username}</span>
           {thought.common_ground && (
             <button
               type="button"

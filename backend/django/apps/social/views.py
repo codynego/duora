@@ -184,7 +184,31 @@ class ExploreView(APIView):
             return score
 
         thoughts.sort(key=lambda thought: (recommendation_score(thought), thought.reply_total > 0, thought.published_at), reverse=True)
-        return Response({'data': ThoughtSerializer(thoughts[:40], many=True, context={'request': request}).data})
+        now = timezone.now()
+        today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        live_thoughts = list(
+            Thought.objects.filter(
+                moderation_status=Thought.ModerationStatus.APPROVED,
+                published_at__isnull=False,
+                created_at__gte=today_start,
+            )
+            .exclude(author=request.user)
+            .exclude(author_id__in=blocked_ids)
+            .select_related('question')
+            .annotate(reply_total=Count('replies', filter=Q(replies__moderation_status=DiscussionReply.ModerationStatus.APPROVED)))
+        )
+        live_thoughts.sort(key=lambda thought: (recommendation_score(thought) + (thought.reply_total * 4), thought.reply_total, thought.published_at), reverse=True)
+        my_thoughts = Thought.objects.filter(
+            author=request.user,
+            moderation_status=Thought.ModerationStatus.APPROVED,
+            published_at__isnull=False,
+        ).select_related('question').order_by('-published_at', '-created_at')[:100]
+        context = {'request': request}
+        return Response({
+            'data': ThoughtSerializer(thoughts[:40], many=True, context=context).data,
+            'featured': ThoughtSerializer(live_thoughts[0], context=context).data if live_thoughts else None,
+            'my_thoughts': ThoughtSerializer(my_thoughts, many=True, context=context).data,
+        })
 
 
 class ThoughtCreateView(APIView):
