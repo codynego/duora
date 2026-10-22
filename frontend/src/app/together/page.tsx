@@ -26,7 +26,7 @@ const TOGETHER_ACTIVITIES = [
     icon: CalendarHeart,
     color: '#FFF0F3',
     textColor: 'text-dark-950',
-    accentColor: '#F05A78',
+    accentColor: '#7454A6',
   },
   {
     key: 'shared-challenges',
@@ -50,7 +50,7 @@ const TOGETHER_ACTIVITIES = [
     icon: Heart,
     color: '#281D32',
     textColor: 'text-white',
-    accentColor: '#F7B8C7',
+    accentColor: '#C9B9E2',
   },
 ];
 

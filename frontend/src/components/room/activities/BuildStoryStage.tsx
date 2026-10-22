@@ -28,7 +28,7 @@ export default function BuildStoryStage({
 }: BaseStageProps) {
   const story = Array.isArray(gameState.story) ? gameState.story as StoryContribution[] : [];
   const turnIndex = typeof gameState.turnIndex === 'number' ? gameState.turnIndex : 0;
-  const players = participants.length ? participants : [{ id: 'you', name: 'You', initial: 'Y', color: '#F05A78', isYou: true }];
+  const players = participants.length ? participants : [{ id: 'you', name: 'You', initial: 'Y', color: '#7454A6', isYou: true }];
   const activePlayer = players[turnIndex % players.length];
   const isMyTurn = Boolean(activePlayer.isYou);
   const [mySentence, setMySentence] = useState('');

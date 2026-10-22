@@ -17,11 +17,11 @@ module.exports = {
           600: '#887b8a',
         },
         spark: {
-          coral: '#F05A78',
-          flame: '#ec765c',
-          rose: '#F7B8C7',
+          coral: '#7454A6',
+          flame: '#5D487A',
+          rose: '#C9B9E2',
           amber: '#F4C96B',
-          blush: '#FFF0F3',
+          blush: '#F1EAF6',
         },
         cream: {
           50: '#fdfbf7',

@@ -42,7 +42,7 @@ export default function WordBattleStage({
 
   const roster: RoomParticipant[] = participants.length
     ? participants
-    : [{ id: 'you', name: 'You', initial: 'Y', color: '#F05A78', isYou: true }];
+    : [{ id: 'you', name: 'You', initial: 'Y', color: '#7454A6', isYou: true }];
   const activePlayer = roster[turnIndex % roster.length];
   const isMyTurn = Boolean(activePlayer.isYou);
   const deck = useMemo(() => shuffledDeck(WORD_CHALLENGES, deckSeed), [deckSeed]);

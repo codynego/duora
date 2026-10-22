@@ -57,7 +57,7 @@ export default function MostLikelyToStage({
   const playerId = currentPlayerId(participants);
 
   const currentPrompt = PROMPTS[roundIndex % PROMPTS.length];
-  const players = participants.length ? participants : [{ id: 'you', name: 'You', initial: 'Y', color: '#F05A78', isYou: true }];
+  const players = participants.length ? participants : [{ id: 'you', name: 'You', initial: 'Y', color: '#7454A6', isYou: true }];
   const totalRounds = PROMPTS.length;
 
   // Vote values must be participant IDs. Display labels are intentionally

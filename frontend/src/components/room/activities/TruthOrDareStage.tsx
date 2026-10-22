@@ -75,7 +75,7 @@ export default function TruthOrDareStage({
   const [customQuestionInput, setCustomQuestionInput] = React.useState(customQuestion);
   const deckSeed = typeof gameState.truthDareSeed === 'number' ? gameState.truthDareSeed : 1;
 
-  const allPlayers = participants.length ? participants : [{ id: 'you', name: 'You', color: '#F05A78', isYou: true }];
+    const allPlayers = participants.length ? participants : [{ id: 'you', name: 'You', color: '#7454A6', isYou: true }];
   const activePlayer = allPlayers[turnIndex % allPlayers.length];
   const promptSetter = allPlayers[(turnIndex + 1) % allPlayers.length];
   const systemDeck = React.useMemo(() => shuffledDeck(CHALLENGES, deckSeed), [deckSeed]);
