@@ -3,6 +3,7 @@ from django.db import models
 from rest_framework import serializers
 from .models import ConnectionRequest, ConnectionThread
 from apps.social.models import IdentityConsent
+from apps.accounts.identity import get_or_create_anonymous_identity
 
 User = get_user_model()
 
@@ -19,7 +20,12 @@ class ConnectionRequestSerializer(serializers.ModelSerializer):
         fields = ('id', 'status', 'source', 'last_experience', 'created_at', 'person', 'thread_id', 'my_reveal_consented', 'other_reveal_consented', 'reveal_ready')
 
     def get_person(self, obj):
-        return {'id': '', 'name': 'Anonymous connection', 'initial': '?'}
+        request = self.context.get('request')
+        if not request:
+            return {'id': '', 'name': 'Duora connection', 'username': '', 'initial': 'D'}
+        person = obj.recipient if obj.requester_id == request.user.id else obj.requester
+        identity = get_or_create_anonymous_identity(person)
+        return {'id': '', 'name': identity.display_name, 'username': identity.username, 'initial': identity.display_name[:1].upper()}
 
     def get_thread_id(self, obj):
         if not self.get_reveal_ready(obj):

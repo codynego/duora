@@ -13,6 +13,7 @@ from .services import canonical_thread_for_users
 from apps.moderation.models import SafetyExclusion
 from apps.rooms.models import Room, RoomMembership, RoomNextStep
 from apps.social.models import IdentityConsent
+from apps.accounts.identity import get_or_create_anonymous_identity
 
 
 class ConnectionsView(APIView):
@@ -119,7 +120,9 @@ class ThreadsView(APIView):
             if not connection or IdentityConsent.objects.filter(connection_request=connection, consented_at__isnull=False, revoked_at__isnull=True).values('user_id').distinct().count() != 2:
                 continue
             latest = thread.messages.last()
-            data.append({'id': str(thread.id), 'person': {'id': '', 'name': 'Anonymous connection', 'initial': '?'}, 'room': None, 'last_message': latest.body if latest else None, 'last_message_at': thread.last_message_at})
+            other = thread.user_two if thread.user_one_id == request.user.id else thread.user_one
+            identity = get_or_create_anonymous_identity(other)
+            data.append({'id': str(thread.id), 'person': {'id': '', 'name': identity.display_name, 'username': identity.username, 'initial': identity.display_name[:1].upper()}, 'room': None, 'last_message': latest.body if latest else None, 'last_message_at': thread.last_message_at})
         return Response({'data': data})
 
 
@@ -167,7 +170,14 @@ class IdentityConsentView(APIView):
             source=ConnectionRequest.Source.AUTO_MATCH,
             status=ConnectionRequest.Status.PENDING,
         ).first()
-        return Response({'data': [{'id': str(message.id), 'body': message.body, 'sender_id': message.sender_id, 'is_you': message.sender_id == request.user.id, 'sender': {'name': 'You' if message.sender_id == request.user.id else 'Anonymous connection', 'initial': 'Y' if message.sender_id == request.user.id else '?'}, 'created_at': message.created_at} for message in thread.messages.select_related('sender')[:100]], 'match': {'connection_id': str(match.id), 'shared_interest': match.last_experience} if match else None})
+        messages = []
+        for message in thread.messages.select_related('sender')[:100]:
+            sender = {'name': 'You', 'username': '', 'initial': 'Y'} if message.sender_id == request.user.id else None
+            if sender is None:
+                identity = get_or_create_anonymous_identity(message.sender)
+                sender = {'name': identity.display_name, 'username': identity.username, 'initial': identity.display_name[:1].upper()}
+            messages.append({'id': str(message.id), 'body': message.body, 'sender_id': message.sender_id, 'is_you': message.sender_id == request.user.id, 'sender': sender, 'created_at': message.created_at})
+        return Response({'data': messages, 'match': {'connection_id': str(match.id), 'shared_interest': match.last_experience} if match else None})
 
     def post(self, request, thread_id):
         thread = self._thread(thread_id, request.user)
@@ -179,7 +189,8 @@ class IdentityConsentView(APIView):
         message = ThreadMessage.objects.create(thread=thread, sender=request.user, body=body)
         thread.last_message_at = message.created_at
         thread.save(update_fields=('last_message_at',))
-        return Response({'data': {'id': str(message.id), 'body': message.body, 'sender_id': message.sender_id, 'is_you': True, 'sender': {'name': request.user.get_full_name().strip() or request.user.username, 'initial': (request.user.get_full_name().strip() or request.user.username)[:1].upper()}, 'created_at': message.created_at}}, status=status.HTTP_201_CREATED)
+        identity = get_or_create_anonymous_identity(request.user)
+        return Response({'data': {'id': str(message.id), 'body': message.body, 'sender_id': message.sender_id, 'is_you': True, 'sender': {'name': identity.display_name, 'username': identity.username, 'initial': identity.display_name[:1].upper()}, 'created_at': message.created_at}}, status=status.HTTP_201_CREATED)
 
 
 class ThreadTypingView(ThreadMessageView):
@@ -191,7 +202,7 @@ class ThreadTypingView(ThreadMessageView):
             return Response({'detail': 'Connection thread not found.'}, status=status.HTTP_404_NOT_FOUND)
         cutoff = timezone.now() - timedelta(seconds=5)
         names = ThreadTypingPresence.objects.filter(thread=thread, updated_at__gte=cutoff).exclude(user=request.user).select_related('user')
-        return Response({'data': [presence.user.get_full_name().strip() or presence.user.username for presence in names]})
+        return Response({'data': [get_or_create_anonymous_identity(presence.user).display_name for presence in names]})
 
     def post(self, request, thread_id):
         thread = self._thread(thread_id, request.user)

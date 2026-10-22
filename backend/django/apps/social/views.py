@@ -82,9 +82,31 @@ class ExploreView(APIView):
         if request.query_params.get('saved') == '1':
             queryset = queryset.filter(saves__user=request.user).distinct()
         profile = getattr(request.user, 'discovery_profile', None)
-        interests = set(profile.interests if profile else [])
+        interests = {str(value).strip().lower() for value in (profile.interests if profile else [])}
+        related_ids = set(ThoughtReaction.objects.filter(user=request.user, kind=ThoughtReaction.Kind.RELATE).values_list('thought_id', flat=True))
+        saved_ids = set(SavedThought.objects.filter(user=request.user).values_list('thought_id', flat=True))
+        replied_ids = set(DiscussionReply.objects.filter(author=request.user).values_list('thought_id', flat=True))
+        interaction_categories = set(Thought.objects.filter(id__in=related_ids | saved_ids | replied_ids).values_list('question__category', flat=True))
+        interaction_categories = {str(value).strip().lower() for value in interaction_categories}
         thoughts = list(queryset.annotate(reply_total=Count('replies', filter=Q(replies__moderation_status=DiscussionReply.ModerationStatus.APPROVED)))[:100])
-        thoughts.sort(key=lambda thought: (thought.question.category in interests, thought.reply_total > 0, thought.published_at), reverse=True)
+        def recommendation_score(thought):
+            category = thought.question.category.strip().lower()
+            score = 0
+            if category in interests:
+                score += 6
+            if category in interaction_categories:
+                score += 3
+            if thought.id in related_ids:
+                score += 4
+            if thought.id in saved_ids:
+                score += 4
+            if thought.id in replied_ids:
+                score += 5
+            if thought.reply_total:
+                score += 2
+            return score
+
+        thoughts.sort(key=lambda thought: (recommendation_score(thought), thought.reply_total > 0, thought.published_at), reverse=True)
         return Response({'data': ThoughtSerializer(thoughts[:40], many=True, context={'request': request}).data})
 
 

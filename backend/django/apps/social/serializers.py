@@ -1,6 +1,7 @@
 from django.utils import timezone
 from rest_framework import serializers
 
+from apps.accounts.identity import get_or_create_anonymous_identity
 from .models import DiscussionReply, Question, Thought
 
 
@@ -22,8 +23,9 @@ class ThoughtSerializer(serializers.ModelSerializer):
         model = Thought
         fields = ('id', 'question', 'body', 'author', 'reply_count', 'relate_count', 'viewer_related', 'viewer_saved', 'published_at', 'created_at')
 
-    def get_author(self, _obj):
-        return {'anonymous': True, 'label': 'Someone you have not met yet'}
+    def get_author(self, obj):
+        identity = get_or_create_anonymous_identity(obj.author)
+        return {'anonymous': True, 'username': identity.username, 'display_name': identity.display_name, 'label': f'{identity.display_name} · @{identity.username}'}
 
     def get_reply_count(self, obj):
         return obj.replies.filter(moderation_status=DiscussionReply.ModerationStatus.APPROVED).count()
@@ -52,8 +54,9 @@ class ReplySerializer(serializers.ModelSerializer):
         model = DiscussionReply
         fields = ('id', 'body', 'author', 'parent', 'created_at')
 
-    def get_author(self, _obj):
-        return {'anonymous': True, 'label': 'A thoughtful stranger'}
+    def get_author(self, obj):
+        identity = get_or_create_anonymous_identity(obj.author)
+        return {'anonymous': True, 'username': identity.username, 'display_name': identity.display_name, 'label': f'{identity.display_name} · @{identity.username}'}
 
 
 class ReplyCreateSerializer(serializers.Serializer):

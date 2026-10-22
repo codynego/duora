@@ -2,6 +2,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 from apps.matching.models import DiscoveryProfile
+from .identity import get_or_create_anonymous_identity
 
 User = get_user_model()
 
@@ -10,18 +11,26 @@ class MeSerializer(serializers.ModelSerializer):
     """The small, private account record used by Duora's signed-in surfaces."""
 
     display_name = serializers.SerializerMethodField()
+    anonymous_username = serializers.SerializerMethodField()
+    anonymous_display_name = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ('id', 'username', 'display_name', 'email', 'date_joined')
+        fields = ('id', 'username', 'display_name', 'anonymous_username', 'anonymous_display_name', 'email', 'date_joined')
         read_only_fields = ('id', 'date_joined')
 
     def get_display_name(self, user):
-        return user.get_full_name().strip() or user.username
+        return get_or_create_anonymous_identity(user).display_name
+
+    def get_anonymous_username(self, user):
+        return get_or_create_anonymous_identity(user).username
+
+    def get_anonymous_display_name(self, user):
+        return get_or_create_anonymous_identity(user).display_name
 
 
 class MeUpdateSerializer(serializers.ModelSerializer):
-    display_name = serializers.CharField(max_length=150, required=False, allow_blank=False, write_only=True)
+    display_name = serializers.CharField(max_length=64, required=False, allow_blank=False, write_only=True)
 
     class Meta:
         model = User
@@ -41,7 +50,9 @@ class MeUpdateSerializer(serializers.ModelSerializer):
         for field, value in validated_data.items():
             setattr(instance, field, value.strip() if isinstance(value, str) else value)
         if display_name is not None:
-            instance.first_name = display_name.strip()
+            identity = get_or_create_anonymous_identity(instance)
+            identity.display_name = display_name.strip()
+            identity.save(update_fields=('display_name', 'updated_at'))
         instance.save()
         return instance
 
@@ -74,4 +85,5 @@ class RegisterSerializer(serializers.Serializer):
         gender = validated_data.pop('gender', '')
         user = User.objects.create_user(username=validated_data['username'], password=validated_data['password'])
         DiscoveryProfile.objects.create(user=user, gender=gender)
+        get_or_create_anonymous_identity(user)
         return user

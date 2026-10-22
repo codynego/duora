@@ -7,6 +7,8 @@ export type CurrentUser = {
   id: number | string;
   username: string;
   display_name: string;
+  anonymous_username: string;
+  anonymous_display_name: string;
   email: string;
   date_joined: string;
 };

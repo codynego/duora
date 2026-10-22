@@ -1,73 +1,254 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { ArrowRight, Check, Clock3, Eye, Search, UserRound, UsersRound } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import AppNav from '@/components/AppNav';
-import { getAccessToken } from '@/lib/auth';
-import { useCurrentUser } from '@/lib/current-user';
+import Link from "next/link";
+import {
+  ArrowRight,
+  Bell,
+  Check,
+  MessageCircle,
+  Search,
+  UserRound,
+} from "lucide-react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import AppNav from "@/components/AppNav";
+import { getAccessToken } from "@/lib/auth";
+import { useCurrentUser } from "@/lib/current-user";
 
 type Question = { id: string; text: string; category: string };
-type Thought = { id: string; question: { text: string; category: string }; body: string };
-type Daily = { data: Question | null; answer: Thought | null; completed: boolean; server_now: string; next_reset_at: string };
-const api = process.env.NEXT_PUBLIC_DUORA_API_URL ?? 'http://127.0.0.1:8000';
-const fallbackQuestion: Question = { id: '', text: 'What’s something you wish people understood about you without you having to explain it?', category: 'Relationships' };
+type Daily = {
+  data: Question | null;
+  answer: { body: string } | null;
+  completed: boolean;
+  next_reset_at: string;
+};
+type Thought = {
+  id: string;
+  question: { text: string; category: string };
+  body: string;
+  reply_count: number;
+  relate_count: number;
+};
+type Summary = {
+  counts: {
+    thoughts: number;
+    saved: number;
+    connections: number;
+    reactions: number;
+    discussions: number;
+  };
+};
+const api = process.env.NEXT_PUBLIC_DUORA_API_URL ?? "http://127.0.0.1:8000";
 
-export default function DiscoverPage() {
+export default function OverviewPage() {
   const { user, ready } = useCurrentUser();
   const router = useRouter();
   const [daily, setDaily] = useState<Daily | null>(null);
-  const [answer, setAnswer] = useState('');
-  const [remaining, setRemaining] = useState(0);
-  const [serverOffset, setServerOffset] = useState(0);
+  const [thoughts, setThoughts] = useState<Thought[]>([]);
+  const [summary, setSummary] = useState<Summary | null>(null);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
 
-  useEffect(() => { if (ready && !user) router.replace('/login'); }, [ready, router, user]);
+  useEffect(() => {
+    if (ready && !user) router.replace("/login");
+  }, [ready, router, user]);
   useEffect(() => {
     if (!ready || !user) return;
-    async function loadDaily() {
+    async function loadOverview() {
       const token = await getAccessToken();
-      const response = await fetch(`${api}/api/v1/social/questions/daily/`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
-      if (response.ok) {
-        const body = await response.json() as Daily;
-        setDaily(body); setServerOffset(new Date(body.server_now).getTime() - Date.now());
-        if (body.answer) setAnswer(body.answer.body);
-        else if (body.data?.id) setAnswer(window.localStorage.getItem(`duora:daily-draft:${body.data.id}`) ?? '');
-      }
+      if (!token) return;
+      const headers = { Authorization: `Bearer ${token}` };
+      const [dailyResponse, exploreResponse, summaryResponse] =
+        await Promise.all([
+          fetch(`${api}/api/v1/social/questions/daily/`, { headers }),
+          fetch(`${api}/api/v1/social/explore/`, { headers }),
+          fetch(`${api}/api/v1/social/me/summary/`, { headers }),
+        ]);
+      if (dailyResponse.ok) setDaily(await dailyResponse.json());
+      if (exploreResponse.ok)
+        setThoughts((await exploreResponse.json()).data?.slice(0, 3) ?? []);
+      if (summaryResponse.ok) setSummary(await summaryResponse.json());
       setLoading(false);
     }
-    void loadDaily();
+    void loadOverview();
   }, [ready, user]);
 
-  useEffect(() => {
-    if (!daily?.next_reset_at) return;
-    const update = () => setRemaining(Math.max(0, new Date(daily.next_reset_at).getTime() - (Date.now() + serverOffset)));
-    update(); const timer = window.setInterval(update, 1000); return () => window.clearInterval(timer);
-  }, [daily?.next_reset_at, serverOffset]);
-
-  async function publishThought() {
-    const question = daily?.data;
-    if (!answer.trim() || !question?.id) { setError('Write a thought before sharing it.'); return; }
-    const token = await getAccessToken(); if (!token) { router.replace('/login'); return; }
-    setSaving(true); setError('');
-    try {
-      const response = await fetch(`${api}/api/v1/social/thoughts/`, { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ question_id: question.id, body: answer.trim() }) });
-      const body = await response.json().catch(() => null);
-      if (!response.ok) throw new Error(body?.detail ?? 'Your thought could not be shared. Try again.');
-      window.localStorage.removeItem(`duora:daily-draft:${question.id}`);
-      setDaily((current) => current ? { ...current, completed: true, answer: body.data } : current);
-    } catch (reason) { setError(reason instanceof Error ? reason.message : 'Your thought could not be shared.'); } finally { setSaving(false); }
-  }
-
-  const question = daily?.data ?? fallbackQuestion;
-  const weekday = useMemo(() => daily?.server_now ? new Intl.DateTimeFormat('en-NG', { weekday: 'long' }).format(new Date(daily.server_now)) : 'Today', [daily?.server_now]);
-  const time = formatCountdown(remaining);
-  if (!ready || !user) return <div className="min-h-screen bg-[#F7F5F0]" aria-busy="true" />;
-
-  return <div className="min-h-screen bg-[#F7F5F0] text-[#292630] md:pl-[232px]"><AppNav minimal /><main className="mx-auto max-w-4xl px-5 pb-28 pt-7 sm:px-8 sm:pt-12 md:pb-14"><header className="flex items-center justify-between"><Link href="/home" className="font-serif text-3xl tracking-[-.075em] text-[#292630]">duora<span className="text-[#7454A6]">.</span></Link><Link href="/profile" aria-label="Your profile" className="grid h-10 w-10 place-items-center rounded-full bg-[#292630] text-white"><UserRound className="h-4 w-4" /></Link></header><section className="mx-auto mt-20 max-w-3xl text-center sm:mt-24"><p className="dashboard-kicker justify-center"><span />{weekday.toUpperCase()} · DAILY QUESTION</p><h1 className="dashboard-display mt-7 text-5xl leading-[.93] tracking-[-.07em] sm:text-7xl">A thought worth sharing<span className="text-[#7454A6]">.</span></h1><p className="mx-auto mt-5 max-w-md text-base leading-7 text-[#6E6975]">There’s a question waiting for you today.</p></section><section id="daily-question" className="mx-auto mt-12 max-w-3xl rounded-[26px] border border-[#E7E2EA] bg-white p-6 shadow-[0_18px_45px_rgba(41,38,48,.06)] sm:mt-16 sm:p-10"><p className="text-xs font-bold uppercase tracking-[.16em] text-[#7454A6]">Today’s question</p>{daily?.completed ? <div className="pt-10"><div className="grid h-11 w-11 place-items-center rounded-full bg-[#DDE8D2] text-[#4F713D]"><Check className="h-5 w-5" /></div><h2 className="dashboard-display mt-7 text-4xl leading-[.98] tracking-[-.06em] sm:text-5xl">You’ve shared today’s thought.</h2><p className="mt-4 max-w-xl text-sm leading-6 text-[#6E6975]">Your answer is published anonymously. You can still explore, reply, relate, and discover people.</p><div className="mt-9 flex flex-col gap-6 border-t border-[#E7E2EA] pt-6 sm:flex-row sm:items-end sm:justify-between"><div><p className="text-xs font-bold uppercase tracking-[.14em] text-[#958F9B]">New daily question in</p><p className="mt-2 font-mono text-3xl font-semibold tracking-[-.05em] text-[#292630]">{time.hours}<span className="ml-1 text-[10px] font-sans font-bold tracking-[.1em] text-[#958F9B]">HRS</span><span className="ml-3">{time.minutes}</span><span className="ml-1 text-[10px] font-sans font-bold tracking-[.1em] text-[#958F9B]">MIN</span><span className="ml-3">{time.seconds}</span><span className="ml-1 text-[10px] font-sans font-bold tracking-[.1em] text-[#958F9B]">SEC</span></p></div><Link href={`/discover?category=${encodeURIComponent(question.category)}`} className="inline-flex w-fit items-center gap-2 rounded-full bg-[#7454A6] px-5 py-3 text-sm font-semibold text-white">Explore other answers <ArrowRight className="h-4 w-4" /></Link></div></div> : <div className="pt-8"><h2 className="dashboard-display max-w-2xl text-3xl leading-[1.02] tracking-[-.055em] sm:text-5xl">{loading ? 'Finding today’s question…' : question.text}</h2><p className="mt-5 text-sm leading-6 text-[#6E6975]">Take your time. Your answer is shared anonymously.</p><textarea value={answer} onChange={(event) => { setAnswer(event.target.value); if (daily?.data?.id) window.localStorage.setItem(`duora:daily-draft:${daily.data.id}`, event.target.value); }} maxLength={500} disabled={loading || saving} placeholder="Write what’s on your mind..." className="mt-8 min-h-36 w-full resize-y rounded-2xl border border-[#E7E2EA] bg-[#F7F5F0] p-4 text-sm leading-6 text-[#292630] outline-none placeholder:text-[#958F9B] transition focus:min-h-44 focus:border-[#7454A6] focus:ring-4 focus:ring-[#7454A6]/10" /><div className="mt-3 flex items-center justify-between text-xs text-[#958F9B]"><span>{answer.length} / 500</span><span className="inline-flex items-center gap-1.5"><Eye className="h-3.5 w-3.5" />Your identity stays hidden</span></div><button type="button" onClick={() => void publishThought()} disabled={!answer.trim() || saving || loading || !daily?.data?.id} className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#7454A6] px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-[#61438F] disabled:cursor-not-allowed disabled:opacity-45">{saving ? 'Sharing…' : 'Share my thought'} <ArrowRight className="h-4 w-4" /></button>{error && <p role="alert" className="mt-4 text-sm text-[#9A3650]">{error}</p>}</div>}</section><section className="mx-auto mt-12 grid max-w-3xl gap-3 sm:grid-cols-2"><Link href="/discover" className="group rounded-[20px] border border-[#E7E2EA] bg-white p-5 transition hover:-translate-y-0.5 hover:border-[#7454A6]"><Search className="h-5 w-5 text-[#7454A6]" /><h2 className="mt-7 text-lg font-semibold">Explore thoughts</h2><p className="mt-2 text-sm leading-6 text-[#6E6975]">See what others are thinking.</p><span className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-[#7454A6]">Explore <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" /></span></Link><Link href="/connections" className="group rounded-[20px] border border-[#E7E2EA] bg-white p-5 transition hover:-translate-y-0.5 hover:border-[#7454A6]"><UsersRound className="h-5 w-5 text-[#7454A6]" /><h2 className="mt-7 text-lg font-semibold">Find your people</h2><p className="mt-2 text-sm leading-6 text-[#6E6975]">Connect through shared thoughts.</p><span className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-[#7454A6]">Connections <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" /></span></Link></section><p className="mx-auto mt-12 flex max-w-3xl items-center justify-center gap-2 text-center text-xs text-[#958F9B]"><Clock3 className="h-3.5 w-3.5" />One thoughtful answer each day. Everything else stays open.</p></main></div>;
+  if (!ready || !user)
+    return <div className="min-h-screen bg-[#F7F5F0]" aria-busy="true" />;
+  const displayName =
+    user.anonymous_display_name || user.display_name || "there";
+  const counts = summary?.counts;
+  return (
+    <div className="min-h-screen bg-[#F7F5F0] text-[#292630] md:pl-[232px]">
+      <AppNav />
+      <main className="mx-auto max-w-6xl px-5 pb-28 pt-8 sm:px-8 sm:pt-12 md:pb-14">
+        <header className="flex items-start justify-between gap-5">
+          <div>
+            <p className="dashboard-kicker">
+              <span />
+              Your Duora home
+            </p>
+            <h1 className="dashboard-display mt-4 text-5xl leading-[.92] tracking-[-.07em] sm:text-7xl">
+              Good morning, {displayName.split(" ")[0]}
+              <span className="text-[#7454A6]">.</span>
+            </h1>
+            <p className="mt-4 text-base text-[#6E6975]">
+              A little closer, every day.
+            </p>
+            <p className="mt-2 text-xs font-semibold text-[#958F9B]">
+              @{user.anonymous_username}
+            </p>
+          </div>
+          <Link
+            href="/profile"
+            aria-label="Your profile"
+            className="grid h-11 w-11 place-items-center rounded-full bg-[#292630] text-white"
+          >
+            <UserRound className="h-4 w-4" />
+          </Link>
+        </header>
+        <section className="mt-10 rounded-[26px] bg-[#7454A6] p-6 text-white shadow-[0_20px_45px_rgba(116,84,166,.18)] sm:p-9">
+          <div className="flex items-center justify-between gap-4">
+            <p className="text-xs font-bold uppercase tracking-[.16em] text-white/70">
+              Today’s question
+            </p>
+            <span className="inline-flex items-center gap-2 text-xs text-white/70">
+              <span className="h-2 w-2 rounded-full bg-[#DDE8D2]" />
+              Anonymous by default
+            </span>
+          </div>
+          <h2 className="dashboard-display mt-9 max-w-3xl text-4xl leading-[.98] tracking-[-.06em] sm:text-6xl">
+            {daily?.data?.text ?? "A thought worth sharing."}
+          </h2>
+          <p className="mt-5 max-w-xl text-sm leading-6 text-white/75">
+            {daily?.completed
+              ? "You shared today’s thought. There is always more to discover."
+              : "Take a quiet moment and share what is on your mind."}
+          </p>
+          <Link
+            href="/discover"
+            className="mt-8 inline-flex items-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-semibold text-[#7454A6]"
+          >
+            {daily?.completed ? "Read today’s question" : "Answer now"}{" "}
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        </section>
+        <section className="mt-12">
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <p className="dashboard-kicker">
+                <span />
+                Today’s pulse
+              </p>
+              <h2 className="dashboard-display mt-3 text-3xl tracking-[-.055em]">
+                Worth your attention.
+              </h2>
+            </div>
+            <Link
+              href="/explore"
+              className="hidden items-center gap-2 text-sm font-semibold text-[#7454A6] sm:inline-flex"
+            >
+              Explore all <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+          {loading ? (
+            <div className="mt-6 h-44 animate-pulse rounded-[22px] bg-[#E9E1F1]" />
+          ) : thoughts.length ? (
+            <div className="mt-6 grid gap-4 lg:grid-cols-3">
+              {thoughts.map((thought) => (
+                <article
+                  key={thought.id}
+                  className="rounded-[22px] border border-[#292630]/10 bg-white p-5"
+                >
+                  <p className="text-xs font-bold uppercase tracking-[.13em] text-[#7454A6]">
+                    {thought.question.category}
+                  </p>
+                  <h3 className="mt-5 text-xl font-semibold leading-tight tracking-[-.04em]">
+                    {thought.question.text}
+                  </h3>
+                  <p className="mt-4 line-clamp-3 text-sm leading-6 text-[#6E6975]">
+                    “{thought.body}”
+                  </p>
+                  <p className="mt-5 text-xs text-[#958F9B]">
+                    {thought.reply_count} replies · {thought.relate_count}{" "}
+                    relates
+                  </p>
+                  <Link
+                    href={`/explore/${thought.id}`}
+                    className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-[#7454A6]"
+                  >
+                    Join conversation <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <div className="mt-6 rounded-[22px] border border-dashed border-[#292630]/15 bg-white p-8 text-center">
+              <MessageCircle className="mx-auto h-5 w-5 text-[#7454A6]" />
+              <p className="mt-4 text-sm font-semibold">
+                The first conversations are waiting to be started.
+              </p>
+              <Link
+                href="/discover"
+                className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-[#7454A6]"
+              >
+                Share a thought <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+          )}
+        </section>
+        <Link
+          href="/explore"
+          className="mt-10 flex items-center justify-between gap-5 rounded-[22px] border border-[#292630]/10 bg-white p-5 transition hover:border-[#7454A6] sm:p-6"
+        >
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[.14em] text-[#7454A6]">
+              Explore more perspectives
+            </p>
+            <h2 className="mt-2 text-xl font-semibold tracking-[-.04em]">
+              There’s more than one way to see it.
+            </h2>
+            <p className="mt-2 text-sm text-[#6E6975]">
+              Browse the wider anonymous community.
+            </p>
+          </div>
+          <ArrowRight className="h-5 w-5 shrink-0 text-[#7454A6]" />
+        </Link>
+        <section className="mt-10 rounded-[22px] border border-[#292630]/10 bg-white p-5 sm:p-6">
+          <div className="flex items-center gap-3">
+            <Bell className="h-4 w-4 text-[#7454A6]" />
+            <p className="text-xs font-bold uppercase tracking-[.14em] text-[#7454A6]">
+              Your activity
+            </p>
+          </div>
+          {counts &&
+          (counts.discussions > 0 ||
+            counts.connections > 0 ||
+            counts.thoughts > 0) ? (
+            <div className="mt-5 grid gap-3 sm:grid-cols-3">
+              <Activity label="Thoughts shared" value={counts.thoughts} />
+              <Activity label="Discussions joined" value={counts.discussions} />
+              <Activity label="Connections" value={counts.connections} />
+            </div>
+          ) : (
+            <p className="mt-5 text-sm leading-6 text-[#6E6975]">
+              Your replies, connection updates, and daily-question progress will
+              appear here as they happen.
+            </p>
+          )}
+        </section>
+      </main>
+    </div>
+  );
 }
 
-function formatCountdown(value: number) { const total = Math.floor(value / 1000); return { hours: String(Math.floor(total / 3600)).padStart(2, '0'), minutes: String(Math.floor((total % 3600) / 60)).padStart(2, '0'), seconds: String(total % 60).padStart(2, '0') }; }
+function Activity({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-2xl bg-[#F7F5F0] p-4">
+      <div className="flex items-center gap-2">
+        <Check className="h-4 w-4 text-[#7454A6]" />
+        <span className="text-2xl font-bold tracking-[-.04em]">{value}</span>
+      </div>
+      <p className="mt-2 text-xs font-semibold text-[#6E6975]">{label}</p>
+    </div>
+  );
+}
