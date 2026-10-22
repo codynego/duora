@@ -4,10 +4,13 @@ import Link from "next/link";
 import {
   ArrowLeft,
   ArrowRight,
+  Ban,
   Check,
+  Flag,
   Heart,
   MessageCircle,
   Send,
+  Trash2,
   UserRound,
 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -21,15 +24,31 @@ type Thought = {
   id: string;
   question: { text: string; category: string };
   body: string;
-  author: { label: string; avatar_variant: number };
+  author: {
+    label: string;
+    display_name: string;
+    username: string;
+    avatar_variant: number;
+  };
   reply_count: number;
   relate_count: number;
   viewer_related: boolean;
+  common_ground: {
+    shared_count: number;
+    shared_interests: string[];
+    percentage: number | null;
+    label: string;
+  } | null;
 };
 type Reply = {
   id: string;
   body: string;
-  author: { label: string; avatar_variant: number };
+  author: {
+    label: string;
+    display_name: string;
+    username: string;
+    avatar_variant: number;
+  };
   created_at: string;
 };
 const api = process.env.NEXT_PUBLIC_DUORA_API_URL ?? "http://127.0.0.1:8000";
@@ -45,6 +64,8 @@ export default function DiscussionPage() {
   const [related, setRelated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [safetyNotice, setSafetyNotice] = useState("");
+  const [showCommonGround, setShowCommonGround] = useState(false);
 
   useEffect(() => {
     if (ready && !user) router.replace("/login");
@@ -119,11 +140,85 @@ export default function DiscussionPage() {
     if (response.ok) setSent(true);
   }
 
+  async function safetyAction(action: "report" | "block" | "delete") {
+    if (!thought) return;
+    if (action === "delete" && !window.confirm("Delete this thought? This cannot be undone.")) return;
+    if (action === "block" && !window.confirm("Block this person? Their thoughts will no longer appear for you.")) return;
+    const token = await getAccessToken();
+    if (!token) return;
+    const reason = action === "report" ? window.prompt("Why are you reporting this thought?", "Other") : null;
+    if (action === "report" && reason === null) return;
+    const response = await fetch(`${api}/api/v1/social/thoughts/${thought.id}/${action}/`, {
+      method: action === "delete" ? "DELETE" : "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        ...(action === "report" ? { "Content-Type": "application/json" } : {}),
+      },
+      ...(action === "report" ? { body: JSON.stringify({ reason }) } : {}),
+    });
+    const body = await response.json().catch(() => null);
+    if (!response.ok) {
+      setError(body?.detail ?? "That safety action could not be completed.");
+      return;
+    }
+    if (action === "delete") {
+      router.replace("/profile");
+      return;
+    }
+    setSafetyNotice(action === "block" ? "Person blocked. Their thoughts are hidden from you." : "Thanks. Your report was sent for review.");
+  }
+
   if (!ready || !user)
     return <div className="min-h-screen bg-[#F7F5F0]" aria-busy="true" />;
   return (
     <div className="min-h-screen bg-[#F7F5F0] text-[#292630] md:pl-[232px]">
       <AppNav />
+      {thought && !loading && (
+        <aside
+          className="fixed right-8 top-28 hidden w-72 rounded-[24px] border border-[#292630]/10 bg-white p-5 shadow-[0_18px_45px_rgba(41,38,48,.06)] lg:block"
+          aria-label="Explore different perspectives"
+        >
+          <p className="dashboard-kicker">
+            <span />
+            Explore different perspectives
+          </p>
+          <h2 className="dashboard-display mt-4 text-2xl tracking-[-.05em]">
+            {replies.length} {replies.length === 1 ? "reply" : "replies"}
+          </h2>
+          {replies.length ? (
+            <div className="mt-5 space-y-3">
+              {replies.slice(0, 4).map((item) => (
+                <Link
+                  key={item.id}
+                  href="#reply-box"
+                  className="block rounded-2xl bg-[#F7F5F0] p-3 transition hover:bg-[#E9E1F1]"
+                >
+                  <div className="flex items-center gap-2 text-xs font-semibold text-[#7454A6]">
+                    <AnonymousAvatar
+                      variant={item.author.avatar_variant}
+                      size="sm"
+                    />
+                    <span>{item.author.display_name}</span>
+                  </div>
+                  <p className="mt-2 line-clamp-3 text-xs leading-5 text-[#6E6975]">
+                    “{item.body}”
+                  </p>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <p className="mt-4 text-sm leading-6 text-[#6E6975]">
+              No perspectives yet. Your reply could be the first.
+            </p>
+          )}
+          <a
+            href="#reply-box"
+            className="mt-5 inline-flex text-sm font-semibold text-[#7454A6]"
+          >
+            Add your perspective <ArrowRight className="ml-1 h-4 w-4" />
+          </a>
+        </aside>
+      )}
       <main className="mx-auto max-w-3xl px-5 pb-28 pt-8 sm:px-8 sm:pt-12 md:pb-14">
         <Link
           href="/explore"
@@ -153,12 +248,22 @@ export default function DiscussionPage() {
               </h1>
             </header>
             <section className="mt-8 rounded-[24px] bg-white p-6 shadow-[0_18px_45px_rgba(41,38,48,.08)] sm:p-8">
-              <div className="flex items-center gap-2 text-xs font-semibold text-[#7454A6]">
+              <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-[#7454A6]">
                 <AnonymousAvatar
                   variant={thought.author.avatar_variant}
                   size="sm"
                 />
                 {thought.author.label}
+                {thought.common_ground && (
+                  <button
+                    type="button"
+                    onClick={() => setShowCommonGround(true)}
+                    title={`You both selected: ${thought.common_ground.shared_interests.join(", ")}`}
+                    className="rounded-full bg-[#E9E1F1] px-2.5 py-1 text-[#7454A6]"
+                  >
+                    {thought.common_ground.label}
+                  </button>
+                )}
               </div>
               <p className="mt-6 font-medium text-xl leading-8 text-[#292630]">
                 “{thought.body}”
@@ -195,7 +300,18 @@ export default function DiscussionPage() {
                   Discover this person
                 </button>
               </div>
+              <div className="mt-5 flex flex-wrap gap-3 border-t border-[#292630]/10 pt-4 text-xs font-semibold text-[#958F9B]">
+                {user?.anonymous_username === thought.author.username ? (
+                  <button type="button" onClick={() => void safetyAction("delete")} className="inline-flex items-center gap-1.5 hover:text-[#9A3650]"><Trash2 className="h-3.5 w-3.5" />Delete my thought</button>
+                ) : (
+                  <>
+                    <button type="button" onClick={() => void safetyAction("report")} className="inline-flex items-center gap-1.5 hover:text-[#9A3650]"><Flag className="h-3.5 w-3.5" />Report</button>
+                    <button type="button" onClick={() => void safetyAction("block")} className="inline-flex items-center gap-1.5 hover:text-[#9A3650]"><Ban className="h-3.5 w-3.5" />Block person</button>
+                  </>
+                )}
+              </div>
             </section>
+            {safetyNotice && <p role="status" className="mt-4 rounded-2xl bg-[#DDE8D2] p-4 text-sm font-semibold text-[#496436]">{safetyNotice}</p>}
             {sent && (
               <div className="mt-5 flex items-center gap-3 rounded-2xl bg-[#DDE8D2] p-4 text-sm font-semibold text-[#496436]">
                 <Check className="h-5 w-5" />
@@ -276,6 +392,60 @@ export default function DiscussionPage() {
           </>
         ) : null}
       </main>
+      {thought && showCommonGround && thought.common_ground && (
+        <CommonGroundSheet
+          thought={thought}
+          onClose={() => setShowCommonGround(false)}
+          onConnect={() => {
+            void connect();
+            setShowCommonGround(false);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function CommonGroundSheet({
+  thought,
+  onClose,
+  onConnect,
+}: {
+  thought: Thought;
+  onClose: () => void;
+  onConnect: () => void;
+}) {
+  const common = thought.common_ground;
+  if (!common) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#292630]/35 p-3 sm:items-center">
+      <button type="button" aria-label="Close common ground" onClick={onClose} className="absolute inset-0 cursor-default" />
+      <section className="relative w-full max-w-lg rounded-[28px] bg-white p-6 shadow-[0_24px_80px_rgba(41,38,48,.24)] sm:p-8" role="dialog" aria-modal="true" aria-labelledby="detail-common-ground-title">
+        <div className="flex items-start justify-between gap-5">
+          <div>
+            <p className="dashboard-kicker"><span />Your common ground</p>
+            <h2 id="detail-common-ground-title" className="dashboard-display mt-3 text-3xl tracking-[-.06em]">You and {thought.author.display_name} have things in common.</h2>
+          </div>
+          <button type="button" onClick={onClose} className="rounded-full bg-[#F7F5F0] px-3 py-2 text-xs font-semibold text-[#6E6975]">Close</button>
+        </div>
+        <p className="mt-6 text-sm font-semibold text-[#7454A6]">{common.shared_count} shared {common.shared_count === 1 ? "interest" : "interests"}</p>
+        {common.shared_interests.length ? (
+          <div className="mt-4 space-y-3">
+            {common.shared_interests.map((interest) => (
+              <div key={interest} className="rounded-2xl bg-[#F7F5F0] p-4">
+                <p className="font-semibold">{interest}</p>
+                <p className="mt-1 text-sm leading-6 text-[#6E6975]">You both selected {interest.toLowerCase()} as an interest.</p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="mt-4 rounded-2xl bg-[#F7F5F0] p-4 text-sm leading-6 text-[#6E6975]">You’re still discovering your common ground.</p>
+        )}
+        <div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+          <button type="button" onClick={onClose} className="rounded-full border border-[#292630]/10 px-5 py-3 text-sm font-semibold text-[#6E6975]">Keep exploring</button>
+          <button type="button" onClick={onConnect} className="rounded-full bg-[#292630] px-5 py-3 text-sm font-semibold text-white">Connect</button>
+        </div>
+      </section>
     </div>
   );
 }

@@ -128,19 +128,6 @@ export default function Onboarding() {
     try {
       const api =
         process.env.NEXT_PUBLIC_DUORA_API_URL ?? "http://127.0.0.1:8000";
-      const response = await fetch(`${api}/api/v1/discovery/me/`, {
-        method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          interests: selected,
-          onboarding_completed: true,
-        }),
-      });
-      if (!response.ok)
-        throw new Error("Your starting point could not be saved.");
       if (shareThought && answer.trim() && questionId) {
         const thoughtResponse = await fetch(`${api}/api/v1/social/thoughts/`, {
           method: "POST",
@@ -151,11 +138,26 @@ export default function Onboarding() {
           body: JSON.stringify({
             question_id: questionId,
             body: answer.trim(),
+            onboarding: true,
           }),
         });
         if (!thoughtResponse.ok)
           throw new Error("Your thought could not be shared.");
       }
+      const response = await fetch(`${api}/api/v1/discovery/me/`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          interests: selected,
+          onboarding_completed: true,
+          onboarding_question_id: questionId || null,
+        }),
+      });
+      if (!response.ok)
+        throw new Error("Your starting point could not be saved.");
       router.replace("/discover");
     } catch (reason) {
       setError(

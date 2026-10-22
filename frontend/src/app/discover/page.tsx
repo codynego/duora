@@ -28,6 +28,9 @@ type Daily = {
   completed: boolean;
   server_now: string;
   next_reset_at: string;
+  onboarding_question: Question | null;
+  onboarding_answered: boolean;
+  answer_cooldown_until: string | null;
 };
 const api = process.env.NEXT_PUBLIC_DUORA_API_URL ?? "http://127.0.0.1:8000";
 const fallbackQuestion: Question = {
@@ -41,6 +44,7 @@ export default function DiscoverPage() {
   const router = useRouter();
   const [daily, setDaily] = useState<Daily | null>(null);
   const [answer, setAnswer] = useState("");
+  const [onboardingAnswer, setOnboardingAnswer] = useState("");
   const [remaining, setRemaining] = useState(0);
   const [serverOffset, setServerOffset] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -129,6 +133,60 @@ export default function DiscoverPage() {
     }
   }
 
+  async function publishOnboardingThought() {
+    const question = daily?.onboarding_question;
+    if (!onboardingAnswer.trim() || !question?.id) {
+      setError("Write a thought before sharing it.");
+      return;
+    }
+    const token = await getAccessToken();
+    if (!token) {
+      router.replace("/login");
+      return;
+    }
+    setSaving(true);
+    setError("");
+    try {
+      const response = await fetch(`${api}/api/v1/social/thoughts/`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          question_id: question.id,
+          body: onboardingAnswer.trim(),
+          onboarding: true,
+        }),
+      });
+      const body = await response.json().catch(() => null);
+      if (!response.ok)
+        throw new Error(
+          body?.detail ?? "Your thought could not be shared. Try again.",
+        );
+      setDaily((current) =>
+        current
+          ? {
+              ...current,
+              onboarding_answered: true,
+              answer_cooldown_until:
+                body?.data?.answer_cooldown_until ??
+                new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString(),
+            }
+          : current,
+      );
+      setOnboardingAnswer("");
+    } catch (reason) {
+      setError(
+        reason instanceof Error
+          ? reason.message
+          : "Your thought could not be shared.",
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+
   const question = daily?.data ?? fallbackQuestion;
   const weekday = useMemo(
     () =>
@@ -140,6 +198,10 @@ export default function DiscoverPage() {
     [daily?.server_now],
   );
   const time = formatCountdown(remaining);
+  const cooldownActive = Boolean(
+    daily?.answer_cooldown_until &&
+      new Date(daily.answer_cooldown_until).getTime() > Date.now(),
+  );
   if (!ready || !user)
     return <div className="min-h-screen bg-[#F7F5F0]" aria-busy="true" />;
 
@@ -240,7 +302,7 @@ export default function DiscoverPage() {
                     );
                 }}
                 maxLength={500}
-                disabled={loading || saving}
+                disabled={loading || saving || cooldownActive}
                 placeholder="Write what’s on your mind..."
                 className="mt-8 min-h-36 w-full resize-y rounded-2xl border border-[#E7E2EA] bg-[#F7F5F0] p-4 text-sm leading-6 text-[#292630] outline-none placeholder:text-[#958F9B] transition focus:min-h-44 focus:border-[#7454A6] focus:ring-4 focus:ring-[#7454A6]/10"
               />
@@ -255,13 +317,19 @@ export default function DiscoverPage() {
                 type="button"
                 onClick={() => void publishThought()}
                 disabled={
-                  !answer.trim() || saving || loading || !daily?.data?.id
+                  !answer.trim() || saving || loading || !daily?.data?.id || cooldownActive
                 }
                 className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#7454A6] px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-[#61438F] disabled:cursor-not-allowed disabled:opacity-45"
               >
                 {saving ? "Sharing…" : "Share my thought"}{" "}
                 <ArrowRight className="h-4 w-4" />
               </button>
+              {cooldownActive && (
+                <p className="mt-4 text-sm text-[#6E6975]">
+                  You’ve shared a first thought. You can explore and join
+                  conversations while your short reflection break runs.
+                </p>
+              )}
               {error && (
                 <p role="alert" className="mt-4 text-sm text-[#9A3650]">
                   {error}
@@ -270,6 +338,40 @@ export default function DiscoverPage() {
             </div>
           )}
         </section>
+        {daily?.onboarding_question && !daily.onboarding_answered && (
+          <section className="mx-auto mt-8 max-w-3xl rounded-[26px] border border-[#E7E2EA] bg-[#F0ECFA] p-6 sm:p-8">
+            <p className="text-xs font-bold uppercase tracking-[.16em] text-[#7454A6]">
+              Your first Duora question
+            </p>
+            <h2 className="dashboard-display mt-5 max-w-2xl text-3xl leading-[1.02] tracking-[-.055em] sm:text-4xl">
+              {daily.onboarding_question.text}
+            </h2>
+            <p className="mt-4 text-sm leading-6 text-[#6E6975]">
+              You skipped this during onboarding. You can still answer it here
+              whenever you’re ready.
+            </p>
+            <textarea
+              value={onboardingAnswer}
+              onChange={(event) => setOnboardingAnswer(event.target.value)}
+              maxLength={500}
+              disabled={saving || cooldownActive}
+              placeholder="Write what’s on your mind..."
+              className="mt-6 min-h-32 w-full resize-y rounded-2xl border border-[#E7E2EA] bg-white p-4 text-sm leading-6 text-[#292630] outline-none placeholder:text-[#958F9B] transition focus:border-[#7454A6] focus:ring-4 focus:ring-[#7454A6]/10"
+            />
+            <div className="mt-3 flex items-center justify-between text-xs text-[#958F9B]">
+              <span>{onboardingAnswer.length} / 500</span>
+              <span>Shared anonymously · Appears in Explore</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => void publishOnboardingThought()}
+              disabled={!onboardingAnswer.trim() || saving || cooldownActive}
+              className="mt-5 inline-flex items-center gap-2 rounded-full bg-[#7454A6] px-5 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45"
+            >
+              {saving ? "Sharing…" : "Share my thought"} <ArrowRight className="h-4 w-4" />
+            </button>
+          </section>
+        )}
         <section className="mx-auto mt-12 grid max-w-3xl gap-3 sm:grid-cols-2">
           <Link
             href="/explore"

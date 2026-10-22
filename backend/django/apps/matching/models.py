@@ -30,6 +30,8 @@ class DiscoveryProfile(models.Model):
     city = models.CharField(max_length=100, blank=True)
     is_discoverable = models.BooleanField(default=False)
     onboarding_completed = models.BooleanField(default=False)
+    onboarding_question_id = models.UUIDField(null=True, blank=True)
+    answer_cooldown_until = models.DateTimeField(null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def clean(self):

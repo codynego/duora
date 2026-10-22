@@ -10,6 +10,7 @@ import {
   Pencil,
   Settings,
   ShieldCheck,
+  Trash2,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -155,6 +156,25 @@ export default function ProfilePage() {
     } finally {
       setSaving(false);
     }
+  }
+
+  async function deleteThought(id: string) {
+    if (!window.confirm("Delete this thought? This cannot be undone.")) return;
+    const token = await getAccessToken();
+    if (!token) return;
+    const response = await fetch(`${api}/api/v1/social/thoughts/${id}/delete/`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!response.ok) {
+      setError("That thought could not be deleted.");
+      return;
+    }
+    setSummary((current) => current ? {
+      ...current,
+      counts: { ...current.counts, thoughts: Math.max(0, current.counts.thoughts - 1) },
+      answers: current.answers.filter((item) => item.id !== id),
+    } : current);
   }
 
   async function changeAvatar() {
@@ -443,12 +463,19 @@ export default function ProfilePage() {
                   <p className="mt-3 text-sm leading-6 text-[#5F5967]">
                     “{item.body}”
                   </p>
-                  <Link
-                    href={`/discover/${item.id}`}
-                    className="mt-4 inline-flex items-center gap-2 text-xs font-semibold text-[#7454A6]"
-                  >
-                    Open thought <ArrowRight className="h-3.5 w-3.5" />
-                  </Link>
+                  <div className="mt-4 flex items-center justify-between gap-3">
+                    <Link
+                      href={`/discover/${item.id}`}
+                      className="inline-flex items-center gap-2 text-xs font-semibold text-[#7454A6]"
+                    >
+                      Open thought <ArrowRight className="h-3.5 w-3.5" />
+                    </Link>
+                    {tab === "answers" && (
+                      <button type="button" onClick={() => void deleteThought(item.id)} className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#9A3650]">
+                        <Trash2 className="h-3.5 w-3.5" />Delete
+                      </button>
+                    )}
+                  </div>
                 </article>
               ))}
             </div>

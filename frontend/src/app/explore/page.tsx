@@ -34,6 +34,12 @@ type Thought = {
   viewer_related: boolean;
   viewer_saved: boolean;
   published_at: string | null;
+  common_ground: {
+    shared_count: number;
+    shared_interests: string[];
+    percentage: number | null;
+    label: string;
+  } | null;
 };
 const api = process.env.NEXT_PUBLIC_DUORA_API_URL ?? "http://127.0.0.1:8000";
 const categories = [
@@ -55,6 +61,7 @@ export default function ExplorePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [requestSent, setRequestSent] = useState(false);
+  const [commonGroundThought, setCommonGroundThought] = useState<Thought | null>(null);
 
   useEffect(() => {
     if (ready && !user) router.replace("/login");
@@ -248,6 +255,17 @@ export default function ExplorePage() {
                 <p className="mt-5 max-w-2xl text-base leading-7 text-white/80">
                   “{featured.body}”
                 </p>
+                <div className="mt-6 flex items-center gap-3 text-sm text-white/80">
+                  <AnonymousAvatar
+                    variant={featured.author.avatar_variant}
+                    size="sm"
+                    className="bg-white/15 text-white"
+                  />
+                  <span className="font-semibold text-white">
+                    {featured.author.display_name}
+                  </span>
+                  <span>@{featured.author.username}</span>
+                </div>
               </Link>
               <div className="mt-8 flex flex-wrap items-center gap-3 border-t border-white/15 pt-5">
                 <button
@@ -310,7 +328,8 @@ export default function ExplorePage() {
                       key={thought.id}
                       thought={thought}
                       onToggle={toggleAction}
-                      onConnect={requestConnection}
+                onConnect={requestConnection}
+                onCommonGround={setCommonGroundThought}
                     />
                   ))}
               </div>
@@ -335,6 +354,13 @@ export default function ExplorePage() {
           </section>
         )}
       </main>
+      {commonGroundThought && (
+        <CommonGroundSheet
+          thought={commonGroundThought}
+          onClose={() => setCommonGroundThought(null)}
+          onConnect={requestConnection}
+        />
+      )}
     </div>
   );
 }
@@ -343,10 +369,12 @@ function ThoughtCard({
   thought,
   onToggle,
   onConnect,
+  onCommonGround,
 }: {
   thought: Thought;
   onToggle: (id: string, action: "relate" | "save") => void;
   onConnect: (id: string) => void;
+  onCommonGround: (thought: Thought) => void;
 }) {
   return (
     <article className="rounded-[22px] border border-[#292630]/10 bg-white p-5 transition hover:-translate-y-0.5 hover:shadow-[0_16px_34px_rgba(41,38,48,.08)] sm:p-6">
@@ -363,9 +391,26 @@ function ThoughtCard({
         <p className="mt-4 text-sm leading-6 text-[#5F5967]">
           “{thought.body}”
         </p>
-        <div className="mt-5 flex items-center gap-2 text-xs text-[#958F9B]">
+        <div className="mt-5 flex flex-wrap items-center gap-2 text-xs text-[#958F9B]">
           <AnonymousAvatar variant={thought.author.avatar_variant} size="sm" />
-          {thought.author.label}
+          <span className="font-semibold text-[#5F5967]">
+            {thought.author.display_name}
+          </span>
+          <span>@{thought.author.username}</span>
+          {thought.common_ground && (
+            <button
+              type="button"
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                onCommonGround(thought);
+              }}
+              title={`You both selected: ${thought.common_ground.shared_interests.join(", ")}`}
+              className="rounded-full bg-[#E9E1F1] px-2.5 py-1 font-semibold text-[#7454A6]"
+            >
+              {thought.common_ground.label}
+            </button>
+          )}
         </div>
       </Link>
       <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-[#292630]/10 pt-4">
@@ -409,5 +454,49 @@ function ThoughtCard({
         </button>
       </div>
     </article>
+  );
+}
+
+function CommonGroundSheet({
+  thought,
+  onClose,
+  onConnect,
+}: {
+  thought: Thought;
+  onClose: () => void;
+  onConnect: (id: string) => void;
+}) {
+  const common = thought.common_ground;
+  if (!common) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#292630]/35 p-3 sm:items-center">
+      <button type="button" aria-label="Close common ground" onClick={onClose} className="absolute inset-0 cursor-default" />
+      <section className="relative w-full max-w-lg rounded-[28px] bg-white p-6 shadow-[0_24px_80px_rgba(41,38,48,.24)] sm:p-8" role="dialog" aria-modal="true" aria-labelledby="common-ground-title">
+        <div className="flex items-start justify-between gap-5">
+          <div>
+            <p className="dashboard-kicker"><span />Your common ground</p>
+            <h2 id="common-ground-title" className="dashboard-display mt-3 text-3xl tracking-[-.06em]">You and {thought.author.display_name} have things in common.</h2>
+          </div>
+          <button type="button" onClick={onClose} className="rounded-full bg-[#F7F5F0] px-3 py-2 text-xs font-semibold text-[#6E6975]">Close</button>
+        </div>
+        <p className="mt-6 text-sm font-semibold text-[#7454A6]">{common.shared_count} shared {common.shared_count === 1 ? "interest" : "interests"}</p>
+        {common.shared_count ? (
+          <div className="mt-4 space-y-3">
+            {common.shared_interests.map((interest) => (
+              <div key={interest} className="rounded-2xl bg-[#F7F5F0] p-4">
+                <p className="font-semibold">{interest}</p>
+                <p className="mt-1 text-sm leading-6 text-[#6E6975]">You both selected {interest.toLowerCase()} as an interest.</p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="mt-4 rounded-2xl bg-[#F7F5F0] p-4 text-sm leading-6 text-[#6E6975]">You’re still discovering your common ground.</p>
+        )}
+        <div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+          <button type="button" onClick={onClose} className="rounded-full border border-[#292630]/10 px-5 py-3 text-sm font-semibold text-[#6E6975]">Keep exploring</button>
+          <button type="button" onClick={() => { onConnect(thought.id); onClose(); }} className="rounded-full bg-[#292630] px-5 py-3 text-sm font-semibold text-white">Connect</button>
+        </div>
+      </section>
+    </div>
   );
 }

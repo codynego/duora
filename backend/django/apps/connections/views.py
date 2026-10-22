@@ -102,6 +102,21 @@ class ConnectionThreadStartView(APIView):
         return Response({'data': {'id': str(thread.id)}}, status=status.HTTP_201_CREATED)
 
 
+class ConnectionBlockView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, connection_id):
+        connection = ConnectionRequest.objects.filter(id=connection_id).filter(Q(requester=request.user) | Q(recipient=request.user)).first()
+        if not connection:
+            return Response({'detail': 'Connection not found.'}, status=status.HTTP_404_NOT_FOUND)
+        other_id = connection.recipient_id if connection.requester_id == request.user.id else connection.requester_id
+        SafetyExclusion.objects.update_or_create(user=request.user, excluded_user_id=other_id, defaults={'reason': 'block'})
+        connection.status = ConnectionRequest.Status.BLOCKED
+        connection.responded_at = timezone.now()
+        connection.save(update_fields=('status', 'responded_at'))
+        return Response({'blocked': True})
+
+
 class ThreadsView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -159,6 +174,16 @@ class IdentityConsentView(APIView):
             other_id = connection.recipient_id if connection.requester_id == request.user.id else connection.requester_id
             data['thread_id'] = str(canonical_thread_for_users(request.user.id, other_id).id)
         return Response(data, status=status.HTTP_201_CREATED)
+
+    def delete(self, request, connection_id):
+        connection = ConnectionRequest.objects.filter(id=connection_id, status=ConnectionRequest.Status.ACCEPTED).filter(Q(requester=request.user) | Q(recipient=request.user)).first()
+        if not connection:
+            return Response({'detail': 'Connection not found.'}, status=status.HTTP_404_NOT_FOUND)
+        consent = IdentityConsent.objects.filter(connection_request=connection, user=request.user, revoked_at__isnull=True).first()
+        if consent:
+            consent.revoked_at = timezone.now()
+            consent.save(update_fields=('revoked_at',))
+        return Response({'revealed': False})
 
     def get(self, request, thread_id):
         thread = self._thread(thread_id, request.user)

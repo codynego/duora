@@ -22,6 +22,24 @@ class Question(models.Model):
         indexes = [models.Index(fields=('status', '-published_at'))]
 
 
+class DailyQuestionAssignment(models.Model):
+    class AssignmentType(models.TextChoices):
+        PERSONALIZED = 'personalized', 'Personalized'
+        SHARED = 'shared', 'Shared'
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='daily_question_assignments')
+    question = models.ForeignKey(Question, on_delete=models.PROTECT, related_name='daily_assignments')
+    assignment_date = models.DateField()
+    assigned_at = models.DateTimeField(auto_now_add=True)
+    answered_at = models.DateTimeField(null=True, blank=True)
+    assignment_type = models.CharField(max_length=16, choices=AssignmentType.choices, default=AssignmentType.PERSONALIZED)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=('user', 'assignment_date'), name='unique_daily_question_assignment')]
+        indexes = [models.Index(fields=('assignment_date', 'question'))]
+
+
 class Thought(models.Model):
     class ModerationStatus(models.TextChoices):
         PENDING = 'pending', 'Pending'

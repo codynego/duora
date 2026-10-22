@@ -3,10 +3,12 @@
 import Link from "next/link";
 import {
   ArrowRight,
+  Ban,
   Check,
   LockKeyhole,
   MessageCircle,
   ShieldCheck,
+  Undo2,
   UserRound,
   UsersRound,
   X,
@@ -121,6 +123,27 @@ export default function ConnectionsPage() {
     if (response.ok) await load();
   }
 
+  async function revokeReveal(id: string) {
+    const token = await getAccessToken();
+    if (!token) return;
+    const response = await fetch(`${api}/api/v1/connections/${id}/reveal/`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (response.ok) await load();
+  }
+
+  async function block(id: string) {
+    if (!window.confirm("Block this connection? Their thoughts and messages will be hidden from you.")) return;
+    const token = await getAccessToken();
+    if (!token) return;
+    const response = await fetch(`${api}/api/v1/connections/${id}/block/`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (response.ok) await load();
+  }
+
   const requests = requestView === "received" ? data.requests : data.invites;
   const incomingCount = data.requests.length;
   const activeThreads = useMemo(
@@ -185,7 +208,7 @@ export default function ConnectionsPage() {
             )}
             {tab === "chats" && <Chats threads={activeThreads} />}
             {tab === "people" && (
-              <People connections={data.connections} onReveal={reveal} />
+              <People connections={data.connections} onReveal={reveal} onRevoke={revokeReveal} onBlock={block} />
             )}
           </>
         )}
@@ -415,9 +438,13 @@ function Chats({ threads }: { threads: Thread[] }) {
 function People({
   connections,
   onReveal,
+  onRevoke,
+  onBlock,
 }: {
   connections: ConnectionItem[];
   onReveal: (id: string) => void;
+  onRevoke: (id: string) => void;
+  onBlock: (id: string) => void;
 }) {
   return (
     <section className="mt-6 rounded-[24px] border border-[#292630]/10 bg-white p-5 sm:p-8">
@@ -474,6 +501,10 @@ function People({
                     Choose to reveal
                   </button>
                 )}
+                {item.my_reveal_consented && (
+                  <button type="button" onClick={() => onRevoke(item.id)} className="inline-flex items-center gap-1.5 rounded-full border border-[#292630]/10 bg-white px-3 py-2 text-xs font-semibold text-[#6E6975]"><Undo2 className="h-3.5 w-3.5" />Revoke reveal</button>
+                )}
+                <button type="button" onClick={() => onBlock(item.id)} className="inline-flex items-center gap-1.5 rounded-full border border-[#F8E1E7] bg-[#FFF5F6] px-3 py-2 text-xs font-semibold text-[#9A3650]"><Ban className="h-3.5 w-3.5" />Block</button>
               </div>
             </article>
           ))}
