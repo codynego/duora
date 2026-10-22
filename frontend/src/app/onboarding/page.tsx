@@ -337,7 +337,7 @@ export default function Onboarding() {
                   <MessageCircle className="h-4 w-4" />
                 </div>
                 <h1 className="mt-10 max-w-2xl font-serif text-4xl leading-[.98] tracking-[-.05em] sm:text-6xl">
-                  {questionFor(selected)}
+                  {questionText || "Finding a question for you…"}
                 </h1>
                 <textarea
                   value={answer}
