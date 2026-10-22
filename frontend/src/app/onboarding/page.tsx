@@ -104,12 +104,18 @@ export default function Onboarding() {
     const body = (await response.json()) as {
       data?: { id: string; text: string; category: string }[];
     };
-    const preferred =
-      body.data?.find((question) => selected.includes(question.category)) ??
-      body.data?.[0];
-    if (preferred) {
-      setQuestionId(preferred.id);
-      setQuestionText(preferred.text);
+    const available = body.data ?? [];
+    const normalizeCategory = (value: string) =>
+      value.toLowerCase().replace(/&/g, "and").replace(/[^a-z0-9]+/g, " ").trim();
+    const selectedCategories = new Set(selected.map(normalizeCategory));
+    const relevant = available.filter((question) =>
+      selectedCategories.has(normalizeCategory(question.category)),
+    );
+    const pool = relevant.length ? relevant : available;
+    const chosen = pool[Math.floor(Math.random() * pool.length)];
+    if (chosen) {
+      setQuestionId(chosen.id);
+      setQuestionText(chosen.text);
     }
   }
 
