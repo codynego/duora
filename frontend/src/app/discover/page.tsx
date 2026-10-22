@@ -224,8 +224,8 @@ export default function DiscoverPage() {
   return (
     <div className="min-h-screen bg-[#F7F5F0] text-[#292630] md:pl-[232px]">
       <AppNav />
-      <main className="mx-auto max-w-4xl px-5 pb-28 pt-7 sm:px-8 sm:pt-12 md:pb-14">
-        <section className="mx-auto mt-20 max-w-3xl text-center sm:mt-24">
+      <main className="mx-auto max-w-4xl px-5 pb-28 pt-4 sm:px-8 sm:pt-8 md:pb-14">
+        <section className="mx-auto mt-10 max-w-3xl text-center sm:mt-14">
           <p className="dashboard-kicker justify-center">
             <span />
             {weekday.toUpperCase()} · DAILY MOMENTS
@@ -239,7 +239,7 @@ export default function DiscoverPage() {
         </section>
         <section
           id="daily-question"
-          className="mx-auto mt-12 max-w-3xl rounded-[26px] border border-[#E7E2EA] bg-white p-6 shadow-[0_18px_45px_rgba(41,38,48,.06)] sm:mt-16 sm:p-10"
+          className="mx-auto mt-8 max-w-3xl rounded-[26px] border border-[#E7E2EA] bg-white p-6 shadow-[0_18px_45px_rgba(41,38,48,.06)] sm:mt-12 sm:p-10"
         >
           <p className="text-xs font-bold uppercase tracking-[.16em] text-[#7454A6]">
             Today’s question
