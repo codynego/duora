@@ -128,29 +128,50 @@ export default function ExplorePage() {
       router.replace("/login");
       return;
     }
+    const previousThoughts = thoughts;
+    const previousFeatured = featuredThought;
+    const update = (thought: Thought) =>
+      thought.id !== thoughtId
+        ? thought
+        : {
+            ...thought,
+            viewer_related:
+              action === "relate" ? !thought.viewer_related : thought.viewer_related,
+            relate_count:
+              action === "relate"
+                ? Math.max(0, thought.relate_count + (thought.viewer_related ? -1 : 1))
+                : thought.relate_count,
+            viewer_saved:
+              action === "save" ? !thought.viewer_saved : thought.viewer_saved,
+          };
+    setThoughts((current) => current.map(update));
+    setFeaturedThought((current) => (current ? update(current) : current));
     const response = await fetch(
       `${api}/api/v1/social/thoughts/${thoughtId}/${action}/`,
       { method: "POST", headers: { Authorization: `Bearer ${token}` } },
     );
-    if (!response.ok) return;
+    if (!response.ok) {
+      setThoughts(previousThoughts);
+      setFeaturedThought(previousFeatured);
+      return;
+    }
     const body = await response.json();
-    setThoughts((current) =>
-      current.map((thought) =>
-        thought.id === thoughtId
-          ? {
-              ...thought,
-              viewer_related:
-                action === "relate" ? body.related : thought.viewer_related,
-              relate_count:
-                action === "relate" && typeof body.relate_count === "number"
-                  ? body.relate_count
-                  : thought.relate_count,
-              viewer_saved:
-                action === "save" ? body.saved : thought.viewer_saved,
-            }
-          : thought,
-      ),
-    );
+    const confirm = (thought: Thought) =>
+      thought.id !== thoughtId
+        ? thought
+        : {
+            ...thought,
+            viewer_related:
+              action === "relate" ? Boolean(body.related) : thought.viewer_related,
+            relate_count:
+              action === "relate" && typeof body.relate_count === "number"
+                ? body.relate_count
+                : thought.relate_count,
+            viewer_saved:
+              action === "save" ? Boolean(body.saved) : thought.viewer_saved,
+          };
+    setThoughts((current) => current.map(confirm));
+    setFeaturedThought((current) => (current ? confirm(current) : current));
   }
 
   async function requestConnection(thoughtId: string) {

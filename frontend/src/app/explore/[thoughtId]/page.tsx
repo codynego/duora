@@ -100,14 +100,28 @@ export default function DiscussionPage() {
   async function toggleRelate() {
     const token = await getAccessToken();
     if (!token || !thought) return;
+    const previousRelated = related;
+    const previousCount = thought.relate_count;
+    const nextRelated = !related;
+    setRelated(nextRelated);
+    setThought({
+      ...thought,
+      relate_count: Math.max(0, previousCount + (nextRelated ? 1 : -1)),
+    });
     const response = await fetch(
       `${api}/api/v1/social/thoughts/${thought.id}/relate/`,
       { method: "POST", headers: { Authorization: `Bearer ${token}` } },
     );
-    if (!response.ok) return;
+    if (!response.ok) {
+      setRelated(previousRelated);
+      setThought({ ...thought, relate_count: previousCount });
+      return;
+    }
     const body = await response.json();
     setRelated(Boolean(body.related));
-    setThought({ ...thought, relate_count: body.relate_count });
+    setThought((current) =>
+      current ? { ...current, relate_count: body.relate_count } : current,
+    );
   }
 
   async function postReply() {
