@@ -41,7 +41,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en-NG">
       <body className="min-h-screen bg-white text-dark-950 antialiased">
         {children}
         <PwaStartup />

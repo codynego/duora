@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -7,13 +7,12 @@
 :root { --ink: #281D32; --coral: #F05A78; --rose: #F7B8C7; --canvas: #ffffff; }
 
 html { scroll-behavior: smooth; }
-body { margin: 0; background: var(--canvas); color: var(--ink); font-family: 'DM Sans', ui-sans-serif, system-ui, sans-serif; }
+body { margin: 0; background: var(--canvas); color: var(--ink); font-family: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif; }
 * { box-sizing: border-box; }
 ::selection { background: #F7B8C7; color: #281D32; }
-.duora-site { font-family: 'DM Sans', ui-sans-serif, system-ui, sans-serif; }
-.duora-site .display-heading { font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; }
-.duora-site .font-serif { font-family: 'Instrument Serif', Georgia, serif; }
-.duora-site .font-mono { font-family: 'DM Mono', ui-monospace, monospace; }
+.duora-site { font-family: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif; }
+.duora-site .display-heading, .dashboard-display, .font-serif { font-family: 'Manrope', 'Geist', ui-sans-serif, sans-serif; font-weight: 800; }
+.duora-site .font-mono { font-family: 'Geist', ui-monospace, monospace; }
 .eyebrow { display: flex; align-items: center; gap: .55rem; color: #777381; font-size: .68rem; font-weight: 700; letter-spacing: .14em; line-height: 1; text-transform: uppercase; }
 .eyebrow-dot { display: inline-block; width: .45rem; height: .45rem; border-radius: 999px; background: #9B84F7; }
 .hero-grid { background-image: linear-gradient(rgba(23,22,34,.045) 1px, transparent 1px), linear-gradient(90deg, rgba(23,22,34,.045) 1px, transparent 1px); background-size: 72px 72px; }
@@ -45,8 +44,7 @@ body { margin: 0; background: var(--canvas); color: var(--ink); font-family: 'DM
 .auth-glow--two { bottom: -18rem; left: -12rem; background: radial-gradient(circle, rgba(217,243,107,.2), transparent 65%); }
 .duora-form-input { border: 1px solid rgba(23,22,34,.16); background: rgba(255,255,255,.68); color: #171622; transition: border-color 150ms ease, box-shadow 150ms ease, background-color 150ms ease; }
 .duora-form-input:focus { border-color: #9B84F7; background: #fff; box-shadow: 0 0 0 4px rgba(155,132,247,.14); }
-.dashboard-shell { font-family: 'DM Sans', ui-sans-serif, system-ui, sans-serif; }
-.dashboard-display { font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; }
+.dashboard-shell { font-family: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif; }
 .dashboard-kicker { display: flex; align-items: center; gap: .55rem; color: #7454A6; font-size: .68rem; font-weight: 700; letter-spacing: .14em; line-height: 1; text-transform: uppercase; }
 .dashboard-kicker > span { display: inline-block; width: .45rem; height: .45rem; border-radius: 999px; background: #7454A6; }
 .soft-shadow { box-shadow: 0 20px 50px rgba(40, 29, 50, .09); }
@@ -440,4 +438,4 @@ a[href]:focus-visible,
 /* Public entry screens share the homepage's paper canvas and editorial voice. */
 main.min-h-screen.bg-\[\#fffdfc\] { background: #F3F1EC !important; }
 main.min-h-screen.bg-\[\#fffdfc\] h1,
-main.min-h-screen.bg-\[\#fffdfc\] h2 { font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; line-height: .98; }
+main.min-h-screen.bg-\[\#fffdfc\] h2 { font-family: 'Manrope', 'Geist', ui-sans-serif, sans-serif; font-weight: 800; line-height: .98; }
