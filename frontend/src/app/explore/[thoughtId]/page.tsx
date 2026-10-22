@@ -180,11 +180,12 @@ export default function DiscussionPage() {
   return (
     <div className="min-h-screen bg-[#F7F5F0] text-[#292630] md:pl-[232px]">
       <AppNav />
-      {thought && !loading && (
-        <aside
-          className="fixed right-8 top-28 hidden w-72 rounded-[24px] border border-[#292630]/10 bg-white p-5 shadow-[0_18px_45px_rgba(41,38,48,.06)] lg:block"
+      <div className="mx-auto grid max-w-6xl grid-cols-1 gap-8 px-5 pb-28 pt-8 sm:px-8 sm:pt-12 md:pb-14 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
+        {thought && !loading && (
+          <aside
+          className="order-2 hidden rounded-[24px] border border-[#292630]/10 bg-white p-5 shadow-[0_18px_45px_rgba(41,38,48,.06)] lg:sticky lg:top-28 lg:col-start-2 lg:row-start-1 lg:block"
           aria-label="Explore different perspectives"
-        >
+          >
           <p className="dashboard-kicker">
             <span />
             Explore different perspectives
@@ -239,9 +240,9 @@ export default function DiscussionPage() {
               </button>
             </div>
           </div>
-        </aside>
-      )}
-      <main className="mx-auto max-w-3xl px-5 pb-28 pt-8 sm:px-8 sm:pt-12 md:pb-14">
+          </aside>
+        )}
+      <main className="order-1 min-w-0 lg:col-start-1 lg:row-start-1">
         <Link
           href="/explore"
           className="inline-flex items-center gap-2 text-sm font-semibold text-[#6E6975] hover:text-[#292630]"
@@ -414,6 +415,7 @@ export default function DiscussionPage() {
           </>
         ) : null}
       </main>
+      </div>
       {thought && showCommonGround && thought.common_ground && (
         <CommonGroundSheet
           thought={thought}
