@@ -54,6 +54,44 @@ type Reply = {
   };
   created_at: string;
 };
+
+type NestedReply = {
+  item: Reply;
+  depth: number;
+};
+
+function nestReplies(replies: Reply[]): NestedReply[] {
+  const children = new Map<string | null, Reply[]>();
+  for (const reply of replies) {
+    const siblings = children.get(reply.parent) ?? [];
+    siblings.push(reply);
+    children.set(reply.parent, siblings);
+  }
+
+  const nested: NestedReply[] = [];
+  function visit(parent: string | null, depth: number) {
+    for (const item of children.get(parent) ?? []) {
+      nested.push({ item, depth });
+      visit(item.id, Math.min(depth + 1, 2));
+    }
+  }
+  visit(null, 0);
+
+  // Keep an orphaned reply visible if its parent was removed or moderated.
+  for (const item of replies) {
+    if (!nested.some((entry) => entry.item.id === item.id)) {
+      nested.push({ item, depth: 0 });
+    }
+  }
+  return nested;
+}
+
+function replyNestingClass(depth: number) {
+  if (depth === 1) return "ml-4 border-l-2 border-[#E9E1F1] pl-3 sm:ml-5 sm:pl-3";
+  if (depth >= 2) return "ml-7 border-l-2 border-[#E9E1F1] pl-3 sm:ml-10 sm:pl-3";
+  return "";
+}
+
 const api = process.env.NEXT_PUBLIC_DUORA_API_URL ?? "http://127.0.0.1:8000";
 
 export default function DiscussionPage() {
@@ -209,6 +247,8 @@ export default function DiscussionPage() {
     focusReplyBox();
   }
 
+  const nestedReplies = nestReplies(replies);
+
   async function connect() {
     if (!thought) return;
     const token = await getAccessToken();
@@ -272,7 +312,7 @@ export default function DiscussionPage() {
       <div className="mx-auto grid max-w-none grid-cols-1 gap-8 px-5 pb-28 pt-8 sm:px-8 sm:pt-12 md:pb-14 lg:grid-cols-1 lg:gap-10 lg:pl-8 lg:pr-[404px] xl:pl-12">
         {thought && !loading && (
           <aside
-          className="order-2 hidden min-h-0 flex-col overflow-hidden rounded-l-[24px] border border-r-0 border-[#292630]/10 bg-white p-5 shadow-[0_18px_45px_rgba(41,38,48,.06)] lg:fixed lg:bottom-0 lg:right-0 lg:top-28 lg:z-20 lg:flex lg:h-[calc(100vh-7rem)] lg:w-[380px]"
+          className="order-2 hidden min-h-0 flex-col overflow-hidden rounded-l-[24px] border border-r-0 border-[#292630]/10 bg-white p-5 shadow-[0_18px_45px_rgba(41,38,48,.06)] lg:fixed lg:inset-y-0 lg:right-0 lg:z-20 lg:flex lg:h-screen lg:w-[380px]"
           aria-label="Different perspectives"
           >
           <p className="dashboard-kicker">
@@ -285,10 +325,10 @@ export default function DiscussionPage() {
           <div className="min-h-0 flex-1 overflow-y-auto pr-1">
           {replies.length ? (
             <div className="mt-5 space-y-3">
-              {replies.map((item) => (
+              {nestedReplies.map(({ item, depth }) => (
                 <article
                   key={item.id}
-                  className={`rounded-2xl bg-[#F7F5F0] p-2.5 ${item.parent ? "ml-4 border-l-2 border-[#E9E1F1]" : ""}`}
+                  className={`rounded-2xl bg-[#F7F5F0] p-2 ${replyNestingClass(depth)}`}
                 >
                   <div className="flex items-center gap-2 text-xs font-semibold text-[#7454A6]">
                     <AnonymousAvatar
@@ -465,10 +505,10 @@ export default function DiscussionPage() {
                 </div>
               </div>
               <div className="mt-6 space-y-4">
-                {replies.map((item) => (
+                {nestedReplies.map(({ item, depth }) => (
                   <article
                     key={item.id}
-                    className="rounded-[18px] border border-[#292630]/10 bg-white p-4"
+                    className={`rounded-[18px] border border-[#292630]/10 bg-white p-3 ${replyNestingClass(depth)}`}
                   >
                     <div className="flex items-center gap-2 text-xs font-semibold text-[#7454A6]">
                       <AnonymousAvatar
