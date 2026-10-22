@@ -488,13 +488,12 @@ function ThoughtCard({
           <MessageCircle className="h-3.5 w-3.5" />
           Reply
         </Link>
-        <button
-          type="button"
-          onClick={() => onConnect(thought.id)}
+        <Link
+          href={`/explore/${thought.id}`}
           className="inline-flex items-center gap-1.5 rounded-full bg-[#292630] px-3 py-2 text-xs font-semibold text-white"
         >
-          Discover them
-        </button>
+          Join <ArrowRight className="h-3.5 w-3.5" />
+        </Link>
         <button
           type="button"
           onClick={() => onToggle(thought.id, "save")}

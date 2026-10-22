@@ -69,6 +69,8 @@ export default function DiscussionPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [safetyNotice, setSafetyNotice] = useState("");
+  const [connectError, setConnectError] = useState("");
+  const [connecting, setConnecting] = useState(false);
   const [showCommonGround, setShowCommonGround] = useState(false);
 
   useEffect(() => {
@@ -168,12 +170,28 @@ export default function DiscussionPage() {
   async function connect() {
     if (!thought) return;
     const token = await getAccessToken();
-    if (!token) return;
-    const response = await fetch(
-      `${api}/api/v1/social/thoughts/${thought.id}/connect/`,
-      { method: "POST", headers: { Authorization: `Bearer ${token}` } },
-    );
-    if (response.ok) setSent(true);
+    if (!token) {
+      router.replace(`/login?next=${encodeURIComponent(`/explore/${thought.id}`)}`);
+      return;
+    }
+    setConnecting(true);
+    setConnectError("");
+    try {
+      const response = await fetch(
+        `${api}/api/v1/social/thoughts/${thought.id}/connect/`,
+        { method: "POST", headers: { Authorization: `Bearer ${token}` } },
+      );
+      const body = await response.json().catch(() => null);
+      if (!response.ok) {
+        setConnectError(body?.detail ?? "This connection request could not be sent.");
+        return;
+      }
+      setSent(true);
+    } catch {
+      setConnectError("This connection request could not be sent.");
+    } finally {
+      setConnecting(false);
+    }
   }
 
   async function safetyAction(action: "report" | "block" | "delete") {
@@ -362,10 +380,11 @@ export default function DiscussionPage() {
                 <button
                   type="button"
                   onClick={() => void connect()}
-                  className="inline-flex items-center gap-2 rounded-full bg-[#292630] px-4 py-2.5 text-sm font-semibold text-white"
+                  disabled={sent || connecting}
+                  className="inline-flex items-center gap-2 rounded-full bg-[#292630] px-4 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <UserRound className="h-4 w-4" />
-                  Discover this person
+                  {sent ? "Request sent" : connecting ? "Sending…" : "Discover this person"}
                 </button>
               </div>
               <div className="mt-5 flex flex-wrap gap-3 border-t border-[#292630]/10 pt-4 text-xs font-semibold text-[#958F9B]">
@@ -380,6 +399,7 @@ export default function DiscussionPage() {
               </div>
             </section>
             {safetyNotice && <p role="status" className="mt-4 rounded-2xl bg-[#DDE8D2] p-4 text-sm font-semibold text-[#496436]">{safetyNotice}</p>}
+            {connectError && <p role="alert" className="mt-4 rounded-2xl bg-[#F8E1E7] p-4 text-sm font-semibold text-[#9A3650]">{connectError}</p>}
             {sent && (
               <div className="mt-5 flex items-center gap-3 rounded-2xl bg-[#DDE8D2] p-4 text-sm font-semibold text-[#496436]">
                 <Check className="h-5 w-5" />
