@@ -10,6 +10,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.connections.models import ConnectionRequest
+from apps.accounts.notifications import notify
 from apps.moderation.models import Report, SafetyExclusion
 from .models import DailyQuestionAssignment, DiscussionReply, Question, ReplyReaction, SavedThought, Thought, ThoughtReaction
 from .serializers import QuestionSerializer, ReplyCreateSerializer, ReplySerializer, ThoughtCreateSerializer, ThoughtSerializer
@@ -359,6 +360,15 @@ class DiscussionReplyCreateView(APIView):
         parent_id = serializer.validated_data.get('parent_id')
         parent = thought.replies.filter(id=parent_id).first() if parent_id else None
         reply = DiscussionReply.objects.create(thought=thought, author=request.user, parent=parent, body=serializer.validated_data['body'], moderation_status=DiscussionReply.ModerationStatus.APPROVED)
+        notify(
+            recipient=thought.author,
+            actor=request.user,
+            kind='reply',
+            title='New reply to your thought',
+            body='Someone joined the conversation you started.',
+            href=f'/explore/{thought.id}',
+            target_id=thought.id,
+        )
         return Response({'data': ReplySerializer(reply, context={'request': request}).data}, status=status.HTTP_201_CREATED)
 
 

@@ -2,9 +2,13 @@
 
 import Link from "next/link";
 import { Bell, Compass, MessageCircle, Search, UserRound } from "lucide-react";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import AutoMatchRequestNotice from "@/components/AutoMatchRequestNotice";
 import { useCurrentUser } from "@/lib/current-user";
+import { getAccessToken } from "@/lib/auth";
+
+const api = process.env.NEXT_PUBLIC_DUORA_API_URL ?? "http://127.0.0.1:8000";
 
 const navigation = [
   { label: "Overview", href: "/home", icon: Compass },
@@ -31,13 +35,7 @@ export default function AppNav({ minimal = false }: { minimal?: boolean }) {
         </Link>
         <div className="flex items-center gap-3">
           {!minimal && (
-            <button
-              type="button"
-              aria-label="Notifications"
-              className="grid h-10 w-10 place-items-center rounded-full text-[#292630] transition hover:bg-[#E9E1F1]"
-            >
-              <Bell className="h-[18px] w-[18px]" strokeWidth={1.8} />
-            </button>
+            <NotificationBell />
           )}
           <Link
             href={user ? "/profile" : "/login"}
@@ -55,6 +53,9 @@ export default function AppNav({ minimal = false }: { minimal?: boolean }) {
         >
           Duora<span className="text-[#7454A6]">.</span>
         </Link>
+        <div className="mt-7 px-3">
+          <NotificationBell />
+        </div>
         <nav className="mt-12 space-y-1" aria-label="Primary navigation">
           {navigation.map(({ label, href, icon: Icon }) => {
             const active =
@@ -140,5 +141,82 @@ function SparkleMark() {
     <span className="grid h-9 w-9 place-items-center rounded-full bg-white/70 text-[#7454A6]">
       <span className="text-lg">✦</span>
     </span>
+  );
+}
+
+type NotificationItem = {
+  id: string;
+  title: string;
+  body: string;
+  href: string;
+  read: boolean;
+};
+
+function NotificationBell() {
+  const { user, ready } = useCurrentUser();
+  const [open, setOpen] = useState(false);
+  const [items, setItems] = useState<NotificationItem[]>([]);
+  const [unread, setUnread] = useState(0);
+
+  useEffect(() => {
+    if (!ready || !user) return;
+    async function load() {
+      const token = await getAccessToken();
+      if (!token) return;
+      const response = await fetch(`${api}/api/v1/auth/notifications/`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) return;
+      const body = await response.json();
+      setItems(body.data ?? []);
+      setUnread(body.unread_count ?? 0);
+    }
+    void load();
+  }, [ready, user]);
+
+  async function markRead(id?: string) {
+    const token = await getAccessToken();
+    if (!token) return;
+    await fetch(
+      `${api}/api/v1/auth/notifications/${id ? `${id}/read/` : "read-all/"}`,
+      { method: "POST", headers: { Authorization: `Bearer ${token}` } },
+    );
+    if (id) {
+      setItems((current) => current.map((item) => item.id === id ? { ...item, read: true } : item));
+      setUnread((current) => Math.max(0, current - 1));
+    } else {
+      setItems((current) => current.map((item) => ({ ...item, read: true })));
+      setUnread(0);
+    }
+  }
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        aria-label={unread ? `${unread} unread notifications` : "Notifications"}
+        onClick={() => setOpen((current) => !current)}
+        className="relative grid h-10 w-10 place-items-center rounded-full text-[#292630] transition hover:bg-[#E9E1F1]"
+      >
+        <Bell className="h-[18px] w-[18px]" strokeWidth={1.8} />
+        {unread > 0 && <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-[#9A3650]" />}
+      </button>
+      {open && (
+        <div className="absolute right-0 top-12 z-50 w-[min(360px,calc(100vw-32px))] rounded-2xl border border-[#292630]/10 bg-white p-3 shadow-[0_18px_45px_rgba(41,38,48,.14)]">
+          <div className="flex items-center justify-between px-2 py-1">
+            <p className="text-sm font-bold">Notifications</p>
+            {unread > 0 && <button type="button" onClick={() => void markRead()} className="text-xs font-semibold text-[#7454A6]">Mark all read</button>}
+          </div>
+          <div className="mt-2 max-h-80 overflow-y-auto">
+            {items.length ? items.map((item) => (
+              <Link key={item.id} href={item.href} onClick={() => void markRead(item.id)} className={`block rounded-xl p-3 transition hover:bg-[#F7F5F0] ${item.read ? "" : "bg-[#F1EAF6]"}`}>
+                <p className="text-xs font-bold text-[#292630]">{item.title}</p>
+                <p className="mt-1 text-xs leading-5 text-[#6E6975]">{item.body}</p>
+              </Link>
+            )) : <p className="px-2 py-6 text-center text-xs text-[#958F9B]">No notifications yet.</p>}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

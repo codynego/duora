@@ -14,6 +14,7 @@ from apps.moderation.models import SafetyExclusion
 from apps.rooms.models import Room, RoomMembership, RoomNextStep
 from apps.social.models import IdentityConsent
 from apps.accounts.identity import get_or_create_anonymous_identity
+from apps.accounts.notifications import notify
 
 
 class ConnectionsView(APIView):
@@ -56,6 +57,15 @@ class ConnectionsView(APIView):
             from apps.rooms.models import Room
             room = Room.objects.filter(code=data['room_code']).first()
         connection = ConnectionRequest.objects.create(requester=request.user, recipient_id=data['recipient_id'], source=data['source'], room=room, last_experience=data.get('last_experience', ''))
+        notify(
+            recipient=connection.recipient,
+            actor=request.user,
+            kind='connection_request',
+            title='Someone wants to connect',
+            body='A Duora identity sent you a connection request.',
+            href='/connections',
+            target_id=connection.id,
+        )
         return Response(ConnectionRequestSerializer(connection, context={'request': request}).data, status=status.HTTP_201_CREATED)
 
 
@@ -74,6 +84,16 @@ class ConnectionDecisionView(APIView):
         connection.status = ConnectionRequest.Status.ACCEPTED if decision == 'accept' else ConnectionRequest.Status.DECLINED
         connection.responded_at = timezone.now()
         connection.save(update_fields=('status', 'responded_at'))
+        if connection.status == ConnectionRequest.Status.ACCEPTED:
+            notify(
+                recipient=connection.requester,
+                actor=request.user,
+                kind='connection_accepted',
+                title='Your connection request was accepted',
+                body='You can now continue getting to know each other.',
+                href='/connections',
+                target_id=connection.id,
+            )
         data = ConnectionRequestSerializer(connection, context={'request': request}).data
         if connection.source == ConnectionRequest.Source.AUTO_MATCH and connection.status == ConnectionRequest.Status.ACCEPTED:
             other_id = connection.recipient_id if connection.requester_id == request.user.id else connection.requester_id
@@ -172,6 +192,15 @@ class IdentityConsentView(APIView):
         data = {'ready': ready}
         if ready:
             other_id = connection.recipient_id if connection.requester_id == request.user.id else connection.requester_id
+            notify(
+                recipient_id=other_id,
+                actor=request.user,
+                kind='identity_reveal',
+                title='Your identity reveal is mutual',
+                body='You both chose to reveal your identities.',
+                href='/connections',
+                target_id=connection.id,
+            )
             data['thread_id'] = str(canonical_thread_for_users(request.user.id, other_id).id)
         return Response(data, status=status.HTTP_201_CREATED)
 
@@ -214,6 +243,16 @@ class IdentityConsentView(APIView):
         message = ThreadMessage.objects.create(thread=thread, sender=request.user, body=body)
         thread.last_message_at = message.created_at
         thread.save(update_fields=('last_message_at',))
+        other_id = thread.user_two_id if thread.user_one_id == request.user.id else thread.user_one_id
+        notify(
+            recipient_id=other_id,
+            actor=request.user,
+            kind='message',
+            title='New private message',
+            body='Someone in your private connection sent you a message.',
+            href='/connections',
+            target_id=thread.id,
+        )
         identity = get_or_create_anonymous_identity(request.user)
         return Response({'data': {'id': str(message.id), 'body': message.body, 'sender_id': message.sender_id, 'is_you': True, 'sender': {'name': identity.display_name, 'username': identity.username, 'avatar_variant': identity.avatar_variant, 'initial': identity.display_name[:1].upper()}, 'created_at': message.created_at}}, status=status.HTTP_201_CREATED)
 

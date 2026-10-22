@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -8,6 +9,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
 from .identity import get_or_create_anonymous_identity, regenerate_anonymous_avatar, regenerate_anonymous_identity
+from .models import Notification
 from .serializers import MeSerializer, MeUpdateSerializer, RegisterSerializer
 
 User = get_user_model()
@@ -118,3 +120,36 @@ class PasswordResetRequestView(APIView):
     def post(self, request):
         # Deliberately generic: never reveal whether an address exists.
         return Response({'detail': 'If an account matches that email, reset instructions will be sent.'}, status=status.HTTP_202_ACCEPTED)
+
+
+class NotificationListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        notifications = Notification.objects.filter(recipient=request.user)[:40]
+        return Response({
+            'data': [
+                {
+                    'id': str(item.id),
+                    'kind': item.kind,
+                    'title': item.title,
+                    'body': item.body,
+                    'href': item.href,
+                    'read': item.read_at is not None,
+                    'created_at': item.created_at,
+                }
+                for item in notifications
+            ],
+            'unread_count': Notification.objects.filter(recipient=request.user, read_at__isnull=True).count(),
+        })
+
+
+class NotificationReadView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, notification_id=None):
+        queryset = Notification.objects.filter(recipient=request.user, read_at__isnull=True)
+        if notification_id:
+            queryset = queryset.filter(id=notification_id)
+        updated = queryset.update(read_at=timezone.now())
+        return Response({'read': updated})
