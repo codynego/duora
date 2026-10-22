@@ -392,7 +392,7 @@ class DiscussionReplyCreateView(APIView):
             kind='reply',
             title='New reply to your thought',
             body='Someone joined the conversation you started.',
-            href=f'/explore/{thought.id}',
+            href=f'/moments/{thought.id}',
             target_id=thought.id,
         )
         return Response({'data': ReplySerializer(reply, context={'request': request}).data}, status=status.HTTP_201_CREATED)

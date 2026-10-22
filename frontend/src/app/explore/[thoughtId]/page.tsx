@@ -66,6 +66,7 @@ export default function DiscussionPage() {
   const [replyTarget, setReplyTarget] = useState<Reply | null>(null);
   const [sent, setSent] = useState(false);
   const [related, setRelated] = useState(false);
+  const [replyReactionPending, setReplyReactionPending] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [safetyNotice, setSafetyNotice] = useState("");
@@ -152,21 +153,48 @@ export default function DiscussionPage() {
 
   async function toggleReplyRelate(item: Reply) {
     if (!thought) return;
+    if (replyReactionPending[item.id]) return;
     const token = await getAccessToken();
     if (!token) return;
-    const response = await fetch(
-      `${api}/api/v1/social/thoughts/${thought.id}/replies/${item.id}/relate/`,
-      { method: "POST", headers: { Authorization: `Bearer ${token}` } },
-    );
-    if (!response.ok) return;
-    const body = await response.json();
+    const nextRelated = !item.viewer_related;
+    const nextCount = Math.max(0, item.relate_count + (nextRelated ? 1 : -1));
+    setReplyReactionPending((current) => ({ ...current, [item.id]: true }));
     setReplies((current) =>
       current.map((replyItem) =>
         replyItem.id === item.id
-          ? { ...replyItem, viewer_related: Boolean(body.related), relate_count: body.relate_count }
+          ? { ...replyItem, viewer_related: nextRelated, relate_count: nextCount }
           : replyItem,
       ),
     );
+    try {
+      const response = await fetch(
+        `${api}/api/v1/social/thoughts/${thought.id}/replies/${item.id}/relate/`,
+        { method: "POST", headers: { Authorization: `Bearer ${token}` } },
+      );
+      if (!response.ok) throw new Error("Reply reaction failed");
+      const body = await response.json();
+      setReplies((current) =>
+        current.map((replyItem) =>
+          replyItem.id === item.id
+            ? { ...replyItem, viewer_related: Boolean(body.related), relate_count: body.relate_count }
+            : replyItem,
+        ),
+      );
+    } catch {
+      setReplies((current) =>
+        current.map((replyItem) =>
+          replyItem.id === item.id
+            ? { ...replyItem, viewer_related: item.viewer_related, relate_count: item.relate_count }
+            : replyItem,
+        ),
+      );
+    } finally {
+      setReplyReactionPending((current) => {
+        const next = { ...current };
+        delete next[item.id];
+        return next;
+      });
+    }
   }
 
   function focusReplyBox() {
@@ -260,7 +288,7 @@ export default function DiscussionPage() {
               {replies.map((item) => (
                 <article
                   key={item.id}
-                  className={`rounded-2xl bg-[#F7F5F0] p-3 ${item.parent ? "ml-4 border-l-2 border-[#E9E1F1]" : ""}`}
+                  className={`rounded-2xl bg-[#F7F5F0] p-2.5 ${item.parent ? "ml-4 border-l-2 border-[#E9E1F1]" : ""}`}
                 >
                   <div className="flex items-center gap-2 text-xs font-semibold text-[#7454A6]">
                     <AnonymousAvatar
@@ -269,11 +297,11 @@ export default function DiscussionPage() {
                     />
                     <span>@{item.author.username}</span>
                   </div>
-                  <p className="mt-2 line-clamp-3 text-xs leading-5 text-[#6E6975]">
+                  <p className="mt-1.5 line-clamp-3 text-xs leading-[1.125rem] text-[#6E6975]">
                     “{item.body}”
                   </p>
-                  <div className="mt-3 flex items-center gap-3 text-[11px] font-semibold text-[#958F9B]">
-                    <button type="button" onClick={() => void toggleReplyRelate(item)} className={`inline-flex items-center gap-1 ${item.viewer_related ? "text-[#7454A6]" : "hover:text-[#7454A6]"}`}>
+                  <div className="mt-2.5 flex items-center gap-3 text-[11px] font-semibold text-[#958F9B]">
+                    <button type="button" onClick={() => void toggleReplyRelate(item)} disabled={Boolean(replyReactionPending[item.id])} aria-busy={Boolean(replyReactionPending[item.id])} className={`inline-flex items-center gap-1 transition ${item.viewer_related ? "text-[#7454A6]" : "hover:text-[#7454A6]"} disabled:cursor-wait disabled:opacity-60`}>
                       <Heart className="h-3.5 w-3.5" fill={item.viewer_related ? "currentColor" : "none"} />
                       {item.relate_count}
                     </button>
@@ -440,7 +468,7 @@ export default function DiscussionPage() {
                 {replies.map((item) => (
                   <article
                     key={item.id}
-                    className="rounded-[20px] border border-[#292630]/10 bg-white p-5"
+                    className="rounded-[18px] border border-[#292630]/10 bg-white p-4"
                   >
                     <div className="flex items-center gap-2 text-xs font-semibold text-[#7454A6]">
                       <AnonymousAvatar
@@ -449,11 +477,11 @@ export default function DiscussionPage() {
                       />
                       @{item.author.username}
                     </div>
-                    <p className="mt-4 text-sm leading-7 text-[#5F5967]">
+                    <p className="mt-3 text-sm leading-6 text-[#5F5967]">
                       “{item.body}”
                     </p>
-                    <div className="mt-4 flex items-center gap-4 text-xs font-semibold text-[#7454A6]">
-                      <button type="button" onClick={() => void toggleReplyRelate(item)} className="inline-flex items-center gap-1.5">
+                    <div className="mt-3 flex items-center gap-4 text-xs font-semibold text-[#7454A6]">
+                      <button type="button" onClick={() => void toggleReplyRelate(item)} disabled={Boolean(replyReactionPending[item.id])} aria-busy={Boolean(replyReactionPending[item.id])} className="inline-flex items-center gap-1.5 transition disabled:cursor-wait disabled:opacity-60">
                         <Heart className="h-3.5 w-3.5" fill={item.viewer_related ? "currentColor" : "none"} />{item.relate_count}
                       </button>
                       <button type="button" onClick={() => startReply(item)}>Reply</button>
