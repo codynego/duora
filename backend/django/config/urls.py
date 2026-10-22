@@ -15,4 +15,5 @@ urlpatterns = [
     path('api/v1/safety/', include('apps.moderation.urls')),
     path('api/v1/connections/', include('apps.connections.urls')),
     path('api/v1/rooms/', include('apps.rooms.urls')),
+    path('api/v1/social/', include('apps.social.urls')),
 ]

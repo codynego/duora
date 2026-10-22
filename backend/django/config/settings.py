@@ -26,6 +26,7 @@ INSTALLED_APPS = [
     'apps.matching',
     'apps.connections',
     'apps.moderation',
+    'apps.social',
 ]
 
 MIDDLEWARE = [

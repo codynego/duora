@@ -7,25 +7,25 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://duorah.vercel.app';
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
-  title: 'Duorah — Make Every Connection More Interesting',
-  description: 'A mobile-first relationship entertainment platform. Play interactive romance games, send private links to crushes, and turn chemistry into banter.',
-  applicationName: 'Duorah',
+  title: 'Duora — Meet through minds. Connect by choice.',
+  description: 'Discover real people through the things they think, the answers they give, and the conversations they start.',
+  applicationName: 'Duora',
   icons: { icon: '/icon.svg', apple: '/icon-192.svg' },
   appleWebApp: {
     capable: true,
-    title: 'Duorah',
+    title: 'Duora',
     statusBarStyle: 'black-translucent',
   },
   openGraph: {
-    title: 'Duorah — Make Every Connection More Interesting',
-    description: 'More ways to flirt, discover each other, and create meaningful connection.',
+    title: 'Duora — Meet through minds. Connect by choice.',
+    description: 'Discover real people through thoughts, questions, and conversations.',
     type: 'website',
-    siteName: 'Duorah',
+    siteName: 'Duora',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Duorah — Make Every Connection More Interesting',
-    description: 'Shared experiences that turn chemistry into conversation.',
+    title: 'Duora — Meet through minds. Connect by choice.',
+    description: 'Your next meaningful conversation could start with a single thought.',
   },
 };
 

@@ -1,84 +1,83 @@
 'use client';
 
-import { ArrowRight, CalendarDays, HeartHandshake, MessageCircle, Play, Sparkles, Users } from 'lucide-react';
-import Navbar from '@/components/Navbar';
+import { ArrowUpRight, ChevronDown, Eye, MessageCircle, Sparkles } from 'lucide-react';
 import { useCurrentUser } from '@/lib/current-user';
+import Navbar from '@/components/Navbar';
 
-const ways = [
-  { title: 'Send a private experience.', text: 'Pick an activity, share one link, and give the two of you a natural way to begin.', icon: HeartHandshake },
-  { title: 'Join a small live room.', text: 'Meet people through a shared game or topic, not a blank profile or an endless feed.', icon: Users },
-  { title: 'Let the activity carry it.', text: 'A prompt, question, or game takes the pressure off the first message and gives everyone a way in.', icon: MessageCircle },
-  { title: 'Choose your kind of night.', text: 'Play a round, make something together, plan a date, or turn a quiet evening into a small challenge.', icon: Play },
-  { title: 'Keep talking after.', text: 'When you connect, continue the conversation and come back to the same person without starting over.', icon: CalendarDays },
+const steps = [
+  ['01', 'Answer a question', 'A small prompt gives people a way into the parts of themselves they do not usually lead with.'],
+  ['02', 'Notice a mind', 'Explore anonymous answers. Follow the ones that feel familiar, surprising, or worth thinking about.'],
+  ['03', 'Open a conversation', 'Relate, challenge, or ask more. If the feeling is mutual, choose together whether to reveal yourselves.'],
 ];
 
-const experiences = [
-  ['Open Conversation', 'Choose a topic and give everyone in the room a clear place to begin.'],
-  ['Guess My Answer', 'Predict each other’s answers, then see where you match and where you do not.'],
-  ['Truth or Dare', 'Keep it playful, choose your level, and pass whenever something is not for you.'],
-  ['Build a Story', 'Add one sentence at a time and create a story no one person could make alone.'],
-  ['Plan Something Together', 'Compare time, budget, and mood until an idea becomes a real plan.'],
-];
-
-const stages = [
-  ['Someone new', 'Join a small room with a shared activity, so meeting people feels less like performing for a feed.'],
-  ['Someone on your mind', 'Send a private invitation when a plain “hey” is not quite enough.'],
-  ['Your partner or friend', 'Play a round, make a plan, or turn an ordinary night into something you remember.'],
-  ['Your own pace', 'Browse, join, invite, or leave. You decide what feels right and when you are done.'],
+const notes = [
+  { text: 'I take time to get comfortable around people. It does not mean I do not want to talk.', tag: 'quietly honest', tone: 'note-lilac' },
+  { text: 'I think being understood is sometimes more intimate than being liked.', tag: 'worth sitting with', tone: 'note-citrus' },
+  { text: 'The best conversations leave you a little different than they found you.', tag: 'a good question', tone: 'note-peach' },
 ];
 
 export default function HomePage() {
   const { user, ready } = useCurrentUser();
-  const startHref = ready && user ? '/home' : '/login';
+  const startHref = ready && user ? '/home' : '/signup';
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-white text-dark-950">
+    <div className="duora-site min-h-screen overflow-x-hidden bg-[#F3F1EC] text-[#171622]">
       <Navbar />
       <main>
-        <section className="relative isolate overflow-hidden px-5 pb-20 pt-16 sm:px-8 sm:pb-28 sm:pt-24">
-          <div className="absolute -right-28 top-4 -z-10 h-[31rem] w-[31rem] rounded-full bg-[#FFF0F3]" />
-          <div className="absolute left-[8%] top-[54%] -z-10 h-32 w-32 rounded-full bg-[#FFF8DC]" />
-          <div className="mx-auto grid max-w-7xl items-center gap-14 lg:grid-cols-[1.05fr_.95fr] lg:gap-20">
-            <div className="max-w-2xl">
-              <p className="section-label">Private experiences and small live rooms</p>
-              <h1 className="mt-5 text-[3.2rem] font-bold leading-[1.02] tracking-[-.065em] text-dark-950 sm:text-7xl">Better conversations start with something to do together.</h1>
-              <p className="mt-7 max-w-xl text-base leading-8 text-[#6F6470] sm:text-lg">Choose a game, prompt, or plan. Invite someone you know or join a small room—then keep talking when the connection clicks.</p>
-              <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-                <a href={startHref} className="inline-flex items-center justify-center gap-2 rounded-full bg-spark-coral px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-[#d94767]">Start a private experience <ArrowRight className="h-4 w-4" /></a>
-                <a href="#experiences" className="inline-flex items-center justify-center rounded-full border border-[#281D32]/15 px-6 py-3.5 text-sm font-semibold text-dark-950 transition hover:border-spark-coral hover:text-spark-coral">Explore experiences</a>
+        <section className="hero-grid relative isolate overflow-hidden px-5 pb-20 pt-16 sm:px-8 sm:pb-28 sm:pt-24">
+          <div className="hero-orbit hero-orbit--one" />
+          <div className="hero-orbit hero-orbit--two" />
+          <div className="mx-auto grid max-w-7xl items-center gap-16 lg:grid-cols-[.9fr_1.1fr] lg:gap-14">
+            <div className="relative z-10 max-w-2xl">
+              <p className="eyebrow"><span className="eyebrow-dot" />A different kind of discovery</p>
+              <h1 className="display-heading mt-6 max-w-[680px] text-[3.55rem] leading-[.94] tracking-[-.07em] sm:text-[5.8rem]">You don’t know who you’ll connect with<span className="text-[#9B84F7]">.</span></h1>
+              <p className="mt-7 max-w-xl text-lg leading-8 text-[#666372] sm:text-xl">And that’s the interesting part. Discover people through the things they think, the answers they give, and the conversations they start.</p>
+              <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center">
+                <a href={startHref} className="button-primary group inline-flex items-center justify-center gap-3 rounded-full bg-[#171622] px-6 py-4 text-sm font-semibold text-white">Discover your first thought <ArrowUpRight className="h-4 w-4 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5" /></a>
+                <a href="#how-it-works" className="inline-flex items-center justify-center gap-2 px-5 py-4 text-sm font-semibold text-[#5f5b69] hover:text-[#171622]">See how it works <ChevronDown className="h-4 w-4" /></a>
               </div>
-              <p className="mt-6 text-sm text-[#6F6470]">Private invitations, small live rooms, and conversations that can continue after.</p>
+              <p className="mt-6 text-xs font-medium tracking-[.02em] text-[#85818c]">Free to join · Anonymous to start · Real people, real connections</p>
             </div>
-            <div className="relative mx-auto w-full max-w-[490px] rounded-[32px] border border-[#281D32]/10 bg-white p-4 soft-shadow sm:p-5">
-              <div className="rounded-[22px] bg-[#FFF7F2] p-5 sm:p-7">
-                <div className="flex items-center justify-between text-xs font-semibold text-[#6F6470]"><span className="rounded-full bg-white px-3 py-1.5">Private experience</span><span>2 people · 8 min</span></div>
-                <p className="mt-10 text-sm font-semibold text-spark-coral">GUESS MY ANSWER</p>
-                <h2 className="mt-2 text-3xl font-bold tracking-[-.05em] text-dark-950">What small thing makes you feel genuinely looked after?</h2>
-                <div className="mt-8 grid grid-cols-2 gap-3"><button className="rounded-2xl border border-spark-coral bg-white p-4 text-left text-sm font-semibold text-dark-950 shadow-sm">When they remember the little things <span className="mt-1 block text-xs font-normal text-[#6F6470]">Your answer</span></button><button className="rounded-2xl border border-[#281D32]/10 bg-white p-4 text-left text-sm font-semibold text-dark-950">When they make time for me</button></div>
-                <div className="mt-8 flex items-center gap-2 text-xs text-[#6F6470]"><span className="h-2 w-2 rounded-full bg-spark-coral" />Answers reveal together</div>
+
+            <div className="thought-orbit relative mx-auto h-[450px] w-full max-w-[580px] sm:h-[540px]">
+              <div className="orbit-ring orbit-ring--outer" />
+              <div className="orbit-ring orbit-ring--inner" />
+              <div className="thought-card thought-card--main absolute left-1/2 top-1/2 z-10 w-[min(88%,370px)] -translate-x-1/2 -translate-y-1/2 rounded-[28px] bg-[#171622] p-6 text-white sm:p-8">
+                <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-[.16em] text-[#B9A7FF]"><span>Anonymous thought</span><Eye className="h-4 w-4" /></div>
+                <p className="mt-10 font-serif text-[1.75rem] leading-[1.08] tracking-[-.035em] sm:text-[2.15rem]">What’s something you wish people understood about you?</p>
+                <div className="mt-10 flex items-center justify-between border-t border-white/15 pt-4 text-xs text-white/55"><span>Someone out there answered this</span><span className="flex items-center gap-1.5"><MessageCircle className="h-3.5 w-3.5" /> 12 thoughts</span></div>
               </div>
+              <div className="orbit-satellite satellite--one"><span className="satellite-dot" />curious minds</div>
+              <div className="orbit-satellite satellite--two"><Sparkles className="h-3.5 w-3.5" />no profiles needed</div>
+              <div className="orbit-satellite satellite--three">stay a little longer<span className="satellite-dot satellite-dot--peach" /></div>
             </div>
           </div>
         </section>
 
-        <section id="discover" className="border-y border-[#281D32]/8 bg-[#FFF7F2] px-5 py-20 sm:px-8 sm:py-28">
-          <div className="mx-auto grid max-w-7xl gap-12 lg:grid-cols-[.8fr_1.2fr] lg:gap-20">
-          <div><p className="section-label">Why Duorah</p><h2 className="mt-4 text-4xl font-bold tracking-[-.06em] sm:text-5xl">Getting started is easier when you have a shared reason to show up.</h2></div>
-            <div className="max-w-2xl text-lg leading-8 text-[#6F6470]"><p>A blank chat makes the first message feel bigger than it needs to be. A shared activity gives both people something real to react to from the start.</p><p className="mt-5">Duorah gives a room, a relationship, or an ordinary evening just enough structure to get moving—without making it feel scripted.</p><p className="mt-7 font-semibold text-dark-950">Not another feed to keep up with. A place to actually spend time together.</p></div>
+        <section id="how-it-works" className="border-y border-[#171622]/10 bg-[#E9E6DF] px-5 py-20 sm:px-8 sm:py-28">
+          <div className="mx-auto max-w-7xl">
+            <div className="grid gap-10 lg:grid-cols-[.8fr_1.2fr] lg:gap-24">
+              <div><p className="eyebrow"><span className="eyebrow-dot" />The world behind every answer</p><h2 className="display-heading mt-5 max-w-md text-4xl leading-[.98] tracking-[-.06em] sm:text-6xl">Every thought reveals a little. Never everything.</h2></div>
+              <div className="grid gap-0 border-t border-[#171622]/15 sm:grid-cols-3">{steps.map(([number, title, text]) => <article key={number} className="border-b border-[#171622]/15 py-7 sm:border-b-0 sm:border-r sm:px-6 sm:first:pl-0 sm:last:border-r-0"><span className="font-mono text-xs font-semibold tracking-[.14em] text-[#9B84F7]">{number}</span><h3 className="mt-8 text-xl font-semibold tracking-[-.04em]">{title}</h3><p className="mt-3 text-sm leading-6 text-[#666372]">{text}</p></article>)}</div>
+            </div>
           </div>
         </section>
 
-        <section className="px-5 py-20 sm:px-8 sm:py-28"><div className="mx-auto max-w-7xl"><div className="max-w-2xl"><p className="section-label">What you can do here</p><h2 className="mt-4 text-4xl font-bold tracking-[-.06em] sm:text-5xl">Make the time you spend together feel more like time together.</h2></div><div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{ways.map(({ title, text, icon: Icon }, i) => <article key={title} className={`rounded-3xl border p-7 transition hover:-translate-y-1 hover:shadow-lg ${i === 0 ? 'border-[#F7B8C7] bg-[#FFF0F3]' : 'border-[#281D32]/10 bg-white'}`}><Icon className="h-5 w-5 text-spark-coral" strokeWidth={1.8}/><h3 className="mt-8 text-xl font-bold tracking-[-.04em]">{title}</h3><p className="mt-3 text-sm leading-6 text-[#6F6470]">{text}</p></article>)}</div></div></section>
+        <section id="discover" className="px-5 py-20 sm:px-8 sm:py-32">
+          <div className="mx-auto max-w-7xl">
+            <div className="flex flex-col justify-between gap-6 sm:flex-row sm:items-end"><div><p className="eyebrow"><span className="eyebrow-dot" />A small window into someone</p><h2 className="display-heading mt-5 max-w-xl text-4xl leading-[.98] tracking-[-.06em] sm:text-6xl">Explore what people don’t usually say out loud.</h2></div><p className="max-w-xs text-sm leading-6 text-[#777381] sm:pb-1">Examples shown here are imagined. Duora is new, and the first real thoughts will come from you.</p></div>
+            <div className="mt-14 grid gap-4 md:grid-cols-3">{notes.map((note) => <article key={note.text} className={`thought-note ${note.tone} rounded-[24px] p-6 sm:p-7`}><div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-[.16em] text-[#666372]"><span>Example thought</span><span>↗</span></div><p className="mt-16 min-h-[125px] font-serif text-[1.7rem] leading-[1.05] tracking-[-.035em] text-[#171622]">“{note.text}”</p><div className="mt-8 flex items-center justify-between border-t border-[#171622]/15 pt-4 text-xs font-medium text-[#666372]"><span>{note.tag}</span><span className="flex items-center gap-1.5"><MessageCircle className="h-3.5 w-3.5" /> Join the thought</span></div></article>)}</div>
+            <p className="mt-8 text-sm font-medium text-[#666372]">Explore anonymous thoughts · Join conversations · Find the people you didn’t know you were looking for.</p>
+          </div>
+        </section>
 
-        <section id="experiences" className="px-5 py-20 sm:px-8 sm:py-28"><div className="mx-auto max-w-7xl rounded-[36px] bg-dark-950 px-6 py-14 text-white sm:px-12 sm:py-20"><div className="max-w-2xl"><p className="section-label text-spark-rose">Pick the kind of moment</p><h2 className="mt-4 text-4xl font-bold tracking-[-.06em] sm:text-5xl">Choose what you want to do together.</h2><p className="mt-5 text-base leading-7 text-[#d7cfda]">Each experience gives you a shared starting point—and leaves room for the conversation to go somewhere real.</p></div><div className="mt-12 grid gap-3 md:grid-cols-2">{experiences.map(([title, text], i) => <a href="/signup" key={title} className="group rounded-2xl border border-white/12 bg-white/5 p-5 transition hover:border-spark-rose hover:bg-white/10"><div className="flex items-start justify-between gap-4"><span className="text-sm font-semibold text-spark-rose">0{i + 1}</span><ArrowRight className="h-4 w-4 text-spark-rose transition group-hover:translate-x-1" /></div><h3 className="mt-8 text-xl font-bold tracking-[-.04em]">{title}</h3><p className="mt-2 text-sm leading-6 text-[#d7cfda]">{text}</p></a>)}</div><a href="/signup" className="mt-10 inline-flex items-center gap-2 rounded-full bg-spark-coral px-6 py-3.5 text-sm font-semibold transition hover:bg-[#d94767]">Browse experiences <ArrowRight className="h-4 w-4" /></a></div></section>
+        <section className="bg-[#171622] px-5 py-20 text-white sm:px-8 sm:py-28">
+          <div className="mx-auto grid max-w-7xl gap-12 lg:grid-cols-[.8fr_1.2fr] lg:gap-24"><div><p className="eyebrow text-[#B9A7FF]"><span className="eyebrow-dot bg-[#B9A7FF]" />Before the face</p><h2 className="display-heading mt-5 max-w-lg text-4xl leading-[.98] tracking-[-.06em] sm:text-6xl">Not every connection starts with a face.</h2></div><div className="grid gap-0 sm:grid-cols-3 sm:pt-8">{[['Think freely.', 'Share without putting your identity on display.'], ['Stay curious.', 'Meet perspectives beyond your usual circle.'], ['Connect by choice.', 'Private connections require mutual agreement.']].map(([title, text]) => <div key={title} className="border-t border-white/15 py-6 sm:px-5 sm:first:pl-0"><h3 className="text-lg font-semibold tracking-[-.03em]">{title}</h3><p className="mt-3 text-sm leading-6 text-white/55">{text}</p></div>)}</div></div>
+        </section>
 
-        <section id="how-it-works" className="px-5 py-20 sm:px-8 sm:py-28"><div className="mx-auto max-w-7xl"><div className="max-w-2xl"><p className="section-label">How it works</p><h2 className="mt-4 text-4xl font-bold tracking-[-.06em] sm:text-5xl">From invitation to real conversation, in three steps.</h2></div><div className="mt-14 grid gap-10 md:grid-cols-3">{[['01', 'Choose an experience', 'Pick a conversation, game, creation, or plan that fits the time you want to have.'], ['02', 'Invite or join', 'Send a private link to someone you know, or enter a small live room built around the same activity.'], ['03', 'Keep what clicks', 'Play, answer, react, and keep chatting with the people you want to see again.']].map(([number, title, text]) => <div key={number} className="border-t border-[#281D32]/15 pt-5"><span className="text-sm font-bold text-spark-coral">{number}</span><h3 className="mt-8 text-xl font-bold tracking-[-.04em]">{title}</h3><p className="mt-3 text-sm leading-6 text-[#6F6470]">{text}</p></div>)}</div><p className="mt-14 text-lg font-semibold tracking-[-.03em] text-dark-950">No endless scrolling. Just a more natural way to spend time with people.</p></div></section>
-
-        <section className="bg-[#FFF7F2] px-5 py-20 sm:px-8 sm:py-28"><div className="mx-auto max-w-7xl"><div className="max-w-2xl"><p className="section-label">Made for real relationships</p><h2 className="mt-4 text-4xl font-bold tracking-[-.06em] sm:text-5xl">However you arrive, you decide how the connection grows.</h2></div><div className="mt-12 grid gap-x-12 gap-y-9 md:grid-cols-2">{stages.map(([title, text]) => <div key={title} className="flex gap-4"><span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-spark-coral"/><div><h3 className="text-lg font-bold tracking-[-.03em]">{title}</h3><p className="mt-2 text-sm leading-6 text-[#6F6470]">{text}</p></div></div>)}</div></div></section>
-
-        <section id="start" className="px-5 py-24 text-center sm:px-8 sm:py-32"><div className="mx-auto max-w-2xl"><Sparkles className="mx-auto h-6 w-6 text-spark-coral" strokeWidth={1.7}/><h2 className="mt-7 text-4xl font-bold tracking-[-.06em] sm:text-6xl">Start the next conversation with a shared moment.</h2><p className="mt-5 text-lg leading-8 text-[#6F6470]">Choose an experience, invite someone in, or join a room with something worth doing together.</p><a href={startHref} className="mt-9 inline-flex items-center gap-2 rounded-full bg-spark-coral px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-[#d94767]">Start an experience <ArrowRight className="h-4 w-4" /></a></div></section>
+        <section className="px-5 py-24 text-center sm:px-8 sm:py-36"><div className="mx-auto max-w-3xl"><div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#D9F36B] text-[#171622]"><Sparkles className="h-5 w-5" /></div><h2 className="display-heading mt-8 text-5xl leading-[.94] tracking-[-.07em] sm:text-7xl">Someone out there might understand you<span className="text-[#9B84F7]">.</span></h2><p className="mx-auto mt-6 max-w-lg text-lg leading-8 text-[#666372]">You don’t need the perfect profile or the perfect opening line. Sometimes, all it takes is one honest answer.</p><a href={startHref} className="button-primary group mt-9 inline-flex items-center gap-3 rounded-full bg-[#171622] px-6 py-4 text-sm font-semibold text-white">Find your first connection <ArrowUpRight className="h-4 w-4 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5" /></a><p className="mt-5 text-xs text-[#85818c]">Your next meaningful conversation could start with a single thought.</p></div></section>
       </main>
-      <footer className="border-t border-[#281D32]/10 px-5 py-10 sm:px-8"><div className="mx-auto flex max-w-7xl flex-col justify-between gap-5 text-sm text-[#6F6470] sm:flex-row sm:items-center"><div><span className="font-bold tracking-[-.05em] text-dark-950">Duorah</span><span className="ml-3">More ways to spend time together.</span></div><div className="flex gap-5"><a href="#discover">Why Duorah</a><a href="#experiences">Experiences</a><a href="#">Privacy</a><span>© Duorah</span></div></div></footer>
+      <footer className="border-t border-[#171622]/10 px-5 py-9 sm:px-8"><div className="mx-auto flex max-w-7xl flex-col justify-between gap-5 text-sm text-[#777381] sm:flex-row sm:items-center"><div><span className="font-serif text-xl tracking-[-.06em] text-[#171622]">Duora</span><span className="ml-3">Meet through minds. Connect by choice.</span></div><div className="flex flex-wrap gap-5"><a href="#discover" className="hover:text-[#171622]">Explore</a><a href="#how-it-works" className="hover:text-[#171622]">How it works</a><a href="/login" className="hover:text-[#171622]">Log in</a><span>© Duora</span></div></div></footer>
     </div>
   );
 }

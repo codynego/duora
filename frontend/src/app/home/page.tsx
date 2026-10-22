@@ -1,350 +1,83 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import {
-  ArrowRight,
-  CalendarDays,
-  Clock3,
-  HeartHandshake,
-  LockKeyhole,
-  Sparkles,
-  UsersRound,
-} from "lucide-react";
-import AppNav from "@/components/AppNav";
-import AutoMatchPanel from "@/components/AutoMatchPanel";
-import { getAccessToken } from "@/lib/auth";
-import { useCurrentUser } from "@/lib/current-user";
+import Link from 'next/link';
+import { ArrowRight, Check, Compass, Eye, MessageCircle, Sparkles } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import AppNav from '@/components/AppNav';
+import { getAccessToken } from '@/lib/auth';
+import { useCurrentUser } from '@/lib/current-user';
 
-type Room = {
-  id: string;
-  code: string;
-  title: string;
-  description: string;
-  tone: string;
-  max_members: number;
-  members_count: number;
-  duration_minutes: number;
-  starts_at: string;
-  is_discovery_room: boolean;
-};
-const api = process.env.NEXT_PUBLIC_DUORA_API_URL ?? "http://127.0.0.1:8000";
-
-function timeLabel(value: string) {
-  const date = new Date(value);
-  return Number.isNaN(date.getTime())
-    ? "Schedule pending"
-    : new Intl.DateTimeFormat("en", {
-        weekday: "short",
-        hour: "numeric",
-        minute: "2-digit",
-      }).format(date);
-}
+type Question = { id: string; text: string; category: string };
+const api = process.env.NEXT_PUBLIC_DUORA_API_URL ?? 'http://127.0.0.1:8000';
+const fallbackQuestion: Question = { id: '', text: 'What’s something you wish people understood about you?', category: 'Relationships' };
+const collections = [
+  ['Relationships', 'Love, trust, and attraction', 'bg-[#E9E1F1]'],
+  ['Deep conversations', 'Ideas worth sitting with', 'bg-[#DDE8D2]'],
+  ['Fun & everyday life', 'Small joys and strong opinions', 'bg-[#F5DCCB]'],
+];
 
 export default function Home() {
   const { user, ready } = useCurrentUser();
   const router = useRouter();
-  const [rooms, setRooms] = useState<Room[]>([]);
-  const [myRooms, setMyRooms] = useState<Room[]>([]);
-  const [recommendedRoom, setRecommendedRoom] = useState<Room | null>(null);
-  const [recommendationReason, setRecommendationReason] = useState('');
-  const [roomsReady, setRoomsReady] = useState(false);
+  const [question, setQuestion] = useState<Question>(fallbackQuestion);
+  const [answer, setAnswer] = useState('');
+  const [published, setPublished] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     if (!ready || !user) return;
-    async function load() {
+    async function loadQuestion() {
       try {
-        const publicResponse = await fetch(`${api}/api/v1/rooms/`, {
-          headers: { Accept: "application/json" },
-        });
-        if (publicResponse.ok) setRooms(await publicResponse.json());
         const token = await getAccessToken();
-        if (token) {
-          const mineResponse = await fetch(`${api}/api/v1/rooms/mine/`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          const body = await mineResponse.json();
-          if (mineResponse.ok && Array.isArray(body.data))
-            setMyRooms(body.data);
-          const recommendationResponse = await fetch(`${api}/api/v1/discovery/recommendation/`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          const recommendationBody = await recommendationResponse.json();
-          if (recommendationResponse.ok && recommendationBody.data) {
-            setRecommendedRoom(recommendationBody.data);
-            setRecommendationReason(recommendationBody.reason ?? 'Matches your saved preferences.');
-          }
+        const response = await fetch(`${api}/api/v1/social/questions/`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+        if (response.ok) {
+          const body = await response.json() as { data?: Question[] };
+          if (body.data?.[0]) setQuestion(body.data[0]);
         }
-      } finally {
-        setRoomsReady(true);
-      }
+      } finally { setLoading(false); }
     }
-    void load();
+    void loadQuestion();
   }, [ready, user]);
 
-  useEffect(() => {
-    if (ready && !user) router.replace("/login");
-  }, [ready, router, user]);
+  useEffect(() => { if (ready && !user) router.replace('/login'); }, [ready, router, user]);
 
-  if (!ready || !user)
-    return <div className="min-h-screen bg-[#fffdfc]" aria-busy="true" />;
+  async function publishThought() {
+    if (!answer.trim() || !question.id) return;
+    const token = await getAccessToken();
+    if (!token) { router.replace('/login'); return; }
+    setSaving(true); setError('');
+    try {
+      const response = await fetch(`${api}/api/v1/social/thoughts/`, { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ question_id: question.id, body: answer.trim() }) });
+      if (!response.ok) throw new Error('Your thought could not be shared. Try again.');
+      setPublished(true);
+      setAnswer('');
+    } catch (reason) { setError(reason instanceof Error ? reason.message : 'Your thought could not be shared.'); } finally { setSaving(false); }
+  }
 
-  const greeting = `Good evening, ${user.display_name}.`;
+  if (!ready || !user) return <div className="min-h-screen bg-[#F7F5F0]" aria-busy="true" />;
+
+  const firstName = user.display_name?.split(' ')[0] || 'there';
   return (
-    <div className="min-h-screen bg-[#fffdfc] text-dark-950 md:pl-[244px]">
+    <div className="dashboard-shell min-h-screen bg-[#F7F5F0] text-[#292630] md:pl-[232px]">
       <AppNav />
-      <main className="mx-auto max-w-7xl px-5 pb-28 pt-10 sm:px-8 sm:pt-14 md:pb-14">
-        <section className="grid items-end gap-5 md:grid-cols-[1fr_auto]">
-          <div>
-            <p className="section-label">Home</p>
-            <h1 className="mt-3 text-4xl font-bold tracking-[-.06em] sm:text-5xl">
-              {greeting}
-            </h1>
-            <p className="mt-3 max-w-xl text-base leading-7 text-[#6F6470]">
-              Choose a shared experience, find a small room, or pick up where
-              you left off.
-            </p>
+      <main className="mx-auto max-w-7xl px-5 pb-28 pt-8 sm:px-8 sm:pt-12 md:pb-14">
+        <header className="flex items-end justify-between gap-6"><div><p className="dashboard-kicker"><span />Your space to begin</p><h1 className="dashboard-display mt-4 text-5xl leading-[.92] tracking-[-.07em] sm:text-7xl">Good morning, {firstName}<span className="text-[#7454A6]">.</span></h1><p className="mt-5 max-w-xl text-base leading-7 text-[#6E6975]">A question can take you somewhere unexpected.</p></div><Link href="/discover" className="hidden items-center gap-2 text-sm font-semibold text-[#7454A6] hover:text-[#553781] sm:inline-flex">Explore thoughts <ArrowRight className="h-4 w-4" /></Link></header>
+
+        <section className="mt-10 grid gap-5 lg:grid-cols-[1.18fr_.82fr]">
+          <div className={`dashboard-question relative overflow-hidden rounded-[24px] p-6 sm:p-9 ${published ? 'bg-[#DDE8D2]' : 'bg-[#292630] text-white'}`}>
+            <div className="absolute -right-16 -top-20 h-56 w-56 rounded-full border border-[#BCA9D2]/30" /><div className="absolute -right-6 -top-10 h-36 w-36 rounded-full border border-[#BCA9D2]/25" />
+            {published ? <><div className="relative z-10 flex h-full min-h-[350px] flex-col justify-between"><div><span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/70 text-[#4F713D]"><Check className="h-5 w-5" /></span><p className="mt-9 text-xs font-bold uppercase tracking-[.16em] text-[#4F713D]">Your thought is out there</p><h2 className="dashboard-display mt-4 max-w-xl text-5xl leading-[.95] tracking-[-.06em] text-[#292630] sm:text-6xl">That was worth sharing.</h2><p className="mt-4 max-w-md text-sm leading-6 text-[#52634A]">Now see what other people are thinking about the same kinds of things.</p></div><Link href="/discover" className="mt-8 inline-flex w-fit items-center gap-2 rounded-full bg-[#292630] px-5 py-3 text-sm font-semibold text-white">Explore related thoughts <ArrowRight className="h-4 w-4" /></Link></div></> : <><div className="relative z-10 flex items-center justify-between text-[10px] font-semibold uppercase tracking-[.16em] text-[#B9A7C9]"><span>Today’s question</span><span className="flex items-center gap-1.5 text-white/45"><Eye className="h-3.5 w-3.5" />Anonymous to other users</span></div><h2 className="dashboard-display relative z-10 mt-12 max-w-2xl text-4xl leading-[.98] tracking-[-.055em] sm:text-6xl">{question.text}</h2><p className="relative z-10 mt-5 text-sm text-white/55">You can share as much or as little as you want.</p><textarea value={answer} onChange={(event) => setAnswer(event.target.value)} maxLength={500} disabled={loading || saving} placeholder="Write your answer..." aria-label="Your anonymous answer" className="relative z-10 mt-8 min-h-28 w-full resize-none rounded-2xl border border-white/15 bg-white/10 p-4 text-sm leading-6 text-white outline-none placeholder:text-white/35 focus:border-[#B9A7C9] focus:ring-4 focus:ring-[#B9A7C9]/15" /><div className="relative z-10 mt-3 flex items-center justify-between text-xs text-white/40"><span>{answer.length}/500</span><span>Nothing public about your identity</span></div><div className="relative z-10 mt-5 flex flex-col gap-3 sm:flex-row sm:items-center"><button type="button" onClick={() => void publishThought()} disabled={!answer.trim() || saving || !question.id} className="inline-flex w-fit items-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-bold text-[#292630] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-45">{saving ? 'Sharing…' : 'Share my thought'} <ArrowRight className="h-4 w-4" /></button><span className="text-xs text-white/40">You can skip this and explore first.</span></div>{error && <p role="alert" className="relative z-10 mt-4 text-sm text-[#F4B5C5]">{error}</p>}</>}
           </div>
-          <Link
-            href="/onboarding"
-            className="inline-flex items-center gap-2 text-sm font-semibold text-spark-coral hover:text-[#d94767]"
-          >
-            Personalize your recommendations <ArrowRight className="h-4 w-4" />
-          </Link>
+          <aside className="rounded-[24px] border border-[#292630]/10 bg-white p-6 sm:p-8"><div className="flex items-center justify-between"><span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#E9E1F1] text-[#7454A6]"><Sparkles className="h-5 w-5" /></span><span className="text-xs font-semibold text-[#958F9B]">A gentle place to start</span></div><h2 className="dashboard-display mt-10 text-4xl leading-[.98] tracking-[-.055em]">The best conversations rarely start with a perfect line.</h2><p className="mt-4 text-sm leading-6 text-[#6E6975]">They start with a thought that gives someone else a way in.</p><div className="mt-9 border-t border-[#292630]/10 pt-5"><p className="flex items-center gap-2 text-sm font-semibold"><MessageCircle className="h-4 w-4 text-[#7454A6]" />No profile performance required.</p><p className="mt-2 text-xs leading-5 text-[#958F9B]">Answer honestly. Stay anonymous. Decide what happens next.</p></div></aside>
         </section>
 
-        <section className="mt-10 grid gap-5 lg:grid-cols-2">
-          <Link
-            href="/experiences/create?mode=private"
-            className="group rounded-[28px] bg-dark-950 p-7 text-white transition hover:-translate-y-1 hover:shadow-xl sm:p-9"
-          >
-            <div className="flex items-start justify-between">
-              <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10">
-                <HeartHandshake className="h-5 w-5 text-spark-rose" />
-              </span>
-              <ArrowRight className="h-5 w-5 text-spark-rose transition group-hover:translate-x-1" />
-            </div>
-            <p className="mt-12 text-sm font-semibold text-spark-rose">
-              WITH SOMEONE YOU KNOW
-            </p>
-            <h2 className="mt-2 text-3xl font-bold tracking-[-.055em]">
-              Invite someone in.
-            </h2>
-            <p className="mt-3 max-w-sm text-sm leading-6 text-[#d7cfda]">
-              Choose a shared experience, then send one private link to a
-              friend, date, partner, or someone you want to know better.
-            </p>
-            <span className="mt-7 inline-flex rounded-full bg-spark-coral px-4 py-2.5 text-sm font-semibold">
-              Choose an experience
-            </span>
-          </Link>
-          <Link
-            href="/discover"
-            className="group rounded-[28px] border border-[#281D32]/10 bg-[#FFF7F2] p-7 transition hover:-translate-y-1 hover:shadow-xl sm:p-9"
-          >
-            <div className="flex items-start justify-between">
-              <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white">
-                <UsersRound className="h-5 w-5 text-spark-coral" />
-              </span>
-              <ArrowRight className="h-5 w-5 text-spark-coral transition group-hover:translate-x-1" />
-            </div>
-            <p className="mt-12 text-sm font-semibold text-spark-coral">
-              MEET THROUGH SOMETHING SHARED
-            </p>
-            <h2 className="mt-2 text-3xl font-bold tracking-[-.055em]">
-              Find a room.
-            </h2>
-            <p className="mt-3 max-w-sm text-sm leading-6 text-[#6F6470]">
-              Browse a small, guided experience. You decide whether it feels
-              right before joining.
-            </p>
-            <span className="mt-7 inline-flex rounded-full border border-[#281D32]/15 bg-white px-4 py-2.5 text-sm font-semibold">
-              Browse rooms
-            </span>
-          </Link>
-        </section>
+        <section className="mt-16"><div className="flex items-end justify-between gap-4"><div><p className="dashboard-kicker"><span />In the mood for something else?</p><h2 className="dashboard-display mt-3 text-4xl leading-[.98] tracking-[-.06em] sm:text-5xl">Explore beyond today’s prompt.</h2></div><Link href="/discover" className="hidden items-center gap-2 text-sm font-semibold text-[#7454A6] sm:inline-flex">See Explore <Compass className="h-4 w-4" /></Link></div><div className="mt-7 grid gap-4 sm:grid-cols-3">{collections.map(([title, description, color]) => <Link href={`/discover?category=${encodeURIComponent(title)}`} key={title} className={`group rounded-[20px] ${color} p-6 transition hover:-translate-y-1 hover:shadow-[0_18px_35px_rgba(41,38,48,.09)]`}><div className="flex items-start justify-between"><span className="text-xs font-bold uppercase tracking-[.14em] text-[#5F5967]">Collection</span><ArrowRight className="h-4 w-4 text-[#7454A6] transition group-hover:translate-x-1" /></div><h3 className="mt-12 text-xl font-semibold tracking-[-.04em]">{title}</h3><p className="mt-2 text-sm leading-6 text-[#5F5967]">{description}</p></Link>)}</div></section>
 
-        <div className="mt-6"><AutoMatchPanel /></div>
-
-        {user && (
-          <section className="mt-16">
-            <div className="flex items-end justify-between gap-4">
-              <div>
-                <p className="section-label">Your rooms</p>
-                <h2 className="mt-3 text-3xl font-bold tracking-[-.055em]">
-                  Continue something you started.
-                </h2>
-              </div>
-              <Link
-                href="/experiences"
-                className="text-sm font-semibold text-spark-coral"
-              >
-                All experiences
-              </Link>
-            </div>
-            {myRooms.length ? (
-              <RoomList rooms={myRooms.slice(0, 3)} mine />
-            ) : (
-              <div className="mt-6 rounded-[28px] border border-dashed border-dark-950/15 bg-white px-6 py-8">
-                <p className="font-bold">You have not created a room yet.</p>
-                <p className="mt-2 text-sm text-[#6F6470]">
-                  Start with a private invitation or publish a small room for
-                  others to discover.
-                </p>
-              </div>
-            )}
-          </section>
-        )}
-
-        {recommendedRoom && (
-          <section className="mt-16 rounded-[28px] bg-dark-950 p-7 text-white sm:p-9">
-            <div className="flex flex-col justify-between gap-6 sm:flex-row sm:items-end">
-              <div>
-                <p className="section-label text-spark-rose">Picked for you</p>
-                <h2 className="mt-3 text-3xl font-bold tracking-[-.055em]">A room that fits your pace.</h2>
-                <p className="mt-2 max-w-xl text-sm leading-6 text-white/65">{recommendationReason}</p>
-              </div>
-              <Link href={`/rooms/${recommendedRoom.code}`} className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-spark-coral px-5 py-3 text-sm font-semibold text-white">
-                Review room <ArrowRight className="h-4 w-4" />
-              </Link>
-            </div>
-            <div className="mt-7 border-t border-white/10 pt-5">
-              <p className="text-xs font-bold uppercase tracking-[0.14em] text-spark-rose">{recommendedRoom.tone}</p>
-              <h3 className="mt-2 text-2xl font-bold tracking-[-.04em]">{recommendedRoom.title}</h3>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-white/65">{recommendedRoom.description}</p>
-            </div>
-          </section>
-        )}
-
-        <section className="mt-16">
-          <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-            <div>
-              <p className="section-label">Discover rooms</p>
-              <h2 className="mt-3 text-3xl font-bold tracking-[-.055em]">
-                A good place to begin.
-              </h2>
-              <p className="mt-2 text-sm text-[#6F6470]">
-                Live rooms and scheduled experiences from the Duorah community.
-              </p>
-            </div>
-            <Link
-              href="/discover"
-              className="text-sm font-semibold text-spark-coral"
-            >
-              See all rooms
-            </Link>
-          </div>
-          {!roomsReady ? (
-            <div className="mt-7 h-48 animate-pulse rounded-[28px] bg-dark-950/5" />
-          ) : rooms.length ? (
-            <RoomList rooms={rooms.slice(0, 3)} />
-          ) : (
-            <div className="mt-7 rounded-[28px] border border-dashed border-dark-950/15 bg-white px-6 py-10 text-center">
-              <UsersRound className="mx-auto h-6 w-6 text-spark-coral" />
-              <p className="mt-3 font-bold">
-                No public rooms are open right now.
-              </p>
-              <p className="mt-2 text-sm text-[#6F6470]">
-                Create one for a future time, or check back when the next
-                experience is scheduled.
-              </p>
-            </div>
-          )}
-        </section>
-
-        <section className="mt-16 grid gap-5 lg:grid-cols-[1.3fr_.7fr]">
-          <div className="rounded-[28px] border border-[#281D32]/10 bg-white p-7 sm:p-9">
-            <div className="flex items-center gap-3">
-              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#FFF0F3]">
-                <Sparkles className="h-4 w-4 text-spark-coral" />
-              </span>
-              <div>
-                <p className="text-sm font-semibold">Start with a shape</p>
-                <p className="text-xs text-[#6F6470]">
-                  Pick a format before you pick the people.
-                </p>
-              </div>
-            </div>
-            <h2 className="mt-9 max-w-lg text-3xl font-bold tracking-[-.055em]">
-              You do not need a perfect opening line.
-            </h2>
-            <p className="mt-3 max-w-xl text-sm leading-6 text-[#6F6470]">
-              A prompt, game, or shared plan gives everyone something real to
-              respond to.
-            </p>
-            <Link
-              href={user ? "/experiences/create" : "/signup"}
-              className="mt-7 inline-flex items-center gap-2 rounded-full bg-spark-coral px-5 py-3 text-sm font-semibold text-white"
-            >
-              Choose an experience <ArrowRight className="h-4 w-4" />
-            </Link>
-          </div>
-          <aside className="rounded-[28px] bg-[#F7B8C7] p-7">
-            <CalendarDays className="h-5 w-5 text-[#7a2640]" />
-            <p className="mt-8 text-sm font-semibold text-[#7a2640]">
-              PRIVATE BY DEFAULT
-            </p>
-            <h3 className="mt-2 text-2xl font-bold tracking-[-.05em] text-dark-950">
-              You set the pace.
-            </h3>
-            <p className="mt-3 text-sm leading-6 text-[#704457]">
-              Invite one person, host a room, or simply look around. There is no
-              feed and no pressure to perform.
-            </p>
-          </aside>
-        </section>
-        <p className="mt-10 flex items-center gap-2 text-xs text-[#6F6470]">
-          <LockKeyhole className="h-3.5 w-3.5" />
-          Your choices and room preferences are private. You decide who can
-          continue a conversation.
-        </p>
+        <section className="mt-16 grid gap-5 lg:grid-cols-[1fr_.7fr]"><div className="rounded-[24px] border border-[#292630]/10 bg-white p-6 sm:p-8"><div className="flex items-center justify-between"><div><p className="dashboard-kicker"><span />Your activity</p><h2 className="dashboard-display mt-3 text-3xl tracking-[-.05em]">Keep the thread going.</h2></div><MessageCircle className="h-5 w-5 text-[#7454A6]" /></div><div className="mt-8 rounded-2xl bg-[#F7F5F0] p-5"><p className="text-sm font-semibold">Your activity will appear here.</p><p className="mt-2 text-sm leading-6 text-[#6E6975]">Replies to your thoughts and discussions you follow will stay together in one quiet place.</p><Link href="/connections" className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-[#7454A6]">Open Connections <ArrowRight className="h-4 w-4" /></Link></div></div><aside className="rounded-[24px] bg-[#7454A6] p-6 text-white sm:p-8"><p className="text-xs font-bold uppercase tracking-[.16em] text-[#E9E1F1]">Remember</p><h2 className="dashboard-display mt-10 text-4xl leading-[.98] tracking-[-.055em]">Curiosity is enough reason to look around.</h2><p className="mt-4 text-sm leading-6 text-white/70">No streaks. No pressure. Just a place to find a thought that stays with you.</p><Link href="/discover" className="mt-8 inline-flex items-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-bold text-[#292630]">Go to Explore <ArrowRight className="h-4 w-4" /></Link></aside></section>
       </main>
-    </div>
-  );
-}
-
-function RoomList({ rooms, mine = false }: { rooms: Room[]; mine?: boolean }) {
-  return (
-    <div className="mt-7 grid gap-4 lg:grid-cols-3">
-      {rooms.map((room) => (
-        <article
-          key={room.id}
-          className="rounded-3xl border border-[#281D32]/10 bg-white p-5 soft-shadow"
-        >
-          <div className="flex items-center justify-between">
-            <span className="rounded-full bg-[#fff0f3] px-2.5 py-1 text-xs font-bold text-spark-coral">
-              {room.tone}
-            </span>
-            <span className="flex items-center gap-1 text-xs text-[#6F6470]">
-              <Clock3 className="h-3.5 w-3.5" />
-              {timeLabel(room.starts_at)}
-            </span>
-          </div>
-          <h3 className="mt-7 text-xl font-bold tracking-[-.04em]">
-            {room.title}
-          </h3>
-          <p className="mt-2 line-clamp-2 text-sm leading-6 text-[#6F6470]">
-            {room.description}
-          </p>
-          <div className="mt-6 flex items-center justify-between border-t border-[#281D32]/8 pt-4">
-            <span className="text-xs font-medium text-[#6F6470]">
-              {room.members_count}/{room.max_members} people ·{" "}
-              {room.duration_minutes} min
-            </span>
-            <Link
-              href={
-                mine && !room.is_discovery_room
-                  ? `/rooms/private/${room.id}`
-                  : `/rooms/${room.code}`
-              }
-              className="rounded-full bg-[#FFF0F3] px-3 py-1.5 text-xs font-semibold text-spark-coral"
-            >
-              View room
-            </Link>
-          </div>
-        </article>
-      ))}
     </div>
   );
 }

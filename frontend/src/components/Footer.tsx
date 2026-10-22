@@ -76,7 +76,7 @@ export default function Footer() {
         </div>
 
         <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
-          <p>© {new Date().getFullYear()} Duorah. Make every connection more interesting.</p>
+          <p>© {new Date().getFullYear()} Duora. Meet through minds. Connect by choice.</p>
           <p className="flex items-center gap-1">
             <span>Crafted with</span>
             <Heart className="w-3.5 h-3.5 text-spark-coral fill-spark-coral" />

@@ -1,63 +1,92 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowLeft, ArrowRight, Check, HeartHandshake, MessageCircle, Sparkles, UsersRound } from 'lucide-react';
-import { useState } from 'react';
+import { ArrowLeft, ArrowRight, Check, Eye, MessageCircle, Sparkles } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getAccessToken } from '@/lib/auth';
 
-const goalOptions = [
-  ['Meet someone new', 'Join small guided rooms and start with a shared experience.', UsersRound],
-  ['Start something with someone', 'Send a private experience to a person already on your mind.', HeartHandshake],
-  ['Find better conversations', 'Keep it light, social, and pressure-free.', MessageCircle],
+const interestOptions = [
+  ['Relationships', 'The people we choose and the ways we show up'],
+  ['Friendship', 'Finding your people, at your own pace'],
+  ['Business & ambition', 'Ideas, work, momentum, and what drives us'],
+  ['Personal growth', 'Becoming, unlearning, and starting again'],
+  ['Deep conversations', 'Questions that stay with you'],
+  ['Fun & everyday life', 'Small joys, strong opinions, and ordinary stories'],
 ];
-const tones = ['Light and playful', 'Thoughtful and curious', 'Flirty, at my pace'];
-const interestGroups = [
-  ['Food & places', 'Music', 'Film & TV', 'Books', 'Travel', 'Fitness', 'Games', 'Creative things'],
-  ['Talk & debate', 'Stories & creativity', 'Games & puzzles', 'Plans & adventures'],
-];
-const interests = interestGroups.flat();
-const conversationDepths = ['Light and playful', 'Balanced', 'Deep and reflective'];
-const socialEnergies = ['One-on-one', 'Small groups', 'A mix of both'];
+
+function questionFor(interests: string[]) {
+  if (interests.includes('Relationships')) return 'What is something you wish people understood about you?';
+  if (interests.includes('Personal growth')) return 'What are you learning to be gentler with yourself about?';
+  if (interests.includes('Business & ambition')) return 'What are you quietly working toward right now?';
+  if (interests.includes('Fun & everyday life')) return 'What small thing has made your week better lately?';
+  return 'What is something you have been thinking about more than expected?';
+}
 
 export default function Onboarding() {
   const router = useRouter();
   const [step, setStep] = useState(1);
-  const [goals, setGoals] = useState<string[]>(['Meet someone new']);
-  const [tone, setTone] = useState('Light and playful');
-  const [selected, setSelected] = useState<string[]>(['Food & places', 'Music']);
-  const [conversationDepth, setConversationDepth] = useState('Balanced');
-  const [socialEnergy, setSocialEnergy] = useState('A mix of both');
-  const [availability, setAvailability] = useState('Evenings');
+  const [selected, setSelected] = useState<string[]>([]);
+  const [answer, setAnswer] = useState('');
+  const [questionId, setQuestionId] = useState('');
+  const [questionText, setQuestionText] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  const toggleInterest = (item: string) => setSelected(prev => prev.includes(item) ? prev.filter(x => x !== item) : [...prev, item]);
-  const toggleGoal = (item: string) => setGoals(prev => prev.includes(item) ? (prev.length > 1 ? prev.filter(goal => goal !== item) : prev) : [...prev, item]);
-  const next = () => setStep(x => Math.min(x + 1, 4));
-  const back = () => setStep(x => Math.max(x - 1, 1));
-  async function finish() {
+
+  const toggleInterest = (interest: string) => setSelected((current) => current.includes(interest) ? current.filter((item) => item !== interest) : [...current, interest]);
+
+  async function prepareQuestion() {
+    setQuestionText(questionFor(selected));
+    const token = await getAccessToken();
+    if (!token) return;
+    const api = process.env.NEXT_PUBLIC_DUORA_API_URL ?? 'http://127.0.0.1:8000';
+    const response = await fetch(`${api}/api/v1/social/questions/`, { headers: { Authorization: `Bearer ${token}` } });
+    if (!response.ok) return;
+    const body = await response.json() as { data?: { id: string; text: string; category: string }[] };
+    const preferred = body.data?.find((question) => selected.includes(question.category)) ?? body.data?.[0];
+    if (preferred) { setQuestionId(preferred.id); setQuestionText(preferred.text); }
+  }
+
+  useEffect(() => { if (step === 3) void prepareQuestion(); }, [step]);
+
+  async function finish(shareThought: boolean) {
     const token = await getAccessToken();
     if (!token) { router.replace('/login'); return; }
     setSaving(true); setError('');
-    const intents = goals.map(goal => goal === 'Meet someone new' ? 'friendship' : goal === 'Find better conversations' ? 'conversation' : 'dating');
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_DUORA_API_URL ?? 'http://127.0.0.1:8000'}/api/v1/discovery/me/`, { method: 'PATCH', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ intents, interests: selected.filter((item) => !interestGroups[1].includes(item)), conversation_styles: selected.filter((item) => interestGroups[1].includes(item)), conversation_depth: conversationDepth, social_energy: socialEnergy, availability, is_discoverable: goals.includes('Meet someone new'), onboarding_completed: true }) });
-      if (!response.ok) throw new Error('Your preferences could not be saved.');
-      router.push('/home');
-    } catch (reason) { setError(reason instanceof Error ? reason.message : 'Your preferences could not be saved.'); } finally { setSaving(false); }
+      const api = process.env.NEXT_PUBLIC_DUORA_API_URL ?? 'http://127.0.0.1:8000';
+      const response = await fetch(`${api}/api/v1/discovery/me/`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ interests: selected, onboarding_completed: true }),
+      });
+      if (!response.ok) throw new Error('Your starting point could not be saved.');
+      if (shareThought && answer.trim() && questionId) {
+        const thoughtResponse = await fetch(`${api}/api/v1/social/thoughts/`, { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ question_id: questionId, body: answer.trim() }) });
+        if (!thoughtResponse.ok) throw new Error('Your thought could not be shared.');
+      }
+      router.replace('/discover');
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Your starting point could not be saved.');
+    } finally {
+      setSaving(false);
+    }
   }
+
   return (
-    <main className="min-h-screen bg-[#fffdfc] px-5 py-6 sm:px-8"><div className="mx-auto max-w-5xl">
-      <header className="flex items-center justify-between"><Link href="/home" className="text-[23px] font-bold tracking-[-.06em] text-dark-950">Duorah</Link><Link href="/home" className="text-sm font-semibold text-[#6F6470] hover:text-dark-950">Do this later</Link></header>
-      <div className="mt-8 h-1 overflow-hidden rounded-full bg-[#281D32]/8"><div className="h-full rounded-full bg-spark-coral transition-all duration-300" style={{ width: `${step * 25}%` }} /></div>
-      <div className="mx-auto mt-12 max-w-[21.5rem] sm:mx-0 sm:max-w-none"><section>
-        {step === 1 && <><p className="section-label">Personalize your experience</p><h1 className="mt-4 text-4xl font-bold tracking-[-.065em] sm:text-5xl">What would you like Duorah to help with?</h1><p className="mt-4 max-w-xl text-base leading-7 text-[#6F6470]">This is optional. Choose what feels useful, or skip it and start exploring.</p><div className="mt-9 grid gap-3">{goalOptions.map(([title, text, Icon]) => <button key={title as string} onClick={() => toggleGoal(title as string)} aria-pressed={goals.includes(title as string)} className={`flex w-full items-start gap-4 rounded-2xl border p-5 text-left transition ${goals.includes(title as string) ? 'border-spark-coral bg-[#FFF0F3]' : 'border-[#281D32]/10 bg-white hover:border-[#F7B8C7]'}`}><span className="mt-0.5 rounded-xl bg-white p-2.5 text-spark-coral"><Icon className="h-5 w-5" /></span><span><span className="block font-semibold text-dark-950">{title as string}</span><span className="mt-1 block text-sm leading-6 text-[#6F6470]">{text as string}</span></span>{goals.includes(title as string) && <Check className="ml-auto h-5 w-5 shrink-0 text-spark-coral" />}</button>)}</div></>}
-        {step === 2 && <><p className="section-label">Your pace</p><h1 className="mt-4 text-4xl font-bold tracking-[-.065em] sm:text-5xl">What kind of space feels right?</h1><p className="mt-4 max-w-xl text-base leading-7 text-[#6F6470]">This helps us recommend experiences and rooms that match your comfort level.</p><div className="mt-9 grid gap-3">{tones.map(item => <button key={item} onClick={() => setTone(item)} className={`flex items-center justify-between rounded-2xl border p-5 text-left font-semibold transition ${tone === item ? 'border-spark-coral bg-[#FFF0F3] text-dark-950' : 'border-[#281D32]/10 bg-white text-[#6F6470] hover:border-[#F7B8C7]'}`}><span>{item}</span>{tone === item && <Check className="h-5 w-5 text-spark-coral" />}</button>)}</div></>}
-        {step === 3 && <><p className="section-label">A little context</p><h1 className="mt-4 text-4xl font-bold tracking-[-.065em] sm:text-5xl">What would make a good starting point?</h1><p className="mt-4 max-w-xl text-base leading-7 text-[#6F6470]">Pick a few interests and formats. These help us shape better rooms and recommendations, not define you.</p><p className="mt-8 text-sm font-semibold text-dark-950">Things you enjoy</p><div className="mt-3 flex flex-wrap gap-3">{interestGroups[0].map(item => <button key={item} onClick={() => toggleInterest(item)} className={`rounded-full border px-4 py-2.5 text-sm font-medium transition ${selected.includes(item) ? 'border-spark-coral bg-[#FFF0F3] text-spark-coral' : 'border-[#281D32]/10 bg-white text-[#6F6470] hover:border-[#F7B8C7]'}`}>{selected.includes(item) && <Check className="mr-1.5 inline h-3.5 w-3.5" />}{item}</button>)}</div><p className="mt-7 text-sm font-semibold text-dark-950">How you like to connect</p><div className="mt-3 flex flex-wrap gap-3">{interestGroups[1].map(item => <button key={item} onClick={() => toggleInterest(item)} className={`rounded-full border px-4 py-2.5 text-sm font-medium transition ${selected.includes(item) ? 'border-spark-coral bg-[#FFF0F3] text-spark-coral' : 'border-[#281D32]/10 bg-white text-[#6F6470] hover:border-[#F7B8C7]'}`}>{selected.includes(item) && <Check className="mr-1.5 inline h-3.5 w-3.5" />}{item}</button>)}</div><p className="mt-7 text-sm font-semibold text-dark-950">Conversation depth</p><div className="mt-3 flex flex-wrap gap-3">{conversationDepths.map(item => <button key={item} onClick={() => setConversationDepth(item)} className={`rounded-full border px-4 py-2.5 text-sm font-medium transition ${conversationDepth === item ? 'border-spark-coral bg-[#FFF0F3] text-spark-coral' : 'border-[#281D32]/10 bg-white text-[#6F6470]'}`}>{conversationDepth === item && <Check className="mr-1.5 inline h-3.5 w-3.5" />}{item}</button>)}</div><p className="mt-7 text-sm font-semibold text-dark-950">Your social energy</p><div className="mt-3 flex flex-wrap gap-3">{socialEnergies.map(item => <button key={item} onClick={() => setSocialEnergy(item)} className={`rounded-full border px-4 py-2.5 text-sm font-medium transition ${socialEnergy === item ? 'border-spark-coral bg-[#FFF0F3] text-spark-coral' : 'border-[#281D32]/10 bg-white text-[#6F6470]'}`}>{socialEnergy === item && <Check className="mr-1.5 inline h-3.5 w-3.5" />}{item}</button>)}</div></>}
-        {step === 4 && <><p className="section-label">One last thing</p><h1 className="mt-4 text-4xl font-bold tracking-[-.065em] sm:text-5xl">When are you usually up for a good conversation?</h1><p className="mt-4 max-w-xl text-base leading-7 text-[#6F6470]">This helps us show rooms at useful times. You can always browse independently.</p><div className="mt-9 grid gap-3 sm:grid-cols-3">{['Mornings', 'Evenings', 'Weekends'].map(item => <button key={item} onClick={() => setAvailability(item)} className={`rounded-2xl border p-5 text-left text-sm font-semibold transition ${availability === item ? 'border-spark-coral bg-[#FFF0F3] text-dark-950' : 'border-[#281D32]/10 bg-white text-[#6F6470]'}`}>{availability === item && <Check className="mb-5 h-5 w-5 text-spark-coral" />}{item}</button>)}</div><div className="mt-8 rounded-2xl bg-[#FFF7F2] p-5"><p className="flex items-center gap-2 text-sm font-semibold"><Sparkles className="h-4 w-4 text-spark-coral" />Your Duorah starting point</p><p className="mt-2 text-sm leading-6 text-[#6F6470]">We will begin with {goals.map(goal => goal.toLowerCase()).join(' and ')}, a {tone.toLowerCase()} tone, and room suggestions around {selected.slice(0, 2).join(' and ')}.</p></div></>}
-        <div className="mt-10 flex items-center justify-between"><button onClick={back} disabled={step === 1 || saving} className="inline-flex items-center gap-2 text-sm font-semibold text-[#6F6470] disabled:invisible"><ArrowLeft className="h-4 w-4" />Back</button>{step < 4 ? <button onClick={next} className="inline-flex items-center gap-2 rounded-full bg-spark-coral px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#d94767]">Continue <ArrowRight className="h-4 w-4" /></button> : <button disabled={saving} onClick={finish} className="button-loading inline-flex items-center gap-2 rounded-full bg-spark-coral px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#d94767] disabled:opacity-60">{saving && <span className="button-spinner" />}{saving ? 'Saving…' : 'Finish and go home'} <ArrowRight className="h-4 w-4" /></button>}</div>{error && <p role="alert" className="mt-4 text-sm text-spark-coral">{error}</p>}
-      </section>
+    <main className="auth-page min-h-screen bg-[#F3F1EC] px-5 py-6 text-[#171622] sm:px-8">
+      <div className="relative z-10 mx-auto flex min-h-[calc(100vh-3rem)] max-w-5xl flex-col">
+        <header className="flex items-center justify-between"><Link href="/" className="font-serif text-3xl tracking-[-.075em]">Duora<span className="text-[#9B84F7]">.</span></Link><button type="button" onClick={() => void finish(false)} disabled={saving} className="text-sm font-semibold text-[#666372] hover:text-[#171622]">Skip for now</button></header>
+        <div className="mt-8 flex gap-2" aria-label={`Onboarding step ${step} of 3`}>{[1, 2, 3].map((item) => <span key={item} className={`h-1 flex-1 rounded-full transition-colors ${item <= step ? 'bg-[#9B84F7]' : 'bg-[#171622]/10'}`} />)}</div>
+
+        <div className="mx-auto flex w-full max-w-2xl flex-1 items-center py-14">
+          {step === 1 && <section className="w-full"><p className="eyebrow"><span className="eyebrow-dot" />Welcome to Duora</p><h1 className="display-heading mt-6 max-w-2xl text-6xl leading-[.92] tracking-[-.07em] sm:text-8xl">Meet through minds<span className="text-[#9B84F7]">.</span></h1><p className="mt-7 max-w-xl text-lg leading-8 text-[#666372] sm:text-xl">Discover people through the things they think, the answers they give, and the conversations they start. You can stay anonymous until a connection feels worth opening.</p><button type="button" onClick={() => setStep(2)} className="button-primary mt-10 inline-flex items-center gap-3 rounded-full bg-[#171622] px-6 py-4 text-sm font-bold text-white">Let’s begin <ArrowRight className="h-4 w-4" /></button><p className="mt-5 flex items-center gap-2 text-xs text-[#85818c]"><Eye className="h-3.5 w-3.5" />Anonymous to start · You choose what happens next</p></section>}
+
+          {step === 2 && <section className="w-full"><p className="eyebrow"><span className="eyebrow-dot" />A little context</p><h1 className="display-heading mt-6 text-5xl leading-[.94] tracking-[-.07em] sm:text-7xl">Choose what you’re curious about.</h1><p className="mt-6 max-w-xl text-base leading-7 text-[#666372]">Pick a few interests to help shape the thoughts and conversations you see. There is no wrong answer, and you can change this later.</p><div className="mt-10 grid gap-3 sm:grid-cols-2">{interestOptions.map(([title, description]) => { const active = selected.includes(title); return <button type="button" key={title} onClick={() => toggleInterest(title)} aria-pressed={active} className={`group rounded-[20px] border p-5 text-left transition ${active ? 'border-[#9B84F7] bg-[#DCD4FF]' : 'border-[#171622]/12 bg-[#FAF9F5]/80 hover:-translate-y-0.5 hover:border-[#9B84F7]'}`}><span className="flex items-start justify-between gap-4"><span><span className="block text-base font-semibold tracking-[-.02em]">{title}</span><span className="mt-1.5 block text-sm leading-5 text-[#666372]">{description}</span></span>{active && <Check className="h-5 w-5 shrink-0 text-[#806BE4]" />}</span></button>; })}</div><div className="mt-10 flex items-center justify-between gap-4"><button type="button" onClick={() => setStep(1)} className="inline-flex items-center gap-2 text-sm font-semibold text-[#666372]"><ArrowLeft className="h-4 w-4" />Back</button><button type="button" onClick={() => setStep(3)} className="button-primary inline-flex items-center gap-3 rounded-full bg-[#171622] px-6 py-4 text-sm font-bold text-white">Continue <ArrowRight className="h-4 w-4" /></button></div><p className="mt-4 text-right text-xs text-[#85818c]">You can skip this</p></section>}
+
+          {step === 3 && <section className="w-full"><p className="eyebrow"><span className="eyebrow-dot" />Your first Duora question</p><div className="mt-8 rounded-[30px] bg-[#171622] p-6 text-white shadow-[0_24px_70px_rgba(23,22,34,.18)] sm:p-10"><div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-[.16em] text-[#B9A7FF]"><span>A thought to begin with</span><MessageCircle className="h-4 w-4" /></div><h1 className="mt-10 max-w-2xl font-serif text-4xl leading-[.98] tracking-[-.05em] sm:text-6xl">{questionFor(selected)}</h1><textarea value={answer} onChange={(event) => setAnswer(event.target.value)} maxLength={1000} placeholder="Write your answer..." aria-label="Your anonymous answer" className="mt-10 min-h-36 w-full resize-none rounded-2xl border border-white/15 bg-white/10 p-4 text-base leading-7 text-white outline-none placeholder:text-white/35 focus:border-[#B9A7FF] focus:ring-4 focus:ring-[#B9A7FF]/15" /><div className="mt-4 flex items-center justify-between text-xs text-white/45"><span>Anonymous until you choose otherwise</span><span>{answer.length}/1000</span></div></div><div className="mt-8 flex flex-col-reverse items-stretch justify-between gap-4 sm:flex-row sm:items-center"><button type="button" onClick={() => setStep(2)} className="inline-flex items-center justify-center gap-2 text-sm font-semibold text-[#666372]"><ArrowLeft className="h-4 w-4" />Back</button><div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center"><button type="button" onClick={() => void finish(false)} disabled={saving} className="px-3 py-3 text-sm font-semibold text-[#666372] hover:text-[#171622]">Skip this question</button><button type="button" onClick={() => void finish(true)} disabled={saving || !answer.trim()} className="button-primary inline-flex items-center justify-center gap-3 rounded-full bg-[#171622] px-6 py-4 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-45">{saving ? 'Opening Explore…' : 'Share my thought'} <ArrowRight className="h-4 w-4" /></button></div></div>{error && <p role="alert" className="mt-5 text-sm text-[#B23B58]">{error}</p>}<p className="mt-5 flex items-center gap-2 text-xs text-[#85818c]"><Sparkles className="h-3.5 w-3.5 text-[#806BE4]" />This is the beginning, not a test. You can skip it and start exploring.</p></section>}
+        </div>
       </div>
-    </div></main>
+    </main>
   );
 }

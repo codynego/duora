@@ -24,7 +24,7 @@ export default function PwaStartup() {
   if (phase === 'hidden') return null;
 
   return (
-    <div className={`pwa-startup pwa-startup--${phase}`} role="status" aria-live="polite" aria-label="Opening Duorah">
+    <div className={`pwa-startup pwa-startup--${phase}`} role="status" aria-live="polite" aria-label="Opening Duora">
       <div className="pwa-startup__glow pwa-startup__glow--one" />
       <div className="pwa-startup__glow pwa-startup__glow--two" />
       <div className="pwa-startup__content">

@@ -16,6 +16,7 @@ class ConnectionRequest(models.Model):
         AUTO_MATCH = 'auto_match', 'Auto-match'
         PRIVATE_INVITE = 'private_invite', 'Private invite'
         PROFILE = 'profile', 'Profile'
+        THOUGHT = 'thought', 'Thought'
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     requester = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='connection_requests_sent')

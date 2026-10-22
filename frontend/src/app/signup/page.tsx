@@ -26,7 +26,7 @@ function PasswordField({
     <label className="block text-sm font-bold">
       {label}
       <span className="relative mt-2 block">
-        <input value={value} onChange={e => onChange(e.target.value)} required minLength={minLength} type={visible ? 'text' : 'password'} autoComplete={autoComplete} className="w-full rounded-xl border border-dark-950/15 px-4 py-3 pr-12 font-normal outline-none focus:border-spark-coral" />
+        <input value={value} onChange={e => onChange(e.target.value)} required minLength={minLength} type={visible ? 'text' : 'password'} autoComplete={autoComplete} className="duora-form-input w-full rounded-xl px-4 py-3 pr-12 font-normal outline-none" />
         <button type="button" onClick={() => setVisible(current => !current)} aria-label={visible ? `Hide ${label.toLowerCase()}` : `Show ${label.toLowerCase()}`} aria-pressed={visible} className="absolute inset-y-0 right-0 inline-flex w-11 items-center justify-center text-[#6F6470] transition hover:text-dark-950 focus-visible:outline-none focus-visible:text-spark-coral">
           {visible ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
         </button>
@@ -76,7 +76,7 @@ export default function SignupPage() {
       <form onSubmit={submit} className="mt-8 space-y-4">
         <label className="block text-sm font-bold">
           Username
-          <input value={username} onChange={e => { setUsername(e.target.value); setUsernameError(''); }} required minLength={3} autoComplete="username" aria-invalid={Boolean(usernameError)} aria-describedby={usernameError ? 'username-error' : undefined} className={`mt-2 w-full rounded-xl border px-4 py-3 font-normal outline-none ${usernameError ? 'border-[#b23b58] focus:border-[#b23b58]' : 'border-dark-950/15 focus:border-spark-coral'}`} />
+          <input value={username} onChange={e => { setUsername(e.target.value); setUsernameError(''); }} required minLength={3} autoComplete="username" aria-invalid={Boolean(usernameError)} aria-describedby={usernameError ? 'username-error' : undefined} className={`duora-form-input mt-2 w-full rounded-xl px-4 py-3 font-normal outline-none ${usernameError ? 'border-[#b23b58] focus:border-[#b23b58]' : ''}`} />
           {usernameError && <span id="username-error" role="alert" className="mt-2 block text-sm font-normal text-[#b23b58]">{usernameError}</span>}
         </label>
         <PasswordField label="Password" value={password} onChange={setPassword} autoComplete="new-password" minLength={10} />
@@ -84,7 +84,7 @@ export default function SignupPage() {
         <label className="block text-sm font-bold">
           Gender
           <span className="mt-1 block text-xs font-normal text-[#6F6470]">Used privately to keep adult prompts more appropriate. You can change this later.</span>
-          <select value={gender} onChange={e => setGender(e.target.value)} required className="mt-2 w-full rounded-xl border border-dark-950/15 bg-white px-4 py-3 font-normal outline-none focus:border-spark-coral">
+          <select value={gender} onChange={e => setGender(e.target.value)} required className="duora-form-input mt-2 w-full rounded-xl px-4 py-3 font-normal outline-none">
             <option value="" disabled>Select an option</option>
             <option value="woman">Woman</option>
             <option value="man">Man</option>
@@ -93,7 +93,7 @@ export default function SignupPage() {
           </select>
         </label>
         {error && <p role="alert" className="rounded-xl bg-[#fff0f3] p-3 text-sm text-[#b23b58]">{error}</p>}
-        <button disabled={loading} className="w-full rounded-full bg-spark-coral px-5 py-3 text-sm font-bold text-white disabled:opacity-50">{loading ? 'Creating account…' : 'Create account'}</button>
+        <button disabled={loading} className="button-primary w-full rounded-full bg-[#171622] px-5 py-3.5 text-sm font-bold text-white disabled:opacity-50">{loading ? 'Creating account…' : 'Create account'}</button>
       </form>
     </AuthShell>
   );
