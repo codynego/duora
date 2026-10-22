@@ -1,6 +1,6 @@
 import { ImageResponse } from 'next/og';
 
-export const alt = 'Duorah — Make every connection more interesting';
+export const alt = 'Duorah — Meet through minds. Connect by choice.';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
@@ -16,10 +16,10 @@ export default function OpenGraphImage() {
             DUORAH
           </div>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <div style={{ fontSize: 68, lineHeight: 1.03, fontWeight: 800, letterSpacing: -3 }}>Make every connection more interesting.</div>
-            <div style={{ marginTop: 30, fontSize: 27, lineHeight: 1.35, color: '#eadfea' }}>Shared games, better conversations, and a little more chemistry.</div>
+            <div style={{ fontSize: 68, lineHeight: 1.03, fontWeight: 800, letterSpacing: -3 }}>Meet through minds. Connect by choice.</div>
+            <div style={{ marginTop: 30, fontSize: 27, lineHeight: 1.35, color: '#eadfea' }}>Discover anonymous thoughts and the people behind the conversations.</div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 22, color: '#f6c4d0' }}><span style={{ width: 10, height: 10, borderRadius: 10, background: '#8bd49f' }} /> Find your people through something shared</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 22, color: '#c9b9e2' }}><span style={{ width: 10, height: 10, borderRadius: 10, background: '#7454A6' }} /> Start with a thought worth sharing</div>
         </div>
       </div>
     ),
