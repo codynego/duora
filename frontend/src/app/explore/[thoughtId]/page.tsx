@@ -403,15 +403,15 @@ export default function DiscussionPage() {
           </div>
         ) : thought ? (
           <>
-            <header className="mt-10">
-              <p className="dashboard-kicker">
-                <span />
+            <header className="mt-10 rounded-[28px] bg-[#7454A6] p-6 text-white shadow-[0_18px_45px_rgba(116,84,166,.18)] sm:p-10">
+              <p className="dashboard-kicker text-white/70">
+                <span className="bg-white/70" />
                 The conversation
               </p>
-              <p className="mt-8 text-xs font-bold uppercase tracking-[.16em] text-[#7454A6]">
+              <p className="mt-8 text-xs font-bold uppercase tracking-[.16em] text-[#E9E1F1]">
                 {thought.question.category}
               </p>
-              <h1 className="dashboard-display mt-4 text-5xl leading-[.95] tracking-[-.065em] sm:text-7xl">
+              <h1 className="dashboard-display mt-4 text-5xl leading-[.95] tracking-[-.065em] text-white sm:text-7xl">
                 {thought.question.text}
               </h1>
             </header>
