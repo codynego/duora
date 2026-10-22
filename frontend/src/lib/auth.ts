@@ -59,10 +59,16 @@ export async function signUp(
   dateOfBirth: string,
 ) {
   await request("register/", {
-    email,
+    email: email.trim().toLowerCase(),
     password,
     password_confirm: passwordConfirm,
     date_of_birth: dateOfBirth,
+  });
+  // Re-authenticate explicitly so the session is fresh even if the browser
+  // was carrying a stale cookie from a previous account.
+  await request("token/", {
+    username: email.trim().toLowerCase(),
+    password,
   });
   sessionValidUntil = Date.now() + 14 * 60_000;
 }

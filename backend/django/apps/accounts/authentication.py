@@ -13,8 +13,11 @@ class CookieJWTAuthentication(JWTAuthentication):
             # A harmless marker preserves existing frontend call sites during the
             # cookie-auth migration. It is never accepted as a JWT.
             if raw_token and raw_token != b'cookie':
-                validated_token = self.get_validated_token(raw_token)
-                return self.get_user(validated_token), validated_token
+                try:
+                    validated_token = self.get_validated_token(raw_token)
+                    return self.get_user(validated_token), validated_token
+                except exceptions.AuthenticationFailed:
+                    return None
 
         raw_token = request.COOKIES.get(settings.AUTH_ACCESS_COOKIE_NAME)
         if not raw_token:
@@ -26,4 +29,7 @@ class CookieJWTAuthentication(JWTAuthentication):
             validated_token = self.get_validated_token(raw_token)
         except exceptions.AuthenticationFailed:
             return None
-        return self.get_user(validated_token), validated_token
+        try:
+            return self.get_user(validated_token), validated_token
+        except exceptions.AuthenticationFailed:
+            return None
