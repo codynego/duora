@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Bell, Compass, MessageCircle, Search, UserRound } from "lucide-react";
+import { Bell, Clock3, Compass, Heart, MessageCircle, Search, UserPlus, UserRound } from "lucide-react";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import AutoMatchRequestNotice from "@/components/AutoMatchRequestNotice";
@@ -146,10 +146,12 @@ function SparkleMark() {
 
 type NotificationItem = {
   id: string;
+  kind: string;
   title: string;
   body: string;
   href: string;
   read: boolean;
+  created_at: string;
 };
 
 function NotificationBell() {
@@ -202,21 +204,53 @@ function NotificationBell() {
         {unread > 0 && <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-[#9A3650]" />}
       </button>
       {open && (
-        <div className="absolute right-0 top-12 z-50 w-[min(360px,calc(100vw-32px))] rounded-2xl border border-[#292630]/10 bg-white p-3 shadow-[0_18px_45px_rgba(41,38,48,.14)]">
-          <div className="flex items-center justify-between px-2 py-1">
-            <p className="text-sm font-bold">Notifications</p>
-            {unread > 0 && <button type="button" onClick={() => void markRead()} className="text-xs font-semibold text-[#7454A6]">Mark all read</button>}
+        <div className="absolute right-0 top-12 z-50 w-[min(390px,calc(100vw-32px))] overflow-hidden rounded-[24px] border border-[#292630]/10 bg-white shadow-[0_24px_70px_rgba(41,38,48,.16)]">
+          <div className="border-b border-[#292630]/10 bg-[#F7F5F0] px-5 py-4">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="dashboard-kicker"><span />Your activity</p>
+                <p className="mt-2 text-lg font-bold tracking-[-.03em]">Notifications</p>
+              </div>
+              {unread > 0 && <span className="rounded-full bg-[#E9E1F1] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[.12em] text-[#7454A6]">{unread} new</span>}
+            </div>
+            {unread > 0 && <button type="button" onClick={() => void markRead()} className="mt-3 text-xs font-semibold text-[#7454A6] hover:text-[#553781]">Mark all as read</button>}
           </div>
-          <div className="mt-2 max-h-80 overflow-y-auto">
+          <div className="max-h-[min(440px,calc(100vh-150px))] overflow-y-auto p-2">
             {items.length ? items.map((item) => (
-              <Link key={item.id} href={item.href} onClick={() => void markRead(item.id)} className={`block rounded-xl p-3 transition hover:bg-[#F7F5F0] ${item.read ? "" : "bg-[#F1EAF6]"}`}>
-                <p className="text-xs font-bold text-[#292630]">{item.title}</p>
-                <p className="mt-1 text-xs leading-5 text-[#6E6975]">{item.body}</p>
+              <Link key={item.id} href={item.href} onClick={() => void markRead(item.id)} className={`flex gap-3 rounded-2xl p-3 transition hover:bg-[#F7F5F0] ${item.read ? "" : "bg-[#F1EAF6]"}`}>
+                <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-full ${item.read ? "bg-[#F7F5F0] text-[#958F9B]" : "bg-white text-[#7454A6]"}`}>
+                  <NotificationIcon kind={item.kind} />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="flex items-start justify-between gap-3">
+                    <span className="text-xs font-bold text-[#292630]">{item.title}</span>
+                    {!item.read && <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-[#7454A6]" />}
+                  </span>
+                  <span className="mt-1 block text-xs leading-5 text-[#6E6975]">{item.body}</span>
+                  <span className="mt-2 inline-flex items-center gap-1 text-[10px] font-semibold text-[#958F9B]"><Clock3 className="h-3 w-3" />{formatNotificationTime(item.created_at)}</span>
+                </span>
               </Link>
-            )) : <p className="px-2 py-6 text-center text-xs text-[#958F9B]">No notifications yet.</p>}
+            )) : <div className="px-4 py-10 text-center"><span className="mx-auto grid h-11 w-11 place-items-center rounded-full bg-[#E9E1F1] text-[#7454A6]"><Bell className="h-5 w-5" /></span><p className="mt-4 text-sm font-bold">Nothing new yet</p><p className="mt-1 text-xs leading-5 text-[#958F9B]">Replies and connection activity will appear here.</p></div>}
           </div>
         </div>
       )}
     </div>
   );
+}
+
+function NotificationIcon({ kind }: { kind: string }) {
+  if (kind === "reply") return <MessageCircle className="h-4 w-4" />;
+  if (kind === "connection_request" || kind === "connection_accepted") return <UserPlus className="h-4 w-4" />;
+  if (kind === "identity_reveal") return <Heart className="h-4 w-4" />;
+  return <MessageCircle className="h-4 w-4" />;
+}
+
+function formatNotificationTime(value: string) {
+  const elapsed = Math.max(0, Date.now() - new Date(value).getTime());
+  const minutes = Math.floor(elapsed / 60000);
+  if (minutes < 1) return "Just now";
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.floor(hours / 24)}d ago`;
 }

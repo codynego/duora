@@ -514,7 +514,7 @@ function CommonGroundSheet({
             ))}
           </div>
         ) : (
-          <p className="mt-4 rounded-2xl bg-[#F7F5F0] p-4 text-sm leading-6 text-[#6E6975]">You’re still discovering your common ground.</p>
+          <p className="mt-4 rounded-2xl bg-[#F7F5F0] p-4 text-sm leading-6 text-[#6E6975]">Still discovering.</p>
         )}
         <div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
           <button type="button" onClick={onClose} className="rounded-full border border-[#292630]/10 px-5 py-3 text-sm font-semibold text-[#6E6975]">Keep exploring</button>

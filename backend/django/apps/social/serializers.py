@@ -40,7 +40,7 @@ class ThoughtSerializer(serializers.ModelSerializer):
         shared = [viewer_interests[key] for key in viewer_interests.keys() & author_interests.keys()]
         shared.sort()
         if not shared:
-            return {'shared_count': 0, 'shared_interests': [], 'percentage': None, 'label': 'Still discovering your common ground'}
+            return {'shared_count': 0, 'shared_interests': [], 'percentage': None, 'label': 'Still discovering'}
         if min(len(viewer_interests), len(author_interests)) < 2:
             label = f"{len(shared)} shared interest" if len(shared) == 1 else f"{len(shared)} shared interests"
             percentage = None
