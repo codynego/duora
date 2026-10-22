@@ -65,6 +65,7 @@ export default function ProfilePage() {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState("");
   const [city, setCity] = useState("");
+  const [gender, setGender] = useState("");
   const [interests, setInterests] = useState<string[]>([]);
   const [tab, setTab] = useState<
     "answers" | "discussions" | "saved" | "reactions"
@@ -94,6 +95,7 @@ export default function ProfilePage() {
           setProfile(body);
           setInterests(body.interests ?? []);
           setCity(body.city ?? "");
+          setGender(body.gender ?? "");
         }
         if (summaryResponse.ok) setSummary(await summaryResponse.json());
       } catch (reason) {
@@ -138,10 +140,10 @@ export default function ProfilePage() {
       const discoveryResponse = await fetch(`${api}/api/v1/discovery/me/`, {
         method: "PATCH",
         headers,
-        body: JSON.stringify({ city, interests }),
+        body: JSON.stringify({ city, gender, interests }),
       });
       if (!discoveryResponse.ok)
-        throw new Error("Your interests could not be saved.");
+        throw new Error("Your profile details could not be saved.");
       setUser((await accountResponse.json()).data);
       setProfile(await discoveryResponse.json());
       setEditing(false);
@@ -310,6 +312,24 @@ export default function ProfilePage() {
                     placeholder="City or region"
                     className="duora-form-input mt-2 w-full rounded-xl bg-[#F7F5F0] px-4 py-3 text-sm outline-none"
                   />
+                </label>
+                <label className="text-sm font-semibold">
+                  Gender{" "}
+                  <span className="font-normal text-[#958F9B]">optional</span>
+                  <select
+                    value={gender}
+                    onChange={(event) => setGender(event.target.value)}
+                    className="duora-form-input mt-2 w-full rounded-xl bg-[#F7F5F0] px-4 py-3 text-sm outline-none"
+                  >
+                    <option value="">Not specified</option>
+                    <option value="woman">Woman</option>
+                    <option value="man">Man</option>
+                    <option value="non_binary">Non-binary</option>
+                    <option value="prefer_not_to_say">Prefer not to say</option>
+                  </select>
+                  <span className="mt-2 block text-xs font-normal leading-5 text-[#958F9B]">
+                    Optional. Your gender is private unless you choose to share it.
+                  </span>
                 </label>
               </div>
               <p className="mt-7 text-sm font-semibold">Your interests</p>
