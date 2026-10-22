@@ -26,7 +26,7 @@ export default function AppNav({ minimal = false }: { minimal?: boolean }) {
 
   return (
     <>
-      <header className="app-nav-mobile sticky top-0 z-40 flex h-[68px] items-center justify-between border-b border-[#292630]/10 bg-[#F7F5F0]/95 px-5 backdrop-blur md:hidden">
+      <header className="app-nav-mobile sticky top-0 z-[60] flex h-[68px] items-center justify-between border-b border-[#292630]/10 bg-[#F7F5F0]/95 px-5 backdrop-blur md:hidden">
         <Link
           href="/home"
           className="font-serif text-[28px] tracking-[-.075em] text-[#292630]"
@@ -224,7 +224,7 @@ function NotificationBell() {
         )}
       </button>
       {open && (
-        <div className="absolute right-0 top-12 z-50 flex max-h-[calc(100dvh-88px)] w-[min(390px,calc(100vw-32px))] flex-col overflow-hidden rounded-[24px] border border-[#292630]/10 bg-white shadow-[0_24px_70px_rgba(41,38,48,.16)] md:left-0 md:right-auto md:max-h-[calc(100dvh-40px)]">
+        <div className="fixed bottom-[76px] left-4 right-4 top-[76px] z-50 flex max-h-none w-auto flex-col overflow-hidden rounded-[24px] border border-[#292630]/10 bg-white shadow-[0_24px_70px_rgba(41,38,48,.16)] md:absolute md:bottom-auto md:left-0 md:right-auto md:top-12 md:max-h-[calc(100dvh-40px)] md:w-[min(390px,calc(100vw-32px))]">
           <div className="border-b border-[#292630]/10 bg-[#F7F5F0] px-5 py-4">
             <div className="flex items-start justify-between gap-4">
               <div>
