@@ -478,7 +478,7 @@ function People({
                 Connected through{" "}
                 {item.last_experience
                   ? `a discussion about “${item.last_experience}”`
-                  : "a Duora thought"}
+                  : "a Duorah thought"}
                 .
               </p>
               <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-[#292630]/10 pt-4">
@@ -533,7 +533,7 @@ function EmptyState({ title, detail }: { title: string; detail: string }) {
         href="/discover"
         className="mt-5 inline-flex items-center gap-2 rounded-full bg-[#292630] px-4 py-2.5 text-xs font-semibold text-white"
       >
-        Explore Duora <ArrowRight className="h-4 w-4" />
+        Explore Duorah <ArrowRight className="h-4 w-4" />
       </Link>
     </div>
   );

@@ -10,7 +10,7 @@ User = get_user_model()
 
 
 class MeSerializer(serializers.ModelSerializer):
-    """The small, private account record used by Duora's signed-in surfaces."""
+    """The small, private account record used by Duorah's signed-in surfaces."""
 
     display_name = serializers.SerializerMethodField()
     anonymous_username = serializers.SerializerMethodField()
@@ -81,7 +81,7 @@ class RegisterSerializer(serializers.Serializer):
         today = date.today()
         age = today.year - value.year - ((today.month, today.day) < (value.month, value.day))
         if age < 18:
-            raise serializers.ValidationError('You must be at least 18 to join Duora.')
+            raise serializers.ValidationError('You must be at least 18 to join Duorah.')
         if value > today:
             raise serializers.ValidationError('Date of birth cannot be in the future.')
         return value

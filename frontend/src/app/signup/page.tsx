@@ -144,7 +144,7 @@ export default function SignupPage() {
         <label className="block text-sm font-bold">
           Date of birth
           <span className="mt-1 block text-xs font-normal text-[#6F6470]">
-            Used for age verification and safety. Duora is 18+.
+            Used for age verification and safety. Duorah is 18+.
           </span>
           <span className="mt-2 grid grid-cols-[1.35fr_.85fr_1fr] gap-2">
             <select value={birthMonth} onChange={(event) => setBirthMonth(event.target.value)} required aria-label="Birth month" className="duora-form-input w-full rounded-xl px-3 py-3 font-normal outline-none">

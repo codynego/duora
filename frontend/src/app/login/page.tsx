@@ -41,7 +41,7 @@ export default function LoginPage() {
       description="Pick up where your last good conversation left off."
       footer={
         <>
-          New to Duora?{" "}
+          New to Duorah?{" "}
           <Link href="/signup" className="font-bold text-spark-coral">
             Create an account
           </Link>

@@ -7,24 +7,24 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://duorah.vercel.app';
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
-  title: 'Duora — Meet through minds. Connect by choice.',
+  title: 'Duorah — Meet through minds. Connect by choice.',
   description: 'Discover real people through the things they think, the answers they give, and the conversations they start.',
-  applicationName: 'Duora',
+  applicationName: 'Duorah',
   icons: { icon: '/icon.svg', apple: '/icon-192.svg' },
   appleWebApp: {
     capable: true,
-    title: 'Duora',
+    title: 'Duorah',
     statusBarStyle: 'black-translucent',
   },
   openGraph: {
-    title: 'Duora — Meet through minds. Connect by choice.',
+    title: 'Duorah — Meet through minds. Connect by choice.',
     description: 'Discover real people through thoughts, questions, and conversations.',
     type: 'website',
-    siteName: 'Duora',
+    siteName: 'Duorah',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Duora — Meet through minds. Connect by choice.',
+    title: 'Duorah — Meet through minds. Connect by choice.',
     description: 'Your next meaningful conversation could start with a single thought.',
   },
 };

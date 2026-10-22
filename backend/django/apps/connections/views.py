@@ -62,7 +62,7 @@ class ConnectionsView(APIView):
             actor=request.user,
             kind='connection_request',
             title='Someone wants to connect',
-            body='A Duora identity sent you a connection request.',
+            body='A Duorah identity sent you a connection request.',
             href='/connections',
             target_id=connection.id,
         )

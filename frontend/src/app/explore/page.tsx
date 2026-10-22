@@ -176,7 +176,7 @@ export default function ExplorePage() {
           <div>
             <p className="dashboard-kicker">
               <span />
-              The heart of Duora
+              The heart of Duorah
             </p>
             <h1 className="dashboard-display mt-4 text-5xl leading-[.92] tracking-[-.07em] sm:text-7xl">
               Explore<span className="text-[#7454A6]">.</span>

@@ -85,7 +85,7 @@ export default function OverviewPage() {
           <div>
             <p className="dashboard-kicker">
               <span />
-              Your Duora home
+              Your Duorah home
             </p>
             <h1 className="dashboard-display mt-4 text-5xl leading-[.92] tracking-[-.07em] sm:text-7xl">
               Good morning, {displayName.split(" ")[0]}

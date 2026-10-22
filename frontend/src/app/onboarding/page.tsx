@@ -175,7 +175,7 @@ export default function Onboarding() {
       <div className="relative z-10 mx-auto flex min-h-[calc(100vh-3rem)] max-w-5xl flex-col">
         <header className="flex items-center justify-between">
           <Link href="/" className="font-serif text-3xl tracking-[-.075em]">
-            Duora<span className="text-[#9B84F7]">.</span>
+            Duorah<span className="text-[#9B84F7]">.</span>
           </Link>
           <button
             type="button"
@@ -203,7 +203,7 @@ export default function Onboarding() {
             <section className="w-full">
               <p className="eyebrow">
                 <span className="eyebrow-dot" />
-                Welcome to Duora
+                Welcome to Duorah
               </p>
               <h1 className="display-heading mt-6 max-w-2xl text-6xl leading-[.92] tracking-[-.07em] sm:text-8xl">
                 Meet through minds<span className="text-[#9B84F7]">.</span>
@@ -220,7 +220,7 @@ export default function Onboarding() {
                   </span>
                   <div>
                     <p className="text-xs font-bold uppercase tracking-[.14em] text-[#806BE4]">
-                      Your Duora identity
+                      Your Duorah identity
                     </p>
                     <p className="mt-1 text-lg font-semibold">
                       {identity.display_name || "Creating your identity…"}
@@ -323,7 +323,7 @@ export default function Onboarding() {
             <section className="w-full">
               <p className="eyebrow">
                 <span className="eyebrow-dot" />
-                Your first Duora question
+                Your first Duorah question
               </p>
               <div className="mt-8 rounded-[30px] bg-[#171622] p-6 text-white shadow-[0_24px_70px_rgba(23,22,34,.18)] sm:p-10">
                 <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-[.16em] text-[#B9A7FF]">
