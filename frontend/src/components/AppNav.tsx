@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Bell, Clock3, Compass, Heart, MessageCircle, Search, UserPlus, UserRound } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import AutoMatchRequestNotice from "@/components/AutoMatchRequestNotice";
 import { useCurrentUser } from "@/lib/current-user";
@@ -160,21 +160,34 @@ function NotificationBell() {
   const [items, setItems] = useState<NotificationItem[]>([]);
   const [unread, setUnread] = useState(0);
 
-  useEffect(() => {
-    if (!ready || !user) return;
-    async function load() {
-      const token = await getAccessToken();
-      if (!token) return;
-      const response = await fetch(`${api}/api/v1/auth/notifications/`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!response.ok) return;
-      const body = await response.json();
-      setItems(body.data ?? []);
-      setUnread(body.unread_count ?? 0);
+  const loadNotifications = useCallback(async () => {
+    if (!ready || !user) {
+      setItems([]);
+      setUnread(0);
+      return;
     }
-    void load();
+    const token = await getAccessToken({ redirectOnFailure: false });
+    if (!token) return;
+    const response = await fetch(`${api}/api/v1/auth/notifications/`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!response.ok) return;
+    const body = await response.json();
+    setItems(body.data ?? []);
+    setUnread(body.unread_count ?? 0);
   }, [ready, user]);
+
+  useEffect(() => {
+    void loadNotifications();
+    if (!ready || !user) return;
+    const interval = window.setInterval(() => void loadNotifications(), 30_000);
+    const refreshOnFocus = () => void loadNotifications();
+    window.addEventListener("focus", refreshOnFocus);
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener("focus", refreshOnFocus);
+    };
+  }, [loadNotifications, ready, user]);
 
   async function markRead(id?: string) {
     const token = await getAccessToken();
@@ -197,11 +210,18 @@ function NotificationBell() {
       <button
         type="button"
         aria-label={unread ? `${unread} unread notifications` : "Notifications"}
-        onClick={() => setOpen((current) => !current)}
+        onClick={() => {
+          setOpen((current) => !current);
+          if (!open) void loadNotifications();
+        }}
         className="relative grid h-10 w-10 place-items-center rounded-full text-[#292630] transition hover:bg-[#E9E1F1]"
       >
         <Bell className="h-[18px] w-[18px]" strokeWidth={1.8} />
-        {unread > 0 && <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-[#9A3650]" />}
+        {unread > 0 && (
+          <span className="absolute -right-1 -top-1 min-w-4 rounded-full bg-[#9A3650] px-1 py-0.5 text-center text-[9px] font-bold leading-3 text-white">
+            {unread > 99 ? "99+" : unread}
+          </span>
+        )}
       </button>
       {open && (
         <div className="absolute right-0 top-12 z-50 flex max-h-[calc(100dvh-88px)] w-[min(390px,calc(100vw-32px))] flex-col overflow-hidden rounded-[24px] border border-[#292630]/10 bg-white shadow-[0_24px_70px_rgba(41,38,48,.16)] md:left-0 md:right-auto md:max-h-[calc(100dvh-40px)]">

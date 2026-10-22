@@ -223,7 +223,7 @@ export default function DiscoverPage() {
 
   return (
     <div className="min-h-screen bg-[#F7F5F0] text-[#292630] md:pl-[232px]">
-      <AppNav minimal />
+      <AppNav />
       <main className="mx-auto max-w-4xl px-5 pb-28 pt-7 sm:px-8 sm:pt-12 md:pb-14">
         <section className="mx-auto mt-20 max-w-3xl text-center sm:mt-24">
           <p className="dashboard-kicker justify-center">
