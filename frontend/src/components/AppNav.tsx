@@ -53,10 +53,10 @@ export default function AppNav({ minimal = false }: { minimal?: boolean }) {
         >
           Duorah<span className="text-[#7454A6]">.</span>
         </Link>
-        <div className="mt-7 px-3">
+        <div className="mt-4 px-3">
           <NotificationBell />
         </div>
-        <nav className="mt-12 space-y-1" aria-label="Primary navigation">
+        <nav className="mt-7 space-y-1" aria-label="Primary navigation">
           {navigation.map(({ label, href, icon: Icon }) => {
             const active =
               href === "/home"
@@ -204,7 +204,7 @@ function NotificationBell() {
         {unread > 0 && <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-[#9A3650]" />}
       </button>
       {open && (
-        <div className="absolute right-0 top-12 z-50 w-[min(390px,calc(100vw-32px))] overflow-hidden rounded-[24px] border border-[#292630]/10 bg-white shadow-[0_24px_70px_rgba(41,38,48,.16)]">
+        <div className="absolute right-0 top-12 z-50 flex max-h-[calc(100dvh-88px)] w-[min(390px,calc(100vw-32px))] flex-col overflow-hidden rounded-[24px] border border-[#292630]/10 bg-white shadow-[0_24px_70px_rgba(41,38,48,.16)] md:left-0 md:right-auto md:max-h-[calc(100dvh-40px)]">
           <div className="border-b border-[#292630]/10 bg-[#F7F5F0] px-5 py-4">
             <div className="flex items-start justify-between gap-4">
               <div>
@@ -215,7 +215,7 @@ function NotificationBell() {
             </div>
             {unread > 0 && <button type="button" onClick={() => void markRead()} className="mt-3 text-xs font-semibold text-[#7454A6] hover:text-[#553781]">Mark all as read</button>}
           </div>
-          <div className="max-h-[min(440px,calc(100vh-150px))] overflow-y-auto p-2">
+          <div className="min-h-0 flex-1 overflow-y-auto p-2">
             {items.length ? items.map((item) => (
               <Link key={item.id} href={item.href} onClick={() => void markRead(item.id)} className={`flex gap-3 rounded-2xl p-3 transition hover:bg-[#F7F5F0] ${item.read ? "" : "bg-[#F1EAF6]"}`}>
                 <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-full ${item.read ? "bg-[#F7F5F0] text-[#958F9B]" : "bg-white text-[#7454A6]"}`}>
