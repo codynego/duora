@@ -209,7 +209,7 @@ export default function DiscussionPage() {
   return (
     <div className="min-h-screen bg-[#F7F5F0] text-[#292630] md:pl-[232px]">
       <AppNav />
-      <div className="mx-auto grid max-w-none grid-cols-1 gap-8 px-5 pb-28 pt-8 sm:px-8 sm:pt-12 md:pb-14 lg:grid-cols-1 lg:gap-10 lg:pl-8 lg:pr-[380px] xl:pl-12">
+      <div className="mx-auto grid max-w-none grid-cols-1 gap-8 px-5 pb-28 pt-8 sm:px-8 sm:pt-12 md:pb-14 lg:grid-cols-1 lg:gap-10 lg:pl-8 lg:pr-[404px] xl:pl-12">
         {thought && !loading && (
           <aside
           className="order-2 hidden min-h-0 flex-col overflow-hidden rounded-l-[24px] border border-r-0 border-[#292630]/10 bg-white p-5 shadow-[0_18px_45px_rgba(41,38,48,.06)] lg:fixed lg:bottom-0 lg:right-0 lg:top-28 lg:z-20 lg:flex lg:h-[calc(100vh-7rem)] lg:w-[380px]"
