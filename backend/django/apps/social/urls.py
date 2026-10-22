@@ -1,9 +1,10 @@
 from django.urls import path
 
-from .views import DailyQuestionView, DiscussionReplyCreateView, DiscussionReplyReactionView, ExploreView, MySocialSummaryView, QuestionListView, ThoughtBlockView, ThoughtConnectionRequestView, ThoughtCreateView, ThoughtDeleteView, ThoughtDetailView, ThoughtReactionView, ThoughtReportView, ThoughtSaveView
+from .views import DailyQuestionView, DiscussionReplyCreateView, DiscussionReplyReactionView, ExploreView, MySocialSummaryView, QuestionListView, QuestionSkipView, ThoughtBlockView, ThoughtConnectionRequestView, ThoughtCreateView, ThoughtDeleteView, ThoughtDetailView, ThoughtReactionView, ThoughtReportView, ThoughtSaveView
 
 urlpatterns = [
     path('questions/', QuestionListView.as_view()),
+    path('questions/<uuid:question_id>/skip/', QuestionSkipView.as_view()),
     path('questions/daily/', DailyQuestionView.as_view()),
     path('me/summary/', MySocialSummaryView.as_view()),
     path('explore/', ExploreView.as_view()),

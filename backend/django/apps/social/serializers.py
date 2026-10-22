@@ -9,7 +9,7 @@ from .models import DiscussionReply, Question, Thought
 class QuestionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Question
-        fields = ('id', 'text', 'category', 'published_at')
+        fields = ('id', 'text', 'category', 'depth', 'styles', 'published_at')
 
 
 class ThoughtSerializer(serializers.ModelSerializer):

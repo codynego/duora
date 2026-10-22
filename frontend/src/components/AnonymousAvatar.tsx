@@ -1,16 +1,25 @@
 import {
   Cloud,
+  CloudSun,
+  Compass,
+  Feather,
   Flower2,
   Gem,
   Heart,
   Leaf,
   Moon,
+  MoonStar,
+  Mountain,
   Orbit,
+  CircleDashed,
+  TreePine,
   Sparkles,
   Sprout,
   Star,
   Sun,
+  Sunrise,
   Waves,
+  Zap,
 } from "lucide-react";
 
 const symbols = [
@@ -26,12 +35,23 @@ const symbols = [
   Waves,
   Gem,
   Heart,
+  Compass,
+  Feather,
+  Mountain,
+  TreePine,
+  Zap,
+  MoonStar,
+  CircleDashed,
+  CloudSun,
+  Sunrise,
 ];
 const palettes = [
   ["bg-[#E9E1F1]", "text-[#7454A6]"],
   ["bg-[#DDE8D2]", "text-[#4F713D]"],
   ["bg-[#F7E4C2]", "text-[#9A6C2F]"],
   ["bg-[#E4E0F7]", "text-[#5D55A8]"],
+  ["bg-[#F2DDE4]", "text-[#9A4F6A]"],
+  ["bg-[#D8E9E8]", "text-[#3F7774]"],
 ];
 
 export default function AnonymousAvatar({

@@ -7,7 +7,7 @@ from .models import AnonymousIdentity
 
 ADJECTIVES = ('quiet', 'gentle', 'hidden', 'kind', 'soft', 'curious', 'open', 'still', 'bright', 'warm')
 NOUNS = ('moon', 'orbit', 'sunrise', 'horizon', 'harbor', 'wildflower', 'echo', 'river', 'comet', 'morning')
-AVATAR_VARIANT_COUNT = 12
+AVATAR_VARIANT_COUNT = 20
 
 
 def create_anonymous_identity(user):

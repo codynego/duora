@@ -12,7 +12,7 @@ from rest_framework.views import APIView
 from apps.connections.models import ConnectionRequest
 from apps.accounts.notifications import notify
 from apps.moderation.models import Report, SafetyExclusion
-from .models import DailyQuestionAssignment, DiscussionReply, Question, ReplyReaction, SavedThought, Thought, ThoughtReaction
+from .models import DailyQuestionAssignment, DiscussionReply, Question, QuestionSkip, ReplyReaction, SavedThought, Thought, ThoughtReaction
 from .serializers import QuestionSerializer, ReplyCreateSerializer, ReplySerializer, ThoughtCreateSerializer, ThoughtSerializer
 
 
@@ -34,11 +34,12 @@ def daily_question_for_user(user, assignment_date):
         return assignment.question
 
     answered_question_ids = Thought.objects.filter(author=user).values_list('question_id', flat=True)
+    skipped_question_ids = QuestionSkip.objects.filter(user=user).values_list('question_id', flat=True)
     recent_question_ids = DailyQuestionAssignment.objects.filter(
         user=user,
         assignment_date__gte=assignment_date.date() - timedelta(days=30),
     ).values_list('question_id', flat=True)
-    excluded_question_ids = set(answered_question_ids) | set(recent_question_ids)
+    excluded_question_ids = set(answered_question_ids) | set(skipped_question_ids) | set(recent_question_ids)
     candidates = list(Question.objects.filter(status=Question.Status.PUBLISHED).exclude(id__in=excluded_question_ids))
     if not candidates:
         candidates = list(Question.objects.filter(status=Question.Status.PUBLISHED).exclude(id__in=answered_question_ids))
@@ -46,6 +47,20 @@ def daily_question_for_user(user, assignment_date):
         candidates = list(Question.objects.filter(status=Question.Status.PUBLISHED))
     if not candidates:
         return None
+    profile = getattr(user, 'discovery_profile', None)
+    interests = {str(value).strip().lower() for value in (profile.interests if profile else [])}
+    preferred = [question for question in candidates if question.category.strip().lower() in interests]
+    if preferred and random.random() < 0.7:
+        candidates = preferred
+    answered_count = Thought.objects.filter(author=user).count()
+    preferred_depths = (
+        {Question.Depth.SURFACE, Question.Depth.REFLECTIVE} if answered_count < 2 else
+        {Question.Depth.REFLECTIVE, Question.Depth.CHALLENGING} if answered_count < 5 else
+        {Question.Depth.REFLECTIVE, Question.Depth.CHALLENGING, Question.Depth.VULNERABLE}
+    )
+    depth_candidates = [question for question in candidates if question.depth in preferred_depths]
+    if depth_candidates:
+        candidates = depth_candidates
     assignment_counts = dict(
         DailyQuestionAssignment.objects.filter(assignment_date=assignment_date.date())
         .values('question_id')
@@ -80,6 +95,17 @@ class QuestionListView(APIView):
     def get(self, request):
         questions = Question.objects.filter(status=Question.Status.PUBLISHED).order_by('-published_at', '-created_at')[:200]
         return Response({'data': QuestionSerializer(questions, many=True).data})
+
+
+class QuestionSkipView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, question_id):
+        question = Question.objects.filter(id=question_id, status=Question.Status.PUBLISHED).first()
+        if not question:
+            return Response({'detail': 'Question not found.'}, status=status.HTTP_404_NOT_FOUND)
+        QuestionSkip.objects.get_or_create(user=request.user, question=question)
+        return Response({'skipped': True})
 
 
 class DailyQuestionView(APIView):
@@ -221,7 +247,7 @@ class ThoughtCreateView(APIView):
         onboarding = serializer.validated_data.get('onboarding', False)
         profile = getattr(request.user, 'discovery_profile', None)
         now = timezone.now()
-        if profile and profile.answer_cooldown_until and profile.answer_cooldown_until > now and not onboarding:
+        if profile and profile.answer_cooldown_until and profile.answer_cooldown_until > now:
             return Response({
                 'detail': 'You can share another thought after your short reflection break.',
                 'code': 'answer_cooldown',

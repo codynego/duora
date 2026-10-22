@@ -10,9 +10,17 @@ class Question(models.Model):
         PUBLISHED = 'published', 'Published'
         ARCHIVED = 'archived', 'Archived'
 
+    class Depth(models.TextChoices):
+        SURFACE = 'surface', 'Surface beliefs'
+        REFLECTIVE = 'reflective', 'Reflective'
+        CHALLENGING = 'challenging', 'Challenge assumptions'
+        VULNERABLE = 'vulnerable', 'Deeper perspectives'
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     text = models.CharField(max_length=300)
     category = models.CharField(max_length=64, blank=True)
+    depth = models.CharField(max_length=16, choices=Depth.choices, default=Depth.REFLECTIVE)
+    styles = models.JSONField(default=list)
     status = models.CharField(max_length=12, choices=Status.choices, default=Status.DRAFT)
     published_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -20,6 +28,16 @@ class Question(models.Model):
     class Meta:
         ordering = ('-published_at', '-created_at')
         indexes = [models.Index(fields=('status', '-published_at'))]
+
+
+class QuestionSkip(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='skipped_questions')
+    question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name='skips')
+    skipped_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=('user', 'question'), name='unique_question_skip')]
+        indexes = [models.Index(fields=('user', '-skipped_at'))]
 
 
 class DailyQuestionAssignment(models.Model):

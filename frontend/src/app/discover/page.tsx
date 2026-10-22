@@ -170,7 +170,7 @@ export default function DiscoverPage() {
               ...current,
               onboarding_answered: true,
               answer_cooldown_until:
-                body?.data?.answer_cooldown_until ??
+                body?.answer_cooldown_until ??
                 new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString(),
             }
           : current,
@@ -200,7 +200,7 @@ export default function DiscoverPage() {
   const time = formatCountdown(remaining);
   const cooldownActive = Boolean(
     daily?.answer_cooldown_until &&
-      new Date(daily.answer_cooldown_until).getTime() > Date.now(),
+      new Date(daily.answer_cooldown_until).getTime() > Date.now() + serverOffset,
   );
   if (!ready || !user)
     return <div className="min-h-screen bg-[#F7F5F0]" aria-busy="true" />;
