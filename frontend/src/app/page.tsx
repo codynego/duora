@@ -18,7 +18,7 @@ const notes = [
 
 export default function HomePage() {
   const { user, ready } = useCurrentUser();
-  const startHref = ready && user ? '/home' : '/signup';
+  const startHref = ready && user ? '/home' : '/login';
 
   return (
     <div className="duora-site min-h-screen overflow-x-hidden bg-[#F3F1EC] text-[#171622]">
