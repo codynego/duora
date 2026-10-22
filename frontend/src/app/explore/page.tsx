@@ -14,6 +14,7 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import AppNav from "@/components/AppNav";
+import AnonymousAvatar from "@/components/AnonymousAvatar";
 import { getAccessToken } from "@/lib/auth";
 import { useCurrentUser } from "@/lib/current-user";
 
@@ -25,6 +26,7 @@ type Thought = {
     anonymous: boolean;
     username: string;
     display_name: string;
+    avatar_variant: number;
     label: string;
   };
   reply_count: number;
@@ -362,7 +364,7 @@ function ThoughtCard({
           “{thought.body}”
         </p>
         <div className="mt-5 flex items-center gap-2 text-xs text-[#958F9B]">
-          <UserRound className="h-3.5 w-3.5" />
+          <AnonymousAvatar variant={thought.author.avatar_variant} size="sm" />
           {thought.author.label}
         </div>
       </Link>

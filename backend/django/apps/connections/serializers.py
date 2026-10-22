@@ -25,7 +25,7 @@ class ConnectionRequestSerializer(serializers.ModelSerializer):
             return {'id': '', 'name': 'Duora connection', 'username': '', 'initial': 'D'}
         person = obj.recipient if obj.requester_id == request.user.id else obj.requester
         identity = get_or_create_anonymous_identity(person)
-        return {'id': '', 'name': identity.display_name, 'username': identity.username, 'initial': identity.display_name[:1].upper()}
+        return {'id': '', 'name': identity.display_name, 'username': identity.username, 'avatar_variant': identity.avatar_variant, 'initial': identity.display_name[:1].upper()}
 
     def get_thread_id(self, obj):
         if not self.get_reveal_ready(obj):

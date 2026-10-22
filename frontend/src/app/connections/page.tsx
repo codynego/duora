@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import AppNav from "@/components/AppNav";
+import AnonymousAvatar from "@/components/AnonymousAvatar";
 import { getAccessToken } from "@/lib/auth";
 
 type ConnectionItem = {
@@ -21,7 +22,13 @@ type ConnectionItem = {
   source: string;
   last_experience: string;
   created_at: string;
-  person: { id: string; name: string; username: string; initial: string };
+  person: {
+    id: string;
+    name: string;
+    username: string;
+    avatar_variant: number;
+    initial: string;
+  };
   thread_id?: string | null;
   my_reveal_consented?: boolean;
   other_reveal_consented?: boolean;
@@ -29,7 +36,12 @@ type ConnectionItem = {
 };
 type Thread = {
   id: string;
-  person: { name: string; username: string; initial: string };
+  person: {
+    name: string;
+    username: string;
+    avatar_variant: number;
+    initial: string;
+  };
   last_message: string | null;
   last_message_at?: string | null;
 };
@@ -296,7 +308,7 @@ function RequestCard({
       <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-start gap-4">
           <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#E9E1F1] text-[#7454A6]">
-            <UserRound className="h-5 w-5" />
+            <AnonymousAvatar variant={item.person.avatar_variant} />
           </span>
           <div>
             <p className="text-sm font-semibold">
@@ -425,7 +437,7 @@ function People({
             >
               <div className="flex items-start justify-between">
                 <span className="grid h-11 w-11 place-items-center rounded-full bg-[#E9E1F1] text-[#7454A6]">
-                  <UserRound className="h-5 w-5" />
+                  <AnonymousAvatar variant={item.person.avatar_variant} />
                 </span>
                 <span className="rounded-full bg-white px-3 py-1.5 text-[10px] font-bold uppercase tracking-[.1em] text-[#7454A6]">
                   Identity hidden

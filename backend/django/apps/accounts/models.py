@@ -8,6 +8,7 @@ class AnonymousIdentity(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='anonymous_identity')
     username = models.SlugField(max_length=32, unique=True)
     display_name = models.CharField(max_length=64)
+    avatar_variant = models.PositiveSmallIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

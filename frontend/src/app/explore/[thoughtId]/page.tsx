@@ -13,6 +13,7 @@ import {
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import AppNav from "@/components/AppNav";
+import AnonymousAvatar from "@/components/AnonymousAvatar";
 import { getAccessToken } from "@/lib/auth";
 import { useCurrentUser } from "@/lib/current-user";
 
@@ -20,7 +21,7 @@ type Thought = {
   id: string;
   question: { text: string; category: string };
   body: string;
-  author: { label: string };
+  author: { label: string; avatar_variant: number };
   reply_count: number;
   relate_count: number;
   viewer_related: boolean;
@@ -28,7 +29,7 @@ type Thought = {
 type Reply = {
   id: string;
   body: string;
-  author: { label: string };
+  author: { label: string; avatar_variant: number };
   created_at: string;
 };
 const api = process.env.NEXT_PUBLIC_DUORA_API_URL ?? "http://127.0.0.1:8000";
@@ -153,7 +154,10 @@ export default function DiscussionPage() {
             </header>
             <section className="mt-8 rounded-[24px] bg-white p-6 shadow-[0_18px_45px_rgba(41,38,48,.08)] sm:p-8">
               <div className="flex items-center gap-2 text-xs font-semibold text-[#7454A6]">
-                <UserRound className="h-4 w-4" />
+                <AnonymousAvatar
+                  variant={thought.author.avatar_variant}
+                  size="sm"
+                />
                 {thought.author.label}
               </div>
               <p className="mt-6 font-medium text-xl leading-8 text-[#292630]">
@@ -221,7 +225,10 @@ export default function DiscussionPage() {
                     className="rounded-[20px] border border-[#292630]/10 bg-white p-5"
                   >
                     <div className="flex items-center gap-2 text-xs font-semibold text-[#7454A6]">
-                      <UserRound className="h-3.5 w-3.5" />
+                      <AnonymousAvatar
+                        variant={item.author.avatar_variant}
+                        size="sm"
+                      />
                       {item.author.label}
                     </div>
                     <p className="mt-4 text-sm leading-7 text-[#5F5967]">

@@ -26,6 +26,7 @@ class DiscoveryProfile(models.Model):
     social_energy = models.CharField(max_length=24, blank=True)
     availability = models.CharField(max_length=24, blank=True)
     gender = models.CharField(max_length=24, blank=True, choices=Gender.choices)
+    date_of_birth = models.DateField(null=True, blank=True)
     city = models.CharField(max_length=100, blank=True)
     is_discoverable = models.BooleanField(default=False)
     onboarding_completed = models.BooleanField(default=False)

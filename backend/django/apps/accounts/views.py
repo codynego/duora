@@ -7,6 +7,7 @@ from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
+from .identity import get_or_create_anonymous_identity, regenerate_anonymous_avatar, regenerate_anonymous_identity
 from .serializers import MeSerializer, MeUpdateSerializer, RegisterSerializer
 
 User = get_user_model()
@@ -92,6 +93,22 @@ class MeView(APIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response({'data': MeSerializer(request.user).data})
+
+
+class AnonymousIdentityRegenerateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        identity = regenerate_anonymous_identity(request.user)
+        return Response({'data': {'username': identity.username, 'display_name': identity.display_name}})
+
+
+class AnonymousAvatarRegenerateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        identity = regenerate_anonymous_avatar(request.user)
+        return Response({'data': {'avatar_variant': identity.avatar_variant}})
 
 
 class PasswordResetRequestView(APIView):

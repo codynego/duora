@@ -9,6 +9,7 @@ export type CurrentUser = {
   display_name: string;
   anonymous_username: string;
   anonymous_display_name: string;
+  anonymous_avatar_variant: number;
   email: string;
   date_joined: string;
 };

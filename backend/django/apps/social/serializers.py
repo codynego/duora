@@ -25,7 +25,7 @@ class ThoughtSerializer(serializers.ModelSerializer):
 
     def get_author(self, obj):
         identity = get_or_create_anonymous_identity(obj.author)
-        return {'anonymous': True, 'username': identity.username, 'display_name': identity.display_name, 'label': f'{identity.display_name} · @{identity.username}'}
+        return {'anonymous': True, 'username': identity.username, 'display_name': identity.display_name, 'avatar_variant': identity.avatar_variant, 'label': f'{identity.display_name} · @{identity.username}'}
 
     def get_reply_count(self, obj):
         return obj.replies.filter(moderation_status=DiscussionReply.ModerationStatus.APPROVED).count()
@@ -56,7 +56,7 @@ class ReplySerializer(serializers.ModelSerializer):
 
     def get_author(self, obj):
         identity = get_or_create_anonymous_identity(obj.author)
-        return {'anonymous': True, 'username': identity.username, 'display_name': identity.display_name, 'label': f'{identity.display_name} · @{identity.username}'}
+        return {'anonymous': True, 'username': identity.username, 'display_name': identity.display_name, 'avatar_variant': identity.avatar_variant, 'label': f'{identity.display_name} · @{identity.username}'}
 
 
 class ReplyCreateSerializer(serializers.Serializer):

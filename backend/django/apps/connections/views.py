@@ -122,7 +122,7 @@ class ThreadsView(APIView):
             latest = thread.messages.last()
             other = thread.user_two if thread.user_one_id == request.user.id else thread.user_one
             identity = get_or_create_anonymous_identity(other)
-            data.append({'id': str(thread.id), 'person': {'id': '', 'name': identity.display_name, 'username': identity.username, 'initial': identity.display_name[:1].upper()}, 'room': None, 'last_message': latest.body if latest else None, 'last_message_at': thread.last_message_at})
+            data.append({'id': str(thread.id), 'person': {'id': '', 'name': identity.display_name, 'username': identity.username, 'avatar_variant': identity.avatar_variant, 'initial': identity.display_name[:1].upper()}, 'room': None, 'last_message': latest.body if latest else None, 'last_message_at': thread.last_message_at})
         return Response({'data': data})
 
 
@@ -175,7 +175,7 @@ class IdentityConsentView(APIView):
             sender = {'name': 'You', 'username': '', 'initial': 'Y'} if message.sender_id == request.user.id else None
             if sender is None:
                 identity = get_or_create_anonymous_identity(message.sender)
-                sender = {'name': identity.display_name, 'username': identity.username, 'initial': identity.display_name[:1].upper()}
+                sender = {'name': f'{identity.display_name} · @{identity.username}', 'username': identity.username, 'avatar_variant': identity.avatar_variant, 'initial': identity.display_name[:1].upper()}
             messages.append({'id': str(message.id), 'body': message.body, 'sender_id': message.sender_id, 'is_you': message.sender_id == request.user.id, 'sender': sender, 'created_at': message.created_at})
         return Response({'data': messages, 'match': {'connection_id': str(match.id), 'shared_interest': match.last_experience} if match else None})
 
@@ -190,7 +190,7 @@ class IdentityConsentView(APIView):
         thread.last_message_at = message.created_at
         thread.save(update_fields=('last_message_at',))
         identity = get_or_create_anonymous_identity(request.user)
-        return Response({'data': {'id': str(message.id), 'body': message.body, 'sender_id': message.sender_id, 'is_you': True, 'sender': {'name': identity.display_name, 'username': identity.username, 'initial': identity.display_name[:1].upper()}, 'created_at': message.created_at}}, status=status.HTTP_201_CREATED)
+        return Response({'data': {'id': str(message.id), 'body': message.body, 'sender_id': message.sender_id, 'is_you': True, 'sender': {'name': identity.display_name, 'username': identity.username, 'avatar_variant': identity.avatar_variant, 'initial': identity.display_name[:1].upper()}, 'created_at': message.created_at}}, status=status.HTTP_201_CREATED)
 
 
 class ThreadTypingView(ThreadMessageView):
