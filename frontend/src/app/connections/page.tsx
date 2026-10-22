@@ -308,7 +308,7 @@ function Requests({
           }
           detail={
             requestView === "received"
-              ? "Explore answers, join a discussion, and discover people whose perspectives interest you."
+              ? "See moments, join a discussion, and discover people whose perspectives interest you."
               : "When someone catches your curiosity, your request will appear here."
           }
         />
@@ -533,7 +533,7 @@ function EmptyState({ title, detail }: { title: string; detail: string }) {
         href="/discover"
         className="mt-5 inline-flex items-center gap-2 rounded-full bg-[#292630] px-4 py-2.5 text-xs font-semibold text-white"
       >
-        Explore Duorah <ArrowRight className="h-4 w-4" />
+        See moments <ArrowRight className="h-4 w-4" />
       </Link>
     </div>
   );

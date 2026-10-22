@@ -13,7 +13,7 @@ const api = process.env.NEXT_PUBLIC_DUORA_API_URL ?? "http://127.0.0.1:8000";
 const navigation = [
   { label: "Overview", href: "/home", icon: Compass },
   { label: "Discover", href: "/discover", icon: Compass },
-  { label: "Explore", href: "/explore", icon: Search },
+  { label: "Moments", href: "/moments", icon: Search },
   { label: "Connections", href: "/connections", icon: MessageCircle },
   { label: "Profile", href: "/profile", icon: UserRound },
 ];
@@ -79,7 +79,7 @@ export default function AppNav({ minimal = false }: { minimal?: boolean }) {
         </nav>
         <section
           className="mt-auto rounded-2xl bg-[#E9E1F1] p-4"
-          aria-label="Explore invitation"
+          aria-label="Moments invitation"
         >
           <SparkleMark />
           <p className="mt-3 text-sm font-bold tracking-[-.02em] text-[#292630]">
@@ -89,10 +89,10 @@ export default function AppNav({ minimal = false }: { minimal?: boolean }) {
             Your next connection can start with curiosity.
           </p>
           <Link
-            href="/explore"
+            href="/moments"
             className="mt-4 inline-flex text-xs font-bold text-[#7454A6] transition hover:text-[#553781]"
           >
-            Open Explore →
+            Open Moments →
           </Link>
         </section>
         <Link

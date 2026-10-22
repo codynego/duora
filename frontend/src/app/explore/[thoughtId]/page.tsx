@@ -185,7 +185,7 @@ export default function DiscussionPage() {
     if (!thought) return;
     const token = await getAccessToken();
     if (!token) {
-      router.replace(`/login?next=${encodeURIComponent(`/explore/${thought.id}`)}`);
+      router.replace(`/login?next=${encodeURIComponent(`/moments/${thought.id}`)}`);
       return;
     }
     setConnecting(true);
@@ -245,11 +245,11 @@ export default function DiscussionPage() {
         {thought && !loading && (
           <aside
           className="order-2 hidden min-h-0 flex-col overflow-hidden rounded-l-[24px] border border-r-0 border-[#292630]/10 bg-white p-5 shadow-[0_18px_45px_rgba(41,38,48,.06)] lg:fixed lg:bottom-0 lg:right-0 lg:top-28 lg:z-20 lg:flex lg:h-[calc(100vh-7rem)] lg:w-[380px]"
-          aria-label="Explore different perspectives"
+          aria-label="Different perspectives"
           >
           <p className="dashboard-kicker">
             <span />
-            Explore different perspectives
+            Different perspectives
           </p>
           <h2 className="dashboard-display mt-4 text-2xl tracking-[-.05em]">
             {replies.length} {replies.length === 1 ? "reply" : "replies"}
@@ -321,11 +321,11 @@ export default function DiscussionPage() {
         )}
       <main className="order-1 min-w-0 lg:w-full lg:max-w-3xl lg:justify-self-center">
         <Link
-          href="/explore"
+          href="/moments"
           className="inline-flex items-center gap-2 text-sm font-semibold text-[#6E6975] hover:text-[#292630]"
         >
           <ArrowLeft className="h-4 w-4" />
-          Back to Explore
+          Back to Moments
         </Link>
         {loading ? (
           <div className="mt-8 h-96 animate-pulse rounded-[24px] bg-[#E9E1F1]" />
@@ -428,7 +428,7 @@ export default function DiscussionPage() {
                 <div>
                   <p className="dashboard-kicker">
                     <span />
-                    Explore different perspectives
+                    Different perspectives
                   </p>
                   <h2 className="dashboard-display mt-3 text-3xl tracking-[-.05em]">
                     {replies.length}{" "}
@@ -492,10 +492,10 @@ export default function DiscussionPage() {
               </div>
             </section>
             <Link
-              href="/explore"
+              href="/moments"
               className="mt-10 inline-flex items-center gap-2 text-sm font-semibold text-[#7454A6]"
             >
-              Explore more answers <ArrowRight className="h-4 w-4" />
+              See more moments <ArrowRight className="h-4 w-4" />
             </Link>
           </>
         ) : null}

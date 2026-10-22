@@ -510,7 +510,7 @@ export default function ProfilePage() {
               }
               detail={
                 tab === "saved"
-                  ? "Save interesting questions and answers from Explore, then return to them here."
+                  ? "Save interesting questions and answers from Moments, then return to them here."
                   : tab === "reactions"
                     ? "Answers you relate to will stay private to your account."
                     : "Share an answer on Discover to start building your personal collection."
@@ -518,7 +518,7 @@ export default function ProfilePage() {
               href={tab === "saved" ? "/discover" : "/home#next-question"}
               action={
                 tab === "saved"
-                  ? "Explore questions"
+                  ? "See moments"
                   : "Answer your first question"
               }
             />

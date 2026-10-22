@@ -376,7 +376,7 @@ export default function Onboarding() {
                     disabled={saving || !answer.trim()}
                     className="button-primary inline-flex items-center justify-center gap-3 rounded-full bg-[#171622] px-6 py-4 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-45"
                   >
-                    {saving ? "Opening Explore…" : "Share my thought"}{" "}
+                    {saving ? "Opening Moments…" : "Share my thought"}{" "}
                     <ArrowRight className="h-4 w-4" />
                   </button>
                 </div>

@@ -228,7 +228,7 @@ export default function DiscoverPage() {
         <section className="mx-auto mt-20 max-w-3xl text-center sm:mt-24">
           <p className="dashboard-kicker justify-center">
             <span />
-            {weekday.toUpperCase()} · DAILY QUESTION
+            {weekday.toUpperCase()} · DAILY MOMENTS
           </p>
           <h1 className="dashboard-display mt-7 text-5xl leading-[.93] tracking-[-.07em] sm:text-7xl">
             A thought worth sharing<span className="text-[#7454A6]">.</span>
@@ -277,10 +277,10 @@ export default function DiscoverPage() {
                   </p>
                 </div>
                 <Link
-                  href={`/explore?category=${encodeURIComponent(question.category)}`}
+                  href={`/moments?category=${encodeURIComponent(question.category)}`}
                   className="inline-flex w-fit items-center gap-2 rounded-full bg-[#7454A6] px-5 py-3 text-sm font-semibold text-white"
                 >
-                  Explore other answers <ArrowRight className="h-4 w-4" />
+                  See other moments <ArrowRight className="h-4 w-4" />
                 </Link>
               </div>
             </div>
@@ -376,7 +376,7 @@ export default function DiscoverPage() {
             />
             <div className="mt-3 flex items-center justify-between text-xs text-[#958F9B]">
               <span>{onboardingAnswer.length} / 500</span>
-              <span>Shared anonymously · Appears in Explore</span>
+              <span>Shared anonymously · Appears in Moments</span>
             </div>
             <button
               type="button"
@@ -390,16 +390,16 @@ export default function DiscoverPage() {
         )}
         <section className="mx-auto mt-12 grid max-w-3xl gap-3 sm:grid-cols-2">
           <Link
-            href="/explore"
+            href="/moments"
             className="group rounded-[20px] border border-[#E7E2EA] bg-white p-5 transition hover:-translate-y-0.5 hover:border-[#7454A6]"
           >
             <Search className="h-5 w-5 text-[#7454A6]" />
-            <h2 className="mt-7 text-lg font-semibold">Explore thoughts</h2>
+            <h2 className="mt-7 text-lg font-semibold">See moments</h2>
             <p className="mt-2 text-sm leading-6 text-[#6E6975]">
               See what others are thinking.
             </p>
             <span className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-[#7454A6]">
-              Explore{" "}
+              Moments{" "}
               <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
             </span>
           </Link>

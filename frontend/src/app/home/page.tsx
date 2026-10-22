@@ -132,10 +132,10 @@ export default function OverviewPage() {
               </h2>
             </div>
             <Link
-              href="/explore"
+              href="/moments"
               className="hidden items-center gap-2 text-sm font-semibold text-[#7454A6] sm:inline-flex"
             >
-              Explore all <ArrowRight className="h-4 w-4" />
+              Moments all <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
           {loading ? (
@@ -161,7 +161,7 @@ export default function OverviewPage() {
                     relates
                   </p>
                   <Link
-                    href={`/explore/${thought.id}`}
+                    href={`/moments/${thought.id}`}
                     className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-[#7454A6]"
                   >
                     Join conversation <ArrowRight className="h-4 w-4" />
@@ -185,12 +185,12 @@ export default function OverviewPage() {
           )}
         </section>
         <Link
-          href="/explore"
+          href="/moments"
           className="mt-10 flex items-center justify-between gap-5 rounded-[22px] border border-[#292630]/10 bg-white p-5 transition hover:border-[#7454A6] sm:p-6"
         >
           <div>
             <p className="text-xs font-bold uppercase tracking-[.14em] text-[#7454A6]">
-              Explore more perspectives
+              More moments
             </p>
             <h2 className="mt-2 text-xl font-semibold tracking-[-.04em]">
               There’s more than one way to see it.

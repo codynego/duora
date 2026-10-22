@@ -18,7 +18,7 @@ export default function manifest(): MetadataRoute.Manifest {
       { src: '/icon-512.svg', sizes: '512x512', type: 'image/svg+xml', purpose: 'maskable' },
     ],
     shortcuts: [
-      { name: 'Explore thoughts', short_name: 'Explore', description: 'Find anonymous thoughts and conversations.', url: '/explore', icons: [{ src: '/icon-192.svg', sizes: '192x192' }] },
+      { name: 'Moments', short_name: 'Moments', description: 'Find anonymous thoughts and conversations.', url: '/moments', icons: [{ src: '/icon-192.svg', sizes: '192x192' }] },
       { name: 'Create an experience', short_name: 'Create', description: 'Start a private or public room.', url: '/experiences', icons: [{ src: '/icon-192.svg', sizes: '192x192' }] },
     ],
   };

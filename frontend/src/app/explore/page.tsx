@@ -62,8 +62,9 @@ export default function ExplorePage() {
   const [error, setError] = useState("");
   const [requestSent, setRequestSent] = useState(false);
   const [commonGroundThought, setCommonGroundThought] = useState<Thought | null>(null);
-  const [feedTab, setFeedTab] = useState<"all" | "mine">("all");
+  const [feedTab, setFeedTab] = useState<"all" | "mine" | "saved">("all");
   const [myThoughts, setMyThoughts] = useState<Thought[]>([]);
+  const [savedThoughts, setSavedThoughts] = useState<Thought[]>([]);
   const [featuredThought, setFeaturedThought] = useState<Thought | null>(null);
 
   useEffect(() => {
@@ -83,20 +84,26 @@ export default function ExplorePage() {
       setError("");
       try {
         const token = await getAccessToken();
-        const response = await fetch(`${api}/api/v1/social/explore/`, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        });
+        const headers: Record<string, string> = token
+          ? { Authorization: `Bearer ${token}` }
+          : {};
+        const [response, savedResponse] = await Promise.all([
+          fetch(`${api}/api/v1/social/explore/`, { headers }),
+          fetch(`${api}/api/v1/social/explore/?saved=1`, { headers }),
+        ]);
         const body = await response.json().catch(() => null);
+        const savedBody = await savedResponse.json().catch(() => null);
         if (!response.ok)
-          throw new Error(body?.detail ?? "Explore could not be loaded.");
+          throw new Error(body?.detail ?? "Moments could not be loaded.");
         setThoughts(body?.data ?? []);
         setMyThoughts(body?.my_thoughts ?? []);
+        if (savedResponse.ok) setSavedThoughts(savedBody?.data ?? []);
         setFeaturedThought(body?.featured ?? null);
       } catch (reason) {
         setError(
           reason instanceof Error
             ? reason.message
-            : "Explore could not be loaded.",
+            : "Moments could not be loaded.",
         );
       } finally {
         setLoading(false);
@@ -107,7 +114,7 @@ export default function ExplorePage() {
 
   const visibleThoughts = useMemo(
     () =>
-      (feedTab === "mine" ? myThoughts : thoughts).filter((thought) => {
+      (feedTab === "mine" ? myThoughts : feedTab === "saved" ? savedThoughts : thoughts).filter((thought) => {
         const haystack =
           `${thought.question.text} ${thought.question.category} ${thought.body}`.toLowerCase();
         const matchesQuery =
@@ -118,7 +125,7 @@ export default function ExplorePage() {
           thought.question.category.toLowerCase() === category.toLowerCase()
         );
       }),
-    [category, feedTab, myThoughts, query, thoughts],
+    [category, feedTab, myThoughts, query, savedThoughts, thoughts],
   );
   const featured = feedTab === "all" ? featuredThought : null;
 
@@ -130,6 +137,7 @@ export default function ExplorePage() {
     }
     const previousThoughts = thoughts;
     const previousFeatured = featuredThought;
+    const previousSaved = savedThoughts;
     const update = (thought: Thought) =>
       thought.id !== thoughtId
         ? thought
@@ -146,6 +154,17 @@ export default function ExplorePage() {
           };
     setThoughts((current) => current.map(update));
     setFeaturedThought((current) => (current ? update(current) : current));
+    if (action === "save") {
+      const source = thoughts.find((thought) => thought.id === thoughtId);
+      setSavedThoughts((current) => {
+        if (!source) return current;
+        if (source.viewer_saved)
+          return current.filter((thought) => thought.id !== thoughtId);
+        return current.some((thought) => thought.id === thoughtId)
+          ? current.map(update)
+          : [...current, update(source)];
+      });
+    }
     const response = await fetch(
       `${api}/api/v1/social/thoughts/${thoughtId}/${action}/`,
       { method: "POST", headers: { Authorization: `Bearer ${token}` } },
@@ -153,6 +172,7 @@ export default function ExplorePage() {
     if (!response.ok) {
       setThoughts(previousThoughts);
       setFeaturedThought(previousFeatured);
+      setSavedThoughts(previousSaved);
       return;
     }
     const body = await response.json();
@@ -172,6 +192,17 @@ export default function ExplorePage() {
           };
     setThoughts((current) => current.map(confirm));
     setFeaturedThought((current) => (current ? confirm(current) : current));
+    if (action === "save") {
+      const saved = Boolean(body.saved);
+      setSavedThoughts((current) => {
+        if (!saved) return current.filter((thought) => thought.id !== thoughtId);
+        const source = thoughts.find((thought) => thought.id === thoughtId);
+        if (!source) return current;
+        return current.some((thought) => thought.id === thoughtId)
+          ? current.map(confirm)
+          : [...current, confirm(source)];
+      });
+    }
   }
 
   async function requestConnection(thoughtId: string) {
@@ -200,7 +231,7 @@ export default function ExplorePage() {
               The heart of Duorah
             </p>
             <h1 className="dashboard-display mt-4 text-5xl leading-[.92] tracking-[-.07em] sm:text-7xl">
-              Explore<span className="text-[#7454A6]">.</span>
+              Moments<span className="text-[#7454A6]">.</span>
             </h1>
             <p className="mt-4 text-base text-[#6E6975]">
               There’s more to everyone.
@@ -216,15 +247,15 @@ export default function ExplorePage() {
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search Explore..."
-            aria-label="Search Explore"
+            placeholder="Search Moments..."
+            aria-label="Search Moments"
             className="duora-form-input h-12 w-full rounded-2xl bg-white pl-11 pr-4 text-sm outline-none"
           />
         </div>
         <div
           className="scrollbar-none mt-4 flex gap-2 overflow-x-auto pb-1"
           role="tablist"
-          aria-label="Explore categories"
+          aria-label="Moment categories"
         >
           {categories.map((item) => (
             <button
@@ -239,9 +270,10 @@ export default function ExplorePage() {
             </button>
           ))}
         </div>
-        <div className="mt-5 flex w-fit rounded-xl bg-[#292630]/[.06] p-1" role="tablist" aria-label="Explore feed">
+        <div className="mt-5 flex w-fit rounded-xl bg-[#292630]/[.06] p-1" role="tablist" aria-label="Moments feed">
           <button type="button" onClick={() => setFeedTab("all")} aria-selected={feedTab === "all"} className={`rounded-lg px-4 py-2 text-xs font-semibold ${feedTab === "all" ? "bg-white text-[#292630] shadow-sm" : "text-[#6E6975]"}`}>All thoughts</button>
           <button type="button" onClick={() => setFeedTab("mine")} aria-selected={feedTab === "mine"} className={`rounded-lg px-4 py-2 text-xs font-semibold ${feedTab === "mine" ? "bg-white text-[#292630] shadow-sm" : "text-[#6E6975]"}`}>My thoughts</button>
+          <button type="button" onClick={() => setFeedTab("saved")} aria-selected={feedTab === "saved"} className={`rounded-lg px-4 py-2 text-xs font-semibold ${feedTab === "saved" ? "bg-white text-[#292630] shadow-sm" : "text-[#6E6975]"}`}>Saved</button>
         </div>
         {requestSent && (
           <div className="mt-5 flex items-center gap-3 rounded-2xl bg-[#DDE8D2] p-4 text-sm font-semibold text-[#496436]">
@@ -262,8 +294,8 @@ export default function ExplorePage() {
         )}
         {loading ? (
           <div className="mt-8 h-80 animate-pulse rounded-[24px] bg-[#E9E1F1]" />
-        ) : feedTab === "mine" ? (
-          <ThoughtGrid thoughts={visibleThoughts} onToggle={toggleAction} onConnect={requestConnection} onCommonGround={setCommonGroundThought} title="Your thoughts" emptyTitle="You haven’t shared a thought yet." emptyDetail="Answer a question on Discover and it will appear here." />
+        ) : feedTab !== "all" ? (
+          <ThoughtGrid thoughts={visibleThoughts} onToggle={toggleAction} onConnect={requestConnection} onCommonGround={setCommonGroundThought} title={feedTab === "saved" ? "Saved moments" : "Your moments"} emptyTitle={feedTab === "saved" ? "Nothing saved yet." : "You haven’t shared a thought yet."} emptyDetail={feedTab === "saved" ? "Save interesting thoughts from Moments and they will appear here." : "Answer a question on Discover and it will appear here."} />
         ) : featured ? (
           <>
             <section className="mt-8 rounded-[24px] bg-[#7454A6] p-6 text-white shadow-[0_18px_42px_rgba(116,84,166,.2)] sm:p-8">
@@ -280,7 +312,7 @@ export default function ExplorePage() {
                   {featured.relate_count > 0 && ` · ${featured.relate_count} relates`}
                 </span>
               </div>
-              <Link href={`/explore/${featured.id}`} className="group block">
+              <Link href={`/moments/${featured.id}`} className="group block">
                 <h2 className="dashboard-display mt-10 max-w-3xl text-4xl leading-[.98] tracking-[-.055em] sm:text-5xl">
                   {featured.question.text}
                 </h2>
@@ -314,7 +346,7 @@ export default function ExplorePage() {
                   </span>
                 </button>
                 <Link
-                  href={`/explore/${featured.id}`}
+                  href={`/moments/${featured.id}`}
                   className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2.5 text-sm font-semibold text-[#7454A6]"
                 >
                   Join the discussion <ArrowRight className="h-4 w-4" />
@@ -382,7 +414,7 @@ export default function ExplorePage() {
               href="/home"
               className="mt-6 inline-flex items-center gap-2 rounded-full bg-[#292630] px-5 py-3 text-sm font-semibold text-white"
             >
-              Share a thought <ArrowRight className="h-4 w-4" />
+              Share a moment <ArrowRight className="h-4 w-4" />
             </Link>
           </section>
         )}
@@ -448,7 +480,7 @@ function ThoughtCard({
 }) {
   return (
     <article className="rounded-[22px] border border-[#292630]/10 bg-white p-5 transition hover:-translate-y-0.5 hover:shadow-[0_16px_34px_rgba(41,38,48,.08)] sm:p-6">
-      <Link href={`/explore/${thought.id}`} className="block">
+      <Link href={`/moments/${thought.id}`} className="block">
         <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-[.14em] text-[#7454A6]">
           <span>
             {thought.reply_count > 0 ? "Discussion" : "Anonymous thought"}
@@ -503,14 +535,14 @@ function ThoughtCard({
           I relate
         </button>
         <Link
-          href={`/explore/${thought.id}`}
+          href={`/moments/${thought.id}`}
           className="inline-flex items-center gap-1.5 rounded-full bg-[#F7F5F0] px-3 py-2 text-xs font-semibold text-[#6E6975]"
         >
           <MessageCircle className="h-3.5 w-3.5" />
           Reply
         </Link>
         <Link
-          href={`/explore/${thought.id}`}
+          href={`/moments/${thought.id}`}
           className="inline-flex items-center gap-1.5 rounded-full bg-[#292630] px-3 py-2 text-xs font-semibold text-white"
         >
           Join <ArrowRight className="h-3.5 w-3.5" />
