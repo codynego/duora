@@ -3,11 +3,7 @@
 import { Download, Smartphone, Sparkles, Zap } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import Navbar from '@/components/Navbar';
-
-type BeforeInstallPromptEvent = Event & {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
-};
+import { initPwaInstall, promptInstall, subscribeToInstallPrompt, type BeforeInstallPromptEvent } from '@/lib/pwa-install';
 
 export default function InstallDorah() {
   const [installEvent, setInstallEvent] = useState<BeforeInstallPromptEvent | null>(null);
@@ -16,20 +12,12 @@ export default function InstallDorah() {
   useEffect(() => {
     const standalone = window.matchMedia('(display-mode: standalone)').matches || Boolean((navigator as Navigator & { standalone?: boolean }).standalone);
     setInstalled(standalone);
-    const handleInstallPrompt = (event: Event) => {
-      event.preventDefault();
-      setInstallEvent(event as BeforeInstallPromptEvent);
-    };
-    window.addEventListener('beforeinstallprompt', handleInstallPrompt);
-    return () => window.removeEventListener('beforeinstallprompt', handleInstallPrompt);
+    initPwaInstall();
+    return subscribeToInstallPrompt(setInstallEvent);
   }, []);
 
   async function install() {
-    if (!installEvent) return;
-    await installEvent.prompt();
-    const choice = await installEvent.userChoice;
-    if (choice.outcome === 'accepted') setInstalled(true);
-    setInstallEvent(null);
+    if (await promptInstall()) setInstalled(true);
   }
 
   return (

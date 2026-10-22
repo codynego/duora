@@ -215,9 +215,15 @@ export default function Onboarding() {
                 Meet through minds<span className="text-[#9B84F7]">.</span>
               </h1>
               <p className="mt-7 max-w-xl text-lg leading-8 text-[#666372] sm:text-xl">
-                Discover people through the things they think, the answers they
-                give, and the conversations they start. You can stay anonymous
-                until a connection feels worth opening.
+                <span className="sm:hidden">
+                  Share a thought, find a perspective, and stay anonymous until
+                  you choose.
+                </span>
+                <span className="hidden sm:inline">
+                  Discover people through the things they think, the answers
+                  they give, and the conversations they start. You can stay
+                  anonymous until a connection feels worth opening.
+                </span>
               </p>
               <div className="mt-9 rounded-[24px] border border-[#171622]/10 bg-[#FAF9F5]/80 p-5">
                 <div className="flex items-center gap-3">
@@ -269,12 +275,10 @@ export default function Onboarding() {
               <h1 className="display-heading mt-6 text-5xl leading-[.94] tracking-[-.07em] sm:text-7xl">
                 Choose what you’re curious about.
               </h1>
-              <p className="mt-6 max-w-xl text-base leading-7 text-[#666372]">
-                Pick a few interests to help shape the thoughts and
-                conversations you see. There is no wrong answer, and you can
-                change this later.
+              <p className="mt-5 max-w-xl text-sm leading-6 text-[#666372] sm:mt-6 sm:text-base sm:leading-7">
+                Pick a few interests. You can change them later.
               </p>
-              <div className="mt-10 grid gap-3 sm:grid-cols-2">
+              <div className="mt-7 grid grid-cols-2 gap-2.5 sm:mt-10 sm:grid-cols-3 sm:gap-3">
                 {interestOptions.map(([title, description]) => {
                   const active = selected.includes(title);
                   return (
@@ -283,19 +287,19 @@ export default function Onboarding() {
                       key={title}
                       onClick={() => toggleInterest(title)}
                       aria-pressed={active}
-                      className={`group rounded-[20px] border p-5 text-left transition ${active ? "border-[#9B84F7] bg-[#DCD4FF]" : "border-[#171622]/12 bg-[#FAF9F5]/80 hover:-translate-y-0.5 hover:border-[#9B84F7]"}`}
+                      className={`group min-h-[76px] rounded-[18px] border p-3 text-left transition sm:min-h-[132px] sm:rounded-[20px] sm:p-5 ${active ? "border-[#9B84F7] bg-[#DCD4FF]" : "border-[#171622]/12 bg-[#FAF9F5]/80 hover:-translate-y-0.5 hover:border-[#9B84F7]"}`}
                     >
-                      <span className="flex items-start justify-between gap-4">
+                      <span className="flex h-full items-start justify-between gap-2 sm:gap-4">
                         <span>
-                          <span className="block text-base font-semibold tracking-[-.02em]">
+                          <span className="block text-sm font-semibold leading-5 tracking-[-.02em] sm:text-base sm:leading-normal">
                             {title}
                           </span>
-                          <span className="mt-1.5 block text-sm leading-5 text-[#666372]">
+                          <span className="mt-1.5 hidden text-sm leading-5 text-[#666372] sm:block">
                             {description}
                           </span>
                         </span>
                         {active && (
-                          <Check className="h-5 w-5 shrink-0 text-[#806BE4]" />
+                          <Check className="h-4 w-4 shrink-0 text-[#806BE4] sm:h-5 sm:w-5" />
                         )}
                       </span>
                     </button>
