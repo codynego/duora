@@ -129,6 +129,13 @@ export default function DiscussionPage() {
     setThought({ ...thought, reply_count: thought.reply_count + 1 });
   }
 
+  function focusReplyBox() {
+    const target =
+      document.getElementById("reply-box") ??
+      document.getElementById("reply-box-mobile");
+    target?.focus();
+  }
+
   async function connect() {
     if (!thought) return;
     const token = await getAccessToken();
@@ -211,12 +218,27 @@ export default function DiscussionPage() {
               No perspectives yet. Your reply could be the first.
             </p>
           )}
-          <a
-            href="#reply-box"
-            className="mt-5 inline-flex text-sm font-semibold text-[#7454A6]"
-          >
-            Add your perspective <ArrowRight className="ml-1 h-4 w-4" />
-          </a>
+          <div className="mt-6 border-t border-[#292630]/10 pt-5">
+            <textarea
+              id="reply-box"
+              value={reply}
+              onChange={(event) => setReply(event.target.value)}
+              placeholder="Share your perspective respectfully…"
+              maxLength={2000}
+              className="min-h-28 w-full resize-none rounded-2xl bg-[#F7F5F0] p-3 text-sm leading-6 outline-none placeholder:text-[#958F9B] focus:ring-2 focus:ring-[#7454A6]/20"
+            />
+            <div className="mt-3 flex items-center justify-between gap-3">
+              <span className="text-[11px] text-[#958F9B]">Anonymous reply</span>
+              <button
+                type="button"
+                onClick={() => void postReply()}
+                disabled={!reply.trim()}
+                className="inline-flex items-center gap-1.5 rounded-full bg-[#7454A6] px-3 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45"
+              >
+                Reply <Send className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </div>
         </aside>
       )}
       <main className="mx-auto max-w-3xl px-5 pb-28 pt-8 sm:px-8 sm:pt-12 md:pb-14">
@@ -285,7 +307,7 @@ export default function DiscussionPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => document.getElementById("reply-box")?.focus()}
+                  onClick={focusReplyBox}
                   className="inline-flex items-center gap-2 rounded-full bg-[#F7F5F0] px-4 py-2.5 text-sm font-semibold text-[#6E6975]"
                 >
                   <MessageCircle className="h-4 w-4" />
@@ -321,7 +343,7 @@ export default function DiscussionPage() {
                 </Link>
               </div>
             )}
-            <section className="mt-12">
+            <section className="mt-12 lg:hidden">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="dashboard-kicker">
@@ -361,7 +383,7 @@ export default function DiscussionPage() {
               </div>
               <div className="mt-6 rounded-[20px] border border-[#292630]/10 bg-white p-4">
                 <textarea
-                  id="reply-box"
+                  id="reply-box-mobile"
                   value={reply}
                   onChange={(event) => setReply(event.target.value)}
                   placeholder="Share your perspective respectfully…"

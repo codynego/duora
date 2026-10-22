@@ -310,8 +310,14 @@ class ThoughtDetailView(APIView):
         thought = self.get_object(request, thought_id)
         if not thought:
             return Response({'detail': 'Thought not found.'}, status=status.HTTP_404_NOT_FOUND)
-        replies = thought.replies.filter(moderation_status=DiscussionReply.ModerationStatus.APPROVED)
-        return Response({'data': ThoughtSerializer(thought, context={'request': request}).data, 'replies': ReplySerializer(replies, many=True).data})
+        replies = thought.replies.filter(
+            moderation_status=DiscussionReply.ModerationStatus.APPROVED,
+        ).select_related('author').order_by('created_at')
+        return Response({
+            'data': ThoughtSerializer(thought, context={'request': request}).data,
+            'replies': ReplySerializer(replies, many=True).data,
+            'reply_count': replies.count(),
+        })
 
 
 class ThoughtReactionView(APIView):
@@ -343,6 +349,7 @@ class ThoughtSaveView(APIView):
 class DiscussionReplyCreateView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @transaction.atomic
     def post(self, request, thought_id):
         thought = Thought.objects.filter(id=thought_id, moderation_status=Thought.ModerationStatus.APPROVED).first()
         if not thought:
