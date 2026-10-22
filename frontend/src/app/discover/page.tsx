@@ -7,7 +7,6 @@ import {
   Clock3,
   Eye,
   Search,
-  UserRound,
   UsersRound,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -46,6 +45,7 @@ export default function DiscoverPage() {
   const [answer, setAnswer] = useState("");
   const [onboardingAnswer, setOnboardingAnswer] = useState("");
   const [remaining, setRemaining] = useState(0);
+  const [cooldownRemaining, setCooldownRemaining] = useState(0);
   const [serverOffset, setServerOffset] = useState(0);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -90,6 +90,24 @@ export default function DiscoverPage() {
     const timer = window.setInterval(update, 1000);
     return () => window.clearInterval(timer);
   }, [daily?.next_reset_at, serverOffset]);
+
+  useEffect(() => {
+    if (!daily?.answer_cooldown_until) {
+      setCooldownRemaining(0);
+      return;
+    }
+    const update = () =>
+      setCooldownRemaining(
+        Math.max(
+          0,
+          new Date(daily.answer_cooldown_until as string).getTime() -
+            (Date.now() + serverOffset),
+        ),
+      );
+    update();
+    const timer = window.setInterval(update, 1000);
+    return () => window.clearInterval(timer);
+  }, [daily?.answer_cooldown_until, serverOffset]);
 
   async function publishThought() {
     const question = daily?.data;
@@ -198,10 +216,8 @@ export default function DiscoverPage() {
     [daily?.server_now],
   );
   const time = formatCountdown(remaining);
-  const cooldownActive = Boolean(
-    daily?.answer_cooldown_until &&
-      new Date(daily.answer_cooldown_until).getTime() > Date.now() + serverOffset,
-  );
+  const cooldownTime = formatCountdown(cooldownRemaining);
+  const cooldownActive = cooldownRemaining > 0;
   if (!ready || !user)
     return <div className="min-h-screen bg-[#F7F5F0]" aria-busy="true" />;
 
@@ -209,21 +225,6 @@ export default function DiscoverPage() {
     <div className="min-h-screen bg-[#F7F5F0] text-[#292630] md:pl-[232px]">
       <AppNav minimal />
       <main className="mx-auto max-w-4xl px-5 pb-28 pt-7 sm:px-8 sm:pt-12 md:pb-14">
-        <header className="flex items-center justify-between">
-          <Link
-            href="/home"
-            className="font-serif text-3xl tracking-[-.075em] text-[#292630]"
-          >
-            duorah<span className="text-[#7454A6]">.</span>
-          </Link>
-          <Link
-            href="/profile"
-            aria-label="Your profile"
-            className="grid h-10 w-10 place-items-center rounded-full bg-[#292630] text-white"
-          >
-            <UserRound className="h-4 w-4" />
-          </Link>
-        </header>
         <section className="mx-auto mt-20 max-w-3xl text-center sm:mt-24">
           <p className="dashboard-kicker justify-center">
             <span />
@@ -325,10 +326,25 @@ export default function DiscoverPage() {
                 <ArrowRight className="h-4 w-4" />
               </button>
               {cooldownActive && (
-                <p className="mt-4 text-sm text-[#6E6975]">
-                  You’ve shared a first thought. You can explore and join
-                  conversations while your short reflection break runs.
-                </p>
+                <div className="mt-5 rounded-2xl bg-[#F0ECFA] p-4 text-[#5D487A]">
+                  <p className="text-sm font-semibold">
+                    You’ve shared a first thought.
+                  </p>
+                  <p className="mt-1 text-sm leading-6">
+                    You can answer another question in:
+                  </p>
+                  <p className="mt-3 font-mono text-xl font-semibold tracking-[-.04em]">
+                    {cooldownTime.hours}
+                    <span className="ml-1 text-[10px] font-sans font-bold tracking-[.1em]">HRS</span>
+                    <span className="ml-3">{cooldownTime.minutes}</span>
+                    <span className="ml-1 text-[10px] font-sans font-bold tracking-[.1em]">MIN</span>
+                    <span className="ml-3">{cooldownTime.seconds}</span>
+                    <span className="ml-1 text-[10px] font-sans font-bold tracking-[.1em]">SEC</span>
+                  </p>
+                  <p className="mt-2 text-xs leading-5 text-[#7454A6]">
+                    You can still explore and join conversations while the timer runs.
+                  </p>
+                </div>
               )}
               {error && (
                 <p role="alert" className="mt-4 text-sm text-[#9A3650]">

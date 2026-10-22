@@ -7,7 +7,6 @@ import {
   Check,
   MessageCircle,
   Search,
-  UserRound,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -81,12 +80,8 @@ export default function OverviewPage() {
     <div className="min-h-screen bg-[#F7F5F0] text-[#292630] md:pl-[232px]">
       <AppNav />
       <main className="mx-auto max-w-6xl px-5 pb-28 pt-8 sm:px-8 sm:pt-12 md:pb-14">
-        <header className="flex items-start justify-between gap-5">
+        <header>
           <div>
-            <p className="dashboard-kicker">
-              <span />
-              Your Duorah home
-            </p>
             <h1 className="dashboard-display mt-4 text-5xl leading-[.92] tracking-[-.07em] sm:text-7xl">
               Good morning, {displayName.split(" ")[0]}
               <span className="text-[#7454A6]">.</span>
@@ -98,13 +93,6 @@ export default function OverviewPage() {
               @{user.anonymous_username}
             </p>
           </div>
-          <Link
-            href="/profile"
-            aria-label="Your profile"
-            className="grid h-11 w-11 place-items-center rounded-full bg-[#292630] text-white"
-          >
-            <UserRound className="h-4 w-4" />
-          </Link>
         </header>
         <section className="mt-10 rounded-[26px] bg-[#7454A6] p-6 text-white shadow-[0_20px_45px_rgba(116,84,166,.18)] sm:p-9">
           <div className="flex items-center justify-between gap-4">
