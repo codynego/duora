@@ -159,7 +159,7 @@ export default function InviteAcceptancePage({
               href="/"
               className="mt-8 inline-flex rounded-full bg-dark-950 px-5 py-3 text-sm font-bold text-white"
             >
-              Go to Duorah
+              Go to Dorah
             </Link>
           </>
         )}

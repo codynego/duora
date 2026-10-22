@@ -5,7 +5,7 @@ from django.db import models
 
 
 class AnonymousIdentity(models.Model):
-    """The recognizable identity a person uses inside Duorah."""
+    """The recognizable identity a person uses inside Dorah."""
 
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='anonymous_identity')
     username = models.SlugField(max_length=32, unique=True)

@@ -25,7 +25,7 @@ def create_anonymous_identity(user):
             except IntegrityError:
                 # A concurrent signup may have claimed the generated handle.
                 continue
-    raise RuntimeError('Could not create a unique Duorah identity.')
+    raise RuntimeError('Could not create a unique Dorah identity.')
 
 
 def regenerate_anonymous_avatar(user):
@@ -56,4 +56,4 @@ def regenerate_anonymous_identity(user):
                 return identity
         except IntegrityError:
             continue
-    raise RuntimeError('Could not create a unique Duorah identity.')
+    raise RuntimeError('Could not create a unique Dorah identity.')

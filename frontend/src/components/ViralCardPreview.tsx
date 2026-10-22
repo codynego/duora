@@ -19,7 +19,7 @@ export default function ViralCardPreview() {
           </h2>
 
           <p className="text-base sm:text-lg text-slate-300 leading-relaxed">
-            When an experience ends, Duorah does not just say <em>“Thanks for playing.”</em> It gives people a thoughtful moment they can save, share, or use to continue the conversation.
+            When an experience ends, Dorah does not just say <em>“Thanks for playing.”</em> It gives people a thoughtful moment they can save, share, or use to continue the conversation.
           </p>
 
           <div className="space-y-3 pt-2">

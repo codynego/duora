@@ -24,7 +24,7 @@ export default function PwaStartup() {
   if (phase === 'hidden') return null;
 
   return (
-    <div className={`pwa-startup pwa-startup--${phase}`} role="status" aria-live="polite" aria-label="Opening Duorah">
+    <div className={`pwa-startup pwa-startup--${phase}`} role="status" aria-live="polite" aria-label="Opening Dorah">
       <div className="pwa-startup__glow pwa-startup__glow--one" />
       <div className="pwa-startup__glow pwa-startup__glow--two" />
       <div className="pwa-startup__content">
@@ -35,7 +35,7 @@ export default function PwaStartup() {
           </svg>
         </div>
         <p className="pwa-startup__eyebrow">Make the moment yours</p>
-        <p className="pwa-startup__wordmark">duorah</p>
+        <p className="pwa-startup__wordmark">dorah</p>
         <p className="pwa-startup__line">A little closer, every day.</p>
       </div>
       <span className="pwa-startup__progress" aria-hidden="true" />

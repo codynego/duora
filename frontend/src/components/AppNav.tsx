@@ -31,7 +31,7 @@ export default function AppNav({ minimal = false }: { minimal?: boolean }) {
           href="/home"
           className="font-serif text-[28px] tracking-[-.075em] text-[#292630]"
         >
-          Duorah<span className="text-[#7454A6]">.</span>
+          Dorah<span className="text-[#7454A6]">.</span>
         </Link>
         <div className="flex items-center gap-3">
           {!minimal && (
@@ -51,7 +51,7 @@ export default function AppNav({ minimal = false }: { minimal?: boolean }) {
           href="/home"
           className="px-3 font-serif text-3xl tracking-[-.075em] text-[#292630]"
         >
-          Duorah<span className="text-[#7454A6]">.</span>
+          Dorah<span className="text-[#7454A6]">.</span>
         </Link>
         <div className="mt-4 px-3">
           <NotificationBell />

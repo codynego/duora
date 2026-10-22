@@ -152,7 +152,7 @@ const experiences = [
     title: "Plan Something Together",
     category: "together",
     detail: "Compare time, budget, and mood to find overlapping date ideas.",
-    flow: "Both choose privately, Duorah highlights overlap, and saves your date.",
+    flow: "Both choose privately, Dorah highlights overlap, and saves your date.",
     limit: 2,
     duration: "10 minutes",
   },
@@ -400,7 +400,7 @@ function CreateExperienceFlow() {
           </> : <>
             <p className="section-label">Send a private invite</p>
             <h1 className="mt-3 max-w-2xl text-3xl font-bold tracking-[-.06em] sm:text-5xl">Pick a moment. We’ll make the link.</h1>
-            <p className="mt-3 max-w-xl text-sm leading-6 text-[#6F6470]">Choose an experience and Duorah will create a private room that starts right away. No setup or review screen.</p>
+            <p className="mt-3 max-w-xl text-sm leading-6 text-[#6F6470]">Choose an experience and Dorah will create a private room that starts right away. No setup or review screen.</p>
           </>}
         </section>
         <section className="mt-8 rounded-[30px] border border-dark-950/10 bg-white p-5 shadow-[0_16px_50px_rgba(40,29,50,.06)] sm:p-8">

@@ -478,7 +478,7 @@ function People({
                 Connected through{" "}
                 {item.last_experience
                   ? `a discussion about “${item.last_experience}”`
-                  : "a Duorah thought"}
+                  : "a Dorah thought"}
                 .
               </p>
               <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-[#292630]/10 pt-4">

@@ -357,7 +357,7 @@ export default function DiscoverPage() {
         {daily?.onboarding_question && !daily.onboarding_answered && (
           <section className="mx-auto mt-8 max-w-3xl rounded-[26px] border border-[#E7E2EA] bg-[#F0ECFA] p-6 sm:p-8">
             <p className="text-xs font-bold uppercase tracking-[.16em] text-[#7454A6]">
-              Your first Duorah question
+                      Your first Dorah question
             </p>
             <h2 className="dashboard-display mt-5 max-w-2xl text-3xl leading-[1.02] tracking-[-.055em] sm:text-4xl">
               {daily.onboarding_question.text}

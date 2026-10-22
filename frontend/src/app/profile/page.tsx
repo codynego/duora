@@ -262,7 +262,7 @@ export default function ProfilePage() {
               />
               <div>
                 <p className="text-xs font-bold uppercase tracking-[.14em] text-[#958F9B]">
-                  Your Duorah identity
+                  Your Dorah identity
                 </p>
                 <h2 className="mt-2 text-2xl font-semibold tracking-[-.045em]">
                   {user.display_name || "Your name"}
