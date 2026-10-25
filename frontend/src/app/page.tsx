@@ -1,33 +1,18 @@
-'use client';
+import type { Metadata } from 'next';
+import HomiHomepage from '@/components/homi/HomiHomepage';
 
-import Link from 'next/link';
-import { ArrowRight, Check, CirclePlay, MousePointer2, Sparkles } from 'lucide-react';
-import { useState } from 'react';
-import Navbar from '@/components/Navbar';
-
-const scenes = [
-  { id: 'hook', label: '01 / Hook', copy: 'The release your users have been waiting for.', note: 'A clear opening line' },
-  { id: 'product', label: '02 / Product', copy: 'Reminders that follow up before work falls through.', note: 'Your actual interface' },
-  { id: 'payoff', label: '03 / Payoff', copy: 'Ship the update. Let the launch do its job.', note: 'A focused close' },
-];
+export const metadata: Metadata = {
+  title: { absolute: 'Homi.ng — Find homes that are still available' },
+  description:
+    'Discover recently confirmed rentals, see the full move-in cost, and connect directly with the person responsible for the home.',
+  openGraph: {
+    title: 'Homi.ng — Find homes that are still available',
+    description: 'Recently confirmed rentals, transparent move-in costs, and safer direct introductions.',
+    type: 'website',
+    locale: 'en_NG',
+  },
+};
 
 export default function HomePage() {
-  const [active, setActive] = useState(1);
-  const scene = scenes[active];
-  return <div className="launch-home min-h-screen bg-[#08090B] text-[#F1F4F7]">
-    <Navbar variant="motion" />
-    <main>
-      <section className="launch-hero relative overflow-hidden px-5 pb-16 pt-14 sm:px-8 sm:pb-24 sm:pt-20">
-        <div className="launch-grid" aria-hidden="true" />
-        <div className="relative mx-auto grid max-w-7xl gap-14 lg:grid-cols-[.83fr_1.17fr] lg:items-center lg:gap-20">
-          <div className="max-w-2xl"><p className="launch-overline">Product launches, directed</p><h1 className="launch-title mt-6">Turn what shipped into something people feel.</h1><p className="mt-7 max-w-xl text-lg leading-8 text-[#A7B0BD] sm:text-xl">Dorah builds launch films from your release notes and product screens—without flattening the product into another generic AI video.</p><div className="mt-9 flex flex-col gap-3 sm:flex-row"><Link href="/dashboard/new" className="launch-action">Make a launch <ArrowRight className="h-4 w-4" /></Link><a href="#how-it-works" className="launch-secondary">See how it works</a></div><p className="mt-7 text-xs font-medium text-[#697483]">For product teams with something real to show.</p></div>
-          <section className="launch-console" aria-label="Interactive launch preview"><header className="flex items-center justify-between border-b border-white/10 px-5 py-4"><div className="flex items-center gap-2 text-xs font-semibold text-white/70"><span className="h-2 w-2 rounded-full bg-[#9BC2FF]" />Launch director</div><span className="font-mono text-[10px] uppercase tracking-[.14em] text-white/35">Preview</span></header><div className="grid min-h-[400px] lg:grid-cols-[160px_1fr]"><div className="flex gap-2 overflow-x-auto border-b border-white/10 p-3 lg:block lg:space-y-2 lg:overflow-visible lg:border-b-0 lg:border-r">{scenes.map((item, index) => <button type="button" key={item.id} onClick={() => setActive(index)} className={`launch-scene ${active === index ? 'launch-scene--active' : ''}`}><span>{item.label}</span><small>{item.note}</small></button>)}</div><div className="relative flex min-h-[330px] overflow-hidden p-6 sm:p-9"><div className="launch-frame-number">{String(active + 1).padStart(2, '0')}</div><div className="relative z-10 self-end"><p className="font-mono text-[10px] font-bold uppercase tracking-[.15em] text-[#9BC2FF]">{scene.note}</p><h2 key={scene.id} className="launch-preview-copy mt-4 max-w-xl text-4xl font-semibold leading-[.94] tracking-[-.06em] sm:text-5xl">{scene.copy}</h2></div>{active === 1 && <div className="launch-product-card"><div className="flex items-center justify-between border-b border-white/10 pb-3 text-[10px] font-bold uppercase tracking-[.14em] text-white/45"><span>InvoiceFlow</span><span>Today</span></div><div className="mt-4 flex items-start gap-3"><span className="mt-1 h-7 w-7 rounded-full bg-[#9BC2FF]" /><div className="flex-1"><div className="h-2 w-32 rounded bg-white/80" /><div className="mt-2 h-1.5 w-full rounded bg-white/15" /><div className="mt-1.5 h-1.5 w-3/4 rounded bg-white/15" /></div></div><div className="mt-5 flex items-center justify-between border-t border-white/10 pt-3 text-xs"><span className="text-white/55">Reminder sent</span><span className="text-[#9BC2FF]">Paid</span></div><span className="launch-cursor"><MousePointer2 className="h-4 w-4" /></span></div>}</div></div><footer className="flex items-center gap-3 border-t border-white/10 px-5 py-4"><CirclePlay className="h-4 w-4 text-[#9BC2FF]" /><div className="h-px flex-1 bg-white/15"><div className="launch-scrubber h-px bg-[#9BC2FF]" /></div><span className="font-mono text-[10px] text-white/45">00:12</span></footer></section>
-        </div>
-      </section>
-      <section id="how-it-works" className="border-y border-white/10 bg-[#0F1217] px-5 py-18 sm:px-8 sm:py-24"><div className="mx-auto max-w-7xl"><div className="grid gap-12 lg:grid-cols-[.72fr_1.28fr]"><div><p className="launch-overline">A release, not a slideshow</p><h2 className="mt-5 max-w-md text-4xl font-semibold leading-[.95] tracking-[-.055em] sm:text-6xl">Your product stays at the center of the frame.</h2></div><div className="grid border-t border-white/10 sm:grid-cols-3 sm:border-t-0">{[['01', 'Give it the change', 'A release note and the screens that explain it.'], ['02', 'Shape the story', 'A concise sequence with one message per scene.'], ['03', 'Ship the cut', 'Refine the language, then export for the channel.']].map(([number, title, copy]) => <article key={number} className="border-b border-white/10 py-7 sm:border-b-0 sm:border-l sm:px-6 sm:first:border-l-0 sm:first:pl-0"><p className="font-mono text-xs font-bold text-[#9BC2FF]">{number}</p><h3 className="mt-8 text-lg font-semibold tracking-[-.03em]">{title}</h3><p className="mt-3 text-sm leading-6 text-[#9BA5B3]">{copy}</p></article>)}</div></div></div></section>
-      <section className="px-5 py-20 sm:px-8 sm:py-28"><div className="mx-auto grid max-w-7xl gap-12 lg:grid-cols-[1.12fr_.88fr] lg:items-center"><div className="launch-showcase"><div className="flex items-center justify-between text-xs font-semibold text-white/55"><span>From one feature</span><span>03 outputs</span></div><div className="mt-10 grid grid-cols-3 gap-3"><div className="h-40 border border-white/10 bg-[#151A21] p-3"><span className="font-mono text-[9px] text-[#9BC2FF]">16:9</span><div className="mt-10 h-2 w-4/5 bg-white/80" /><div className="mt-2 h-1.5 w-full bg-white/10" /></div><div className="h-40 border border-white/10 bg-[#151A21] p-3"><span className="font-mono text-[9px] text-[#9BC2FF]">9:16</span><div className="mt-10 h-2 w-4/5 bg-white/80" /><div className="mt-2 h-1.5 w-full bg-white/10" /></div><div className="h-40 border border-white/10 bg-[#151A21] p-3"><span className="font-mono text-[9px] text-[#9BC2FF]">1:1</span><div className="mt-10 h-2 w-4/5 bg-white/80" /><div className="mt-2 h-1.5 w-full bg-white/10" /></div></div></div><div><p className="launch-overline">Built for the after</p><h2 className="mt-5 text-4xl font-semibold leading-[.95] tracking-[-.055em] sm:text-6xl">The feature is done. The launch is not.</h2><p className="mt-6 max-w-lg text-lg leading-8 text-[#A7B0BD]">Make one product story and deliver it in the places your customers will actually see it.</p><ul className="mt-8 space-y-3 text-sm text-[#DCE2E9]">{['Real product screens, never redrawn UI', 'Landscape, vertical, and square from one project', 'Every scene remains editable'].map((item) => <li key={item} className="flex items-center gap-3"><Check className="h-4 w-4 text-[#9BC2FF]" />{item}</li>)}</ul></div></div></section>
-      <section className="border-t border-white/10 bg-[#0F1217] px-5 py-20 text-center sm:px-8 sm:py-28"><div className="mx-auto max-w-2xl"><Sparkles className="mx-auto h-5 w-5 text-[#9BC2FF]" /><h2 className="mt-6 text-5xl font-semibold leading-[.92] tracking-[-.07em] sm:text-7xl">Make the work visible.</h2><p className="mt-5 text-lg leading-8 text-[#A7B0BD]">Start the next launch while the release is still fresh.</p><Link href="/dashboard/new" className="launch-action mt-8">Open the studio <ArrowRight className="h-4 w-4" /></Link></div></section>
-    </main>
-    <footer className="border-t border-white/10 px-5 py-7 text-sm text-[#697483] sm:px-8"><div className="mx-auto flex max-w-7xl items-center justify-between"><span className="font-semibold text-[#F1F4F7]">Dorah<span className="text-[#9BC2FF]">.</span></span><span>Release notes in. Launch films out.</span></div></footer>
-  </div>;
+  return <HomiHomepage />;
 }

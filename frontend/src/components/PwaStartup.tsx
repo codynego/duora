@@ -1,8 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
 
 export default function PwaStartup() {
+  const pathname = usePathname();
   const [phase, setPhase] = useState<'hidden' | 'entering' | 'leaving'>('hidden');
 
   useEffect(() => {
@@ -21,7 +23,7 @@ export default function PwaStartup() {
     };
   }, []);
 
-  if (phase === 'hidden') return null;
+  if (phase === 'hidden' || pathname === '/') return null;
 
   return (
     <div className={`pwa-startup pwa-startup--${phase}`} role="status" aria-live="polite" aria-label="Opening Dorah">
