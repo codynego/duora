@@ -16,6 +16,11 @@ async function studioRequest(path: string, init: RequestInit = {}) {
 export function createStudioProject(input: { title: string; summary: string; aspect_ratio?: string }) {
   return studioRequest('projects/', { method: 'POST', body: JSON.stringify({ ...input, aspect_ratio: input.aspect_ratio ?? '16:9' }) }) as Promise<StudioProject>;
 }
+export function listStudioProjects() { return studioRequest('projects/') as Promise<StudioProject[]>; }
+export function getStudioProject(projectId: string) { return studioRequest(`projects/${projectId}/`) as Promise<StudioProject>; }
+export function listStudioAssets() { return studioRequest('assets/') as Promise<{ id: string; kind: string; url: string; created_at: string }[]>; }
+export function getBrandKit() { return studioRequest('brand-kit/') as Promise<{ name: string; website: string; primary_color: string; accent_color: string; default_cta: string }>; }
+export function saveBrandKit(input: Record<string, string>) { return studioRequest('brand-kit/', { method: 'PUT', body: JSON.stringify(input) }); }
 
 export function uploadStudioAsset(projectId: string, file: File) {
   const form = new FormData(); form.append('project_id', projectId); form.append('file', file);

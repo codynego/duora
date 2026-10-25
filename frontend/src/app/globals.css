@@ -550,3 +550,46 @@ main.min-h-screen.bg-\[\#fffdfc\] h2 { font-family: 'Manrope', 'Geist', ui-sans-
 @keyframes launch-scrub { 0%, 100% { width: 28%; } 50% { width: 82%; } }
 @media (max-width: 640px) { .launch-product-card { width: 62%; right: 1rem; top: 4rem; } .launch-title { letter-spacing: -.07em; } }
 @media (prefers-reduced-motion: reduce) { .launch-preview-copy, .launch-cursor, .launch-scrubber { animation: none; } .launch-action:hover { transform: none; } }
+
+/* Daylight studio: paper-like workspace, quiet navy ink, one coral action.
+   Overrides the earlier dark experiment across public and product surfaces. */
+.launch-home, .motion-dashboard { background: #f6f4ef !important; color: #1b1d22 !important; }
+.launch-hero { background: #f6f4ef; }
+.launch-grid { background-image: linear-gradient(rgba(27,29,34,.055) 1px, transparent 1px), linear-gradient(90deg, rgba(27,29,34,.055) 1px, transparent 1px); }
+.launch-overline { color: #d75a3d; }
+.launch-title { color: #1b1d22; }
+.launch-action { background: #1b1d22; color: #fff; }
+.launch-action:hover { background: #d75a3d; }
+.launch-secondary { color: #535861; }
+.launch-console, .launch-showcase { border-color: rgba(27,29,34,.14); background: #fffdf9; box-shadow: 0 20px 60px rgba(27,29,34,.08); }
+.launch-console header, .launch-console footer { border-color: rgba(27,29,34,.1); }
+.launch-console .text-white\/70 { color: rgba(27,29,34,.7) !important; }
+.launch-console .text-white\/35, .launch-console .text-white\/45 { color: rgba(27,29,34,.45) !important; }
+.launch-console .border-white\/10, .launch-showcase .border-white\/10 { border-color: rgba(27,29,34,.1) !important; }
+.launch-console .bg-white\/15, .launch-showcase .bg-white\/10 { background-color: rgba(27,29,34,.1) !important; }
+.launch-scene { border-color: rgba(27,29,34,.1); color: #747982; }
+.launch-scene--active { border-color: #1b1d22; background: #f0ebe3; color: #1b1d22; }
+.launch-frame-number { color: rgba(27,29,34,.045); }
+.launch-preview-copy { color: #1b1d22; }
+.launch-product-card { border-color: rgba(27,29,34,.12); background: #1b1d22; color: #fff; }
+.launch-cursor { background: #d75a3d; color: white; }
+.launch-scrubber { background: #d75a3d; }
+.launch-home .bg-\[\#0F1217\], .launch-home .bg-\[\#151A21\] { background-color: #eeebe5 !important; }
+.launch-home .text-\[\#A7B0BD\], .launch-home .text-\[\#9BA5B3\], .launch-home .text-\[\#697483\] { color: #656b74 !important; }
+.launch-home .text-\[\#F1F4F7\], .launch-home .text-\[\#DCE2E9\] { color: #1b1d22 !important; }
+.motion-dashboard aside { background: #fffdf9 !important; border-color: rgba(27,29,34,.1) !important; color: #1b1d22 !important; }
+.motion-dashboard aside .motion-brand { color: #1b1d22 !important; }
+.motion-dashboard .motion-brand span { color: #d75a3d !important; }
+.motion-dashboard .dashboard-nav-item { color: #737984; }
+.motion-dashboard .dashboard-nav-item:hover, .motion-dashboard .dashboard-nav-item--active { background: #f0ebe3; color: #1b1d22; }
+.motion-dashboard .dashboard-nav-item--active { box-shadow: inset 2px 0 0 #d75a3d; }
+.motion-dashboard .dashboard-new-button { background: #1b1d22; color: #fff; }
+.motion-dashboard .dashboard-new-button:hover { background: #d75a3d; }
+.motion-dashboard .bg-\[\#F8F5EE\] { background-color: #f6f4ef !important; }
+.motion-dashboard .bg-\[\#102126\] { background-color: #1b1d22 !important; }
+.motion-dashboard .bg-white { background-color: #fffdf9 !important; }
+.motion-dashboard .text-\[\#102126\] { color: #1b1d22 !important; }
+.motion-dashboard .text-\[\#52615F\], .motion-dashboard .text-\[\#4D5C5B\] { color: #656b74 !important; }
+.motion-dashboard .border-\[\#102126\] { border-color: rgba(27,29,34,.14) !important; }
+.motion-dashboard .dashboard-field { background: #fffdf9; color: #1b1d22; border-color: rgba(27,29,34,.2); }
+.motion-dashboard .dashboard-field:focus { background: #fff; border-color: #d75a3d; box-shadow: 0 0 0 3px rgba(215,90,61,.14); }
