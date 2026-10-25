@@ -27,6 +27,7 @@ INSTALLED_APPS = [
     'apps.connections',
     'apps.moderation',
     'apps.social',
+    'apps.studio',
 ]
 
 MIDDLEWARE = [
@@ -69,6 +70,8 @@ USE_I18N = True
 USE_TZ = True
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 configured_cors_origins = [origin.strip() for origin in os.environ.get('DUORA_CORS_ORIGINS', 'http://127.0.0.1:3000,http://localhost:3000').split(',') if origin.strip()]

@@ -487,3 +487,37 @@ main.min-h-screen.bg-\[\#fffdfc\] h2 { font-family: 'Manrope', 'Geist', ui-sans-
 .dashboard-field { display: block; width: 100%; border: 1px solid rgba(16,33,38,.3); background: #f8f5ee; padding: .75rem .8rem; color: #102126; font-size: .9rem; font-weight: 500; outline: none; transition: border-color 150ms ease, box-shadow 150ms ease, background-color 150ms ease; }
 .dashboard-field:focus { border-color: #102126; background: #fff; box-shadow: 3px 3px 0 #7ee7dd; }
 @media (prefers-reduced-motion: reduce) { .dashboard-new-button:hover { transform: none; } }
+
+/* Night shift studio: deliberately low-glare, with blue used only to signal
+   action and progress. This override is scoped to the new product surfaces. */
+.motion-site, .motion-dashboard { background: #0b0d10 !important; color: #f3f5f7 !important; }
+.motion-site .bg-\[\#F8F5EE\], .motion-dashboard .bg-\[\#F8F5EE\] { background-color: #0b0d10 !important; }
+.motion-site .bg-white, .motion-dashboard .bg-white { background-color: #151a21 !important; }
+.motion-site .bg-\[\#102126\], .motion-dashboard .bg-\[\#102126\] { background-color: #11151b !important; }
+.motion-site .bg-\[\#E6DFD0\], .motion-dashboard .bg-\[\#E6DFD0\] { background-color: #1a2029 !important; }
+.motion-site .bg-\[\#FF6B4A\], .motion-dashboard .bg-\[\#FF6B4A\] { background-color: #7c9cff !important; }
+.motion-site .bg-\[\#7EE7DD\], .motion-dashboard .bg-\[\#7EE7DD\] { background-color: #18212c !important; }
+.motion-site .text-\[\#102126\], .motion-dashboard .text-\[\#102126\] { color: #f3f5f7 !important; }
+.motion-site .text-\[\#4D5C5B\], .motion-dashboard .text-\[\#4D5C5B\], .motion-dashboard .text-\[\#52615F\], .motion-site .text-\[\#536260\] { color: #a8b1bf !important; }
+.motion-site .border-\[\#102126\], .motion-dashboard .border-\[\#102126\] { border-color: rgba(243,245,247,.16) !important; }
+.motion-site .border-\[\#102126\]\/15, .motion-dashboard .border-\[\#102126\]\/15 { border-color: rgba(243,245,247,.11) !important; }
+.motion-site .motion-brand, .motion-dashboard .motion-brand { color: #f3f5f7; }
+.motion-site .motion-brand span, .motion-dashboard .motion-brand span { color: #7c9cff; }
+.motion-site .motion-kicker, .motion-dashboard .motion-kicker { color: #a8b1bf; }
+.motion-site .motion-kicker > span, .motion-dashboard .motion-kicker > span { background: #7c9cff; }
+.motion-grid { background-image: linear-gradient(rgba(243,245,247,.055) 1px, transparent 1px), linear-gradient(90deg, rgba(243,245,247,.055) 1px, transparent 1px); }
+.motion-button--primary, .motion-button--dark { background: #7c9cff; color: #0b0d10; box-shadow: none; }
+.motion-button--primary:hover, .motion-button--dark:hover { background: #afc1ff; box-shadow: none; }
+.motion-button--secondary { border-color: rgba(243,245,247,.2); background: transparent; color: #f3f5f7; }
+.motion-button--secondary:hover { background: #151a21; }
+.motion-editor { box-shadow: 0 24px 70px rgba(0,0,0,.38); transform: rotate(.45deg); }
+.motion-editor__canvas > h2, .motion-scene { animation: none; }
+.motion-cursor__pulse { border-color: #7c9cff; }
+.motion-playhead { background: #7c9cff !important; }
+.motion-dashboard aside { background: #0b0d10 !important; border-color: rgba(243,245,247,.1) !important; }
+.dashboard-new-button { background: #7c9cff; color: #0b0d10; }
+.dashboard-new-button:hover { background: #afc1ff; }
+.dashboard-nav-item--active { box-shadow: inset 2px 0 0 #7c9cff; background: rgba(124,156,255,.12); }
+.dashboard-slate { background: #151a21; box-shadow: none; }
+.dashboard-field { background: #11151b; color: #f3f5f7; border-color: rgba(243,245,247,.16); }
+.dashboard-field:focus { background: #151a21; border-color: #7c9cff; box-shadow: 0 0 0 3px rgba(124,156,255,.18); }
