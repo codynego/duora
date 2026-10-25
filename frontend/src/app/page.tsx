@@ -1,73 +1,33 @@
 'use client';
 
-import { ArrowDownRight, ArrowUpRight, Clapperboard, Layers3, MousePointer2, Play, Sparkles } from 'lucide-react';
+import Link from 'next/link';
+import { ArrowRight, Check, CirclePlay, MousePointer2, Sparkles } from 'lucide-react';
+import { useState } from 'react';
 import Navbar from '@/components/Navbar';
 
-const workflow = [
-  { number: '01', title: 'Drop in what shipped', detail: 'Paste the release note, then add the screens that show the feature at its best.', icon: Layers3 },
-  { number: '02', title: 'Shape the story', detail: 'Dorah writes a tight launch narrative and builds a scene-by-scene first cut around your brand.', icon: Sparkles },
-  { number: '03', title: 'Make the release visible', detail: 'Tweak the words, approve the cut, and export every format your launch needs.', icon: Clapperboard },
-];
-
-const deliverables = [
-  ['01', 'Launch film', 'A focused 20-second story for your website or product announcement.'],
-  ['02', 'Social cuts', 'Vertical and square versions, built from the same source—not cropped afterthoughts.'],
-  ['03', 'Release kit', 'The video, the opening line, captions, and a thumbnail ready for the post.'],
+const scenes = [
+  { id: 'hook', label: '01 / Hook', copy: 'The release your users have been waiting for.', note: 'A clear opening line' },
+  { id: 'product', label: '02 / Product', copy: 'Reminders that follow up before work falls through.', note: 'Your actual interface' },
+  { id: 'payoff', label: '03 / Payoff', copy: 'Ship the update. Let the launch do its job.', note: 'A focused close' },
 ];
 
 export default function HomePage() {
-  return (
-    <div className="motion-site min-h-screen overflow-x-hidden bg-[#F8F5EE] text-[#102126]">
-      <Navbar variant="motion" />
-      <main>
-        <section className="relative overflow-hidden border-b border-[#102126] bg-[#F8F5EE] px-5 pb-14 pt-10 sm:px-8 sm:pb-20 sm:pt-16">
-          <div className="motion-grid absolute inset-0 opacity-40" aria-hidden="true" />
-          <div className="relative mx-auto grid max-w-7xl gap-12 lg:grid-cols-[.85fr_1.15fr] lg:items-center lg:gap-16">
-            <div className="max-w-2xl">
-              <p className="motion-kicker"><span />For teams that ship</p>
-              <h1 className="motion-display mt-6 text-[3.6rem] leading-[.88] tracking-[-.075em] text-[#102126] sm:text-[5.8rem] lg:text-[6.8rem]">Make every release impossible to miss.</h1>
-              <p className="mt-7 max-w-xl text-lg leading-8 text-[#4D5C5B] sm:text-xl">Dorah turns your release notes and real product screens into sharp, on-brand launch videos—without a motion designer or a timeline.</p>
-              <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-                <a href="/dashboard" className="motion-button motion-button--primary">Open the studio <ArrowDownRight className="h-4 w-4" /></a>
-                <a href="#launch-kit" className="motion-button motion-button--secondary">Watch a sample <Play className="h-3.5 w-3.5 fill-current" /></a>
-              </div>
-              <div className="mt-10 flex items-center gap-4 text-xs font-semibold uppercase tracking-[.13em] text-[#536260]"><span className="h-px w-10 bg-[#536260]" />Real screens. Clear story. Ready to publish.</div>
-            </div>
-
-            <div className="relative mx-auto w-full max-w-[690px] lg:justify-self-end">
-              <div className="motion-editor relative overflow-hidden border border-[#102126] bg-[#102126] p-3 shadow-[12px_12px_0_#FF6B4A] sm:p-4">
-                <div className="flex items-center justify-between border-b border-white/15 px-1 pb-3 text-[10px] font-bold uppercase tracking-[.16em] text-white/55"><span>Release / Q3 dashboard</span><span className="flex items-center gap-2 text-[#7EE7DD]"><span className="h-1.5 w-1.5 rounded-full bg-[#7EE7DD]" />Cut ready</span></div>
-                <div className="grid gap-3 pt-3 sm:grid-cols-[1fr_170px]">
-                  <div className="motion-editor__canvas relative min-h-[330px] overflow-hidden bg-[#E6DFD0] p-5 sm:min-h-[400px] sm:p-7">
-                    <div className="absolute left-0 top-0 h-4 w-24 bg-[#FF6B4A]" /><p className="font-mono text-[10px] font-bold uppercase tracking-[.14em] text-[#445250]">Scene 03 · product moment</p>
-                    <h2 className="motion-display mt-5 max-w-md text-4xl leading-[.88] tracking-[-.07em] text-[#102126] sm:text-5xl">Close the loop before work slips.</h2>
-                    <div className="absolute bottom-0 right-0 w-[78%] border-l border-t border-[#102126] bg-[#F8F5EE] p-3 shadow-[-8px_-8px_0_#7EE7DD] sm:p-4">
-                      <div className="flex items-center justify-between border-b border-[#102126]/15 pb-2 text-[9px] font-bold uppercase tracking-[.13em] text-[#596765]"><span>Pulse</span><span>Live</span></div>
-                      <div className="mt-3 grid grid-cols-[30px_1fr] gap-3"><div className="mt-1 h-7 w-7 rounded-full bg-[#FF6B4A]" /><div><div className="h-2 w-24 bg-[#102126]" /><div className="mt-2 h-1.5 w-full bg-[#C9C3B7]" /><div className="mt-1.5 h-1.5 w-4/5 bg-[#C9C3B7]" /></div></div>
-                      <div className="mt-4 flex gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-[#FF6B4A]" /><span className="h-1.5 w-1.5 rounded-full bg-[#102126]" /><span className="h-1.5 w-1.5 rounded-full bg-[#102126]/20" /></div>
-                    </div>
-                    <div className="motion-cursor absolute right-5 top-5 flex h-9 w-9 items-center justify-center rounded-full border border-[#102126] bg-[#F8F5EE] text-[#102126]"><MousePointer2 className="h-4 w-4" /><span className="motion-cursor__pulse" /></div>
-                  </div>
-                  <aside className="grid grid-cols-3 gap-2 sm:grid-cols-1 sm:gap-3">{['01', '02', '03'].map((scene, index) => <div key={scene} className={`motion-scene relative min-h-[72px] overflow-hidden border border-white/15 p-2 ${index === 2 ? 'bg-[#FF6B4A] text-[#102126]' : 'bg-white/5 text-white'}`}><span className="font-mono text-[9px] font-bold">{scene}</span><div className={`absolute bottom-2 left-2 right-2 h-1 ${index === 2 ? 'bg-[#102126]' : 'bg-white/35'}`} />{index === 0 && <div className="absolute bottom-5 left-2 h-5 w-10 bg-[#7EE7DD]" />}{index === 1 && <div className="absolute bottom-5 left-2 h-5 w-7 bg-[#E6DFD0]" />}</div>)}</aside>
-                </div>
-                <div className="mt-3 flex items-center gap-3 border-t border-white/15 pt-3 text-white/70"><Play className="h-4 w-4 fill-current text-[#7EE7DD]" /><div className="h-1 flex-1 bg-white/15"><div className="motion-playhead h-full w-[52%] bg-[#FF6B4A]" /></div><span className="font-mono text-[10px]">00:12 / 00:22</span></div>
-              </div>
-              <p className="mt-5 text-right font-mono text-[10px] font-bold uppercase tracking-[.14em] text-[#536260]">One feature · one clear story · every format</p>
-            </div>
-          </div>
-        </section>
-
-        <section id="workflow" className="bg-[#102126] px-5 py-20 text-[#F8F5EE] sm:px-8 sm:py-28">
-          <div className="mx-auto max-w-7xl"><div className="grid gap-10 lg:grid-cols-[.7fr_1.3fr] lg:gap-20"><div><p className="motion-kicker text-[#7EE7DD]"><span className="bg-[#7EE7DD]" />The release desk</p><h2 className="motion-display mt-5 max-w-md text-5xl leading-[.9] tracking-[-.07em] sm:text-7xl">A launch video starts with the work you already have.</h2></div><div className="grid gap-px border border-white/20 bg-white/20 md:grid-cols-3">{workflow.map(({ number, title, detail, icon: Icon }) => <article key={number} className="bg-[#102126] p-6 sm:p-7"><div className="flex items-start justify-between"><span className="font-mono text-xs font-bold tracking-[.14em] text-[#7EE7DD]">{number}</span><Icon className="h-5 w-5 text-[#FF6B4A]" /></div><h3 className="mt-14 text-xl font-bold tracking-[-.045em]">{title}</h3><p className="mt-3 text-sm leading-6 text-white/60">{detail}</p></article>)}</div></div></div>
-        </section>
-
-        <section id="launch-kit" className="border-b border-[#102126] bg-[#F8F5EE] px-5 py-20 sm:px-8 sm:py-28">
-          <div className="mx-auto max-w-7xl"><div className="grid gap-12 lg:grid-cols-[1fr_.92fr] lg:items-end lg:gap-24"><div><p className="motion-kicker"><span />One story, everywhere it matters</p><h2 className="motion-display mt-5 max-w-2xl text-5xl leading-[.9] tracking-[-.07em] sm:text-7xl">Don’t shrink your launch. Recompose it.</h2><p className="mt-6 max-w-xl text-lg leading-8 text-[#4D5C5B]">Your release needs more than an MP4. Dorah shapes every cut for the place it will actually appear—then gives the rest of the post a head start.</p></div><div className="border border-[#102126] bg-[#FF6B4A] p-6 sm:p-8"><p className="font-mono text-[10px] font-bold uppercase tracking-[.14em]">From one approved cut</p><div className="mt-9 space-y-0 border-t border-[#102126]">{deliverables.map(([number, title, detail]) => <div key={number} className="grid grid-cols-[34px_1fr] gap-4 border-b border-[#102126] py-5"><span className="font-mono text-xs font-bold">{number}</span><div><h3 className="text-xl font-bold tracking-[-.04em]">{title}</h3><p className="mt-1 text-sm leading-6 text-[#3A2520]">{detail}</p></div></div>)}</div></div></div></div>
-        </section>
-
-        <section className="bg-[#7EE7DD] px-5 py-20 sm:px-8 sm:py-28"><div className="mx-auto flex max-w-7xl flex-col justify-between gap-10 lg:flex-row lg:items-end"><div className="max-w-3xl"><p className="motion-kicker"><span className="bg-[#FF6B4A]" />Built for the moment after “ship it”</p><h2 className="motion-display mt-5 text-5xl leading-[.88] tracking-[-.075em] sm:text-7xl">Make the work visible.</h2><p className="mt-5 max-w-xl text-lg leading-8 text-[#254543]">Your product has momentum. Give every meaningful update a launch people can actually see.</p></div><a href="#workflow" className="motion-button motion-button--dark shrink-0">Explore the workflow <ArrowUpRight className="h-4 w-4" /></a></div></section>
-      </main>
-      <footer className="border-t border-[#102126] bg-[#F8F5EE] px-5 py-8 sm:px-8"><div className="mx-auto flex max-w-7xl flex-col justify-between gap-4 text-sm text-[#536260] sm:flex-row sm:items-center"><p className="font-bold text-[#102126]">Dorah<span className="text-[#FF6B4A]">.</span></p><p>Release notes in. Launch videos out.</p><p>© {new Date().getFullYear()} Dorah</p></div></footer>
-    </div>
-  );
+  const [active, setActive] = useState(1);
+  const scene = scenes[active];
+  return <div className="launch-home min-h-screen bg-[#08090B] text-[#F1F4F7]">
+    <Navbar variant="motion" />
+    <main>
+      <section className="launch-hero relative overflow-hidden px-5 pb-16 pt-14 sm:px-8 sm:pb-24 sm:pt-20">
+        <div className="launch-grid" aria-hidden="true" />
+        <div className="relative mx-auto grid max-w-7xl gap-14 lg:grid-cols-[.83fr_1.17fr] lg:items-center lg:gap-20">
+          <div className="max-w-2xl"><p className="launch-overline">Product launches, directed</p><h1 className="launch-title mt-6">Turn what shipped into something people feel.</h1><p className="mt-7 max-w-xl text-lg leading-8 text-[#A7B0BD] sm:text-xl">Dorah builds launch films from your release notes and product screens—without flattening the product into another generic AI video.</p><div className="mt-9 flex flex-col gap-3 sm:flex-row"><Link href="/dashboard/new" className="launch-action">Make a launch <ArrowRight className="h-4 w-4" /></Link><a href="#how-it-works" className="launch-secondary">See how it works</a></div><p className="mt-7 text-xs font-medium text-[#697483]">For product teams with something real to show.</p></div>
+          <section className="launch-console" aria-label="Interactive launch preview"><header className="flex items-center justify-between border-b border-white/10 px-5 py-4"><div className="flex items-center gap-2 text-xs font-semibold text-white/70"><span className="h-2 w-2 rounded-full bg-[#9BC2FF]" />Launch director</div><span className="font-mono text-[10px] uppercase tracking-[.14em] text-white/35">Preview</span></header><div className="grid min-h-[400px] lg:grid-cols-[160px_1fr]"><div className="flex gap-2 overflow-x-auto border-b border-white/10 p-3 lg:block lg:space-y-2 lg:overflow-visible lg:border-b-0 lg:border-r">{scenes.map((item, index) => <button type="button" key={item.id} onClick={() => setActive(index)} className={`launch-scene ${active === index ? 'launch-scene--active' : ''}`}><span>{item.label}</span><small>{item.note}</small></button>)}</div><div className="relative flex min-h-[330px] overflow-hidden p-6 sm:p-9"><div className="launch-frame-number">{String(active + 1).padStart(2, '0')}</div><div className="relative z-10 self-end"><p className="font-mono text-[10px] font-bold uppercase tracking-[.15em] text-[#9BC2FF]">{scene.note}</p><h2 key={scene.id} className="launch-preview-copy mt-4 max-w-xl text-4xl font-semibold leading-[.94] tracking-[-.06em] sm:text-5xl">{scene.copy}</h2></div>{active === 1 && <div className="launch-product-card"><div className="flex items-center justify-between border-b border-white/10 pb-3 text-[10px] font-bold uppercase tracking-[.14em] text-white/45"><span>InvoiceFlow</span><span>Today</span></div><div className="mt-4 flex items-start gap-3"><span className="mt-1 h-7 w-7 rounded-full bg-[#9BC2FF]" /><div className="flex-1"><div className="h-2 w-32 rounded bg-white/80" /><div className="mt-2 h-1.5 w-full rounded bg-white/15" /><div className="mt-1.5 h-1.5 w-3/4 rounded bg-white/15" /></div></div><div className="mt-5 flex items-center justify-between border-t border-white/10 pt-3 text-xs"><span className="text-white/55">Reminder sent</span><span className="text-[#9BC2FF]">Paid</span></div><span className="launch-cursor"><MousePointer2 className="h-4 w-4" /></span></div>}</div></div><footer className="flex items-center gap-3 border-t border-white/10 px-5 py-4"><CirclePlay className="h-4 w-4 text-[#9BC2FF]" /><div className="h-px flex-1 bg-white/15"><div className="launch-scrubber h-px bg-[#9BC2FF]" /></div><span className="font-mono text-[10px] text-white/45">00:12</span></footer></section>
+        </div>
+      </section>
+      <section id="how-it-works" className="border-y border-white/10 bg-[#0F1217] px-5 py-18 sm:px-8 sm:py-24"><div className="mx-auto max-w-7xl"><div className="grid gap-12 lg:grid-cols-[.72fr_1.28fr]"><div><p className="launch-overline">A release, not a slideshow</p><h2 className="mt-5 max-w-md text-4xl font-semibold leading-[.95] tracking-[-.055em] sm:text-6xl">Your product stays at the center of the frame.</h2></div><div className="grid border-t border-white/10 sm:grid-cols-3 sm:border-t-0">{[['01', 'Give it the change', 'A release note and the screens that explain it.'], ['02', 'Shape the story', 'A concise sequence with one message per scene.'], ['03', 'Ship the cut', 'Refine the language, then export for the channel.']].map(([number, title, copy]) => <article key={number} className="border-b border-white/10 py-7 sm:border-b-0 sm:border-l sm:px-6 sm:first:border-l-0 sm:first:pl-0"><p className="font-mono text-xs font-bold text-[#9BC2FF]">{number}</p><h3 className="mt-8 text-lg font-semibold tracking-[-.03em]">{title}</h3><p className="mt-3 text-sm leading-6 text-[#9BA5B3]">{copy}</p></article>)}</div></div></div></section>
+      <section className="px-5 py-20 sm:px-8 sm:py-28"><div className="mx-auto grid max-w-7xl gap-12 lg:grid-cols-[1.12fr_.88fr] lg:items-center"><div className="launch-showcase"><div className="flex items-center justify-between text-xs font-semibold text-white/55"><span>From one feature</span><span>03 outputs</span></div><div className="mt-10 grid grid-cols-3 gap-3"><div className="h-40 border border-white/10 bg-[#151A21] p-3"><span className="font-mono text-[9px] text-[#9BC2FF]">16:9</span><div className="mt-10 h-2 w-4/5 bg-white/80" /><div className="mt-2 h-1.5 w-full bg-white/10" /></div><div className="h-40 border border-white/10 bg-[#151A21] p-3"><span className="font-mono text-[9px] text-[#9BC2FF]">9:16</span><div className="mt-10 h-2 w-4/5 bg-white/80" /><div className="mt-2 h-1.5 w-full bg-white/10" /></div><div className="h-40 border border-white/10 bg-[#151A21] p-3"><span className="font-mono text-[9px] text-[#9BC2FF]">1:1</span><div className="mt-10 h-2 w-4/5 bg-white/80" /><div className="mt-2 h-1.5 w-full bg-white/10" /></div></div></div><div><p className="launch-overline">Built for the after</p><h2 className="mt-5 text-4xl font-semibold leading-[.95] tracking-[-.055em] sm:text-6xl">The feature is done. The launch is not.</h2><p className="mt-6 max-w-lg text-lg leading-8 text-[#A7B0BD]">Make one product story and deliver it in the places your customers will actually see it.</p><ul className="mt-8 space-y-3 text-sm text-[#DCE2E9]">{['Real product screens, never redrawn UI', 'Landscape, vertical, and square from one project', 'Every scene remains editable'].map((item) => <li key={item} className="flex items-center gap-3"><Check className="h-4 w-4 text-[#9BC2FF]" />{item}</li>)}</ul></div></div></section>
+      <section className="border-t border-white/10 bg-[#0F1217] px-5 py-20 text-center sm:px-8 sm:py-28"><div className="mx-auto max-w-2xl"><Sparkles className="mx-auto h-5 w-5 text-[#9BC2FF]" /><h2 className="mt-6 text-5xl font-semibold leading-[.92] tracking-[-.07em] sm:text-7xl">Make the work visible.</h2><p className="mt-5 text-lg leading-8 text-[#A7B0BD]">Start the next launch while the release is still fresh.</p><Link href="/dashboard/new" className="launch-action mt-8">Open the studio <ArrowRight className="h-4 w-4" /></Link></div></section>
+    </main>
+    <footer className="border-t border-white/10 px-5 py-7 text-sm text-[#697483] sm:px-8"><div className="mx-auto flex max-w-7xl items-center justify-between"><span className="font-semibold text-[#F1F4F7]">Dorah<span className="text-[#9BC2FF]">.</span></span><span>Release notes in. Launch films out.</span></div></footer>
+  </div>;
 }

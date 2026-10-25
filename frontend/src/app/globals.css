@@ -521,3 +521,32 @@ main.min-h-screen.bg-\[\#fffdfc\] h2 { font-family: 'Manrope', 'Geist', ui-sans-
 .dashboard-slate { background: #151a21; box-shadow: none; }
 .dashboard-field { background: #11151b; color: #f3f5f7; border-color: rgba(243,245,247,.16); }
 .dashboard-field:focus { background: #151a21; border-color: #7c9cff; box-shadow: 0 0 0 3px rgba(124,156,255,.18); }
+
+/* The launch homepage is a control surface: space, type and live storyboard
+   controls replace cards and decorative effects. */
+.launch-home { font-family: 'Manrope', 'Geist', ui-sans-serif, sans-serif; }
+.launch-hero { background: #08090b; }
+.launch-grid { position: absolute; inset: 0; background-image: linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px); background-size: 64px 64px; mask-image: linear-gradient(to bottom, #000 35%, transparent 88%); pointer-events: none; }
+.launch-overline { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: #9bc2ff; font-size: .68rem; font-weight: 800; letter-spacing: .16em; line-height: 1; text-transform: uppercase; }
+.launch-title { max-width: 760px; font-size: clamp(3.3rem, 7.1vw, 6.9rem); font-weight: 600; letter-spacing: -.085em; line-height: .88; text-wrap: balance; }
+.launch-action { display: inline-flex; align-items: center; justify-content: center; gap: .7rem; min-height: 3.15rem; background: #9bc2ff; padding: .8rem 1.1rem; color: #08090b; font-size: .875rem; font-weight: 800; transition: background-color 150ms ease, transform 150ms ease; }
+.launch-action:hover { background: #c4d8ff; transform: translateY(-1px); }
+.launch-secondary { display: inline-flex; align-items: center; justify-content: center; min-height: 3.15rem; padding: .8rem 1.1rem; color: #dce2e9; font-size: .875rem; font-weight: 700; }
+.launch-secondary:hover { color: #9bc2ff; }
+.launch-console { overflow: hidden; border: 1px solid rgba(255,255,255,.15); background: #0f1217; box-shadow: 0 24px 72px rgba(0,0,0,.4); }
+.launch-scene { display: block; min-width: 134px; border: 1px solid rgba(255,255,255,.08); background: transparent; padding: .8rem; color: rgba(255,255,255,.5); text-align: left; transition: border-color 160ms ease, background-color 160ms ease, color 160ms ease; }
+.launch-scene span, .launch-scene small { display: block; }
+.launch-scene span { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .65rem; font-weight: 800; letter-spacing: .05em; }
+.launch-scene small { margin-top: .4rem; font-size: .68rem; line-height: 1.25; }
+.launch-scene--active { border-color: rgba(155,194,255,.8); background: rgba(155,194,255,.1); color: #f1f4f7; }
+.launch-frame-number { position: absolute; right: 1.5rem; top: 1rem; color: rgba(255,255,255,.06); font-size: clamp(7rem, 21vw, 14rem); font-weight: 700; letter-spacing: -.12em; line-height: .8; }
+.launch-preview-copy { animation: launch-copy-in 260ms ease-out both; }
+.launch-product-card { position: absolute; right: 1.5rem; top: 4.5rem; width: min(55%, 280px); border: 1px solid rgba(255,255,255,.14); background: rgba(17,21,27,.92); padding: 1rem; box-shadow: 0 18px 45px rgba(0,0,0,.28); }
+.launch-cursor { position: absolute; bottom: -1.2rem; right: 21%; display: grid; height: 2.15rem; width: 2.15rem; place-items: center; border-radius: 999px; background: #9bc2ff; color: #08090b; animation: launch-cursor 4s ease-in-out infinite; }
+.launch-scrubber { width: 52%; animation: launch-scrub 5s ease-in-out infinite; }
+.launch-showcase { border: 1px solid rgba(255,255,255,.12); background: #0f1217; padding: clamp(1.3rem, 4vw, 2rem); }
+@keyframes launch-copy-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes launch-cursor { 0%, 100% { transform: translate(0,0); } 48% { transform: translate(-48px,-28px); } }
+@keyframes launch-scrub { 0%, 100% { width: 28%; } 50% { width: 82%; } }
+@media (max-width: 640px) { .launch-product-card { width: 62%; right: 1rem; top: 4rem; } .launch-title { letter-spacing: -.07em; } }
+@media (prefers-reduced-motion: reduce) { .launch-preview-copy, .launch-cursor, .launch-scrubber { animation: none; } .launch-action:hover { transform: none; } }
