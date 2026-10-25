@@ -4,3 +4,5 @@ djangorestframework-simplejwt==5.5.1
 django-cors-headers==4.7.0
 dj-database-url==2.3.0
 psycopg[binary]>=3.2,<4
+opencv-python-headless>=4.10,<5
+Pillow>=10,<12

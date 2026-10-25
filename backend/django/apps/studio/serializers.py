@@ -25,10 +25,14 @@ class AssetSerializer(serializers.ModelSerializer):
 
 class ProjectSerializer(serializers.ModelSerializer):
     asset_count = serializers.IntegerField(source='assets.count', read_only=True)
+    video_url = serializers.SerializerMethodField()
     class Meta:
         model = StudioProject
-        fields = ('id', 'title', 'summary', 'status', 'aspect_ratio', 'storyboard', 'asset_count', 'video_file', 'created_at', 'updated_at')
+        fields = ('id', 'title', 'summary', 'status', 'aspect_ratio', 'storyboard', 'asset_count', 'video_file', 'video_url', 'created_at', 'updated_at')
         read_only_fields = ('id', 'status', 'storyboard', 'video_file', 'created_at', 'updated_at')
+    def get_video_url(self, obj):
+        request = self.context.get('request')
+        return request.build_absolute_uri(obj.video_file.url) if obj.video_file and request else None
 
 
 class RenderJobSerializer(serializers.ModelSerializer):

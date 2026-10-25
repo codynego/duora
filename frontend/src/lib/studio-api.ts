@@ -2,7 +2,7 @@ import { getAccessToken } from '@/lib/auth';
 
 const api = process.env.NEXT_PUBLIC_DUORA_API_URL ?? 'http://127.0.0.1:8000';
 
-export type StudioProject = { id: string; title: string; summary: string; status: string; aspect_ratio: string; storyboard: unknown[]; asset_count: number };
+export type StudioProject = { id: string; title: string; summary: string; status: string; aspect_ratio: string; storyboard: unknown[]; asset_count: number; video_url: string | null };
 
 async function studioRequest(path: string, init: RequestInit = {}) {
   const token = await getAccessToken();
@@ -28,4 +28,14 @@ export function uploadStudioAsset(projectId: string, file: File) {
 }
 
 export function generateStoryboard(projectId: string) { return studioRequest(`projects/${projectId}/storyboard/`, { method: 'POST' }) as Promise<StudioProject>; }
-export function queueRender(projectId: string) { return studioRequest(`projects/${projectId}/render/`, { method: 'POST' }); }
+export function queueRender(projectId: string) { return studioRequest(`projects/${projectId}/render/`, { method: 'POST' }) as Promise<{ job: { id: string; status: string }; project: StudioProject }>; }
+
+export async function downloadStudioVideo(projectId: string, filename: string) {
+  const token = await getAccessToken();
+  if (!token) throw new Error('Sign in to download this video.');
+  const response = await fetch(`${api}/api/v1/studio/projects/${projectId}/download/`, { credentials: 'include' });
+  if (!response.ok) throw new Error('The rendered video is not available yet.');
+  const url = URL.createObjectURL(await response.blob());
+  const link = document.createElement('a'); link.href = url; link.download = `${filename || 'launch'}.mp4`; link.click();
+  URL.revokeObjectURL(url);
+}

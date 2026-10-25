@@ -3,9 +3,9 @@
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { ArrowLeft, Clapperboard, Play, Sparkles } from 'lucide-react';
+import { ArrowLeft, Clapperboard, Download, Play, Sparkles } from 'lucide-react';
 import StudioShell from '@/components/studio/StudioShell';
-import { getStudioProject, queueRender, type StudioProject } from '@/lib/studio-api';
+import { downloadStudioVideo, getStudioProject, queueRender, type StudioProject } from '@/lib/studio-api';
 
 type Scene = { type?: string; duration?: number; text?: string };
 
@@ -20,6 +20,7 @@ export default function ProjectEditorPage() {
   const [active, setActive] = useState(0);
   const [error, setError] = useState('');
   const [queueing, setQueueing] = useState(false);
+  const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
     void getStudioProject(projectId)
@@ -32,12 +33,25 @@ export default function ProjectEditorPage() {
     try {
       setQueueing(true);
       setError('');
-      await queueRender(project.id);
-      setProject({ ...project, status: 'rendering' });
+      const result = await queueRender(project.id);
+      setProject(result.project);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Could not queue the render.');
     } finally {
       setQueueing(false);
+    }
+  }
+
+  async function download() {
+    if (!project) return;
+    try {
+      setDownloading(true);
+      setError('');
+      await downloadStudioVideo(project.id, project.title);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Could not download the video.');
+    } finally {
+      setDownloading(false);
     }
   }
 
@@ -51,11 +65,11 @@ export default function ProjectEditorPage() {
         <p className="motion-kicker mt-7"><span />{project?.status ?? 'Loading'} · {scenes.length} scenes · {project?.aspect_ratio ?? '—'}</p>
         <h1 className="motion-display mt-4 text-5xl leading-[.9] tracking-[-.07em] sm:text-7xl">{project?.title ?? 'Loading project'}</h1>
       </div>
-      <button type="button" disabled={!project || queueing || project.status === 'rendering'} onClick={() => void render()} className="motion-button motion-button--primary disabled:cursor-not-allowed disabled:opacity-55"><Clapperboard className="h-4 w-4" />{project?.status === 'rendering' ? 'Render queued' : queueing ? 'Queueing…' : 'Render video'}</button>
+      {project?.status === 'ready' ? <button type="button" disabled={downloading} onClick={() => void download()} className="motion-button motion-button--primary disabled:cursor-not-allowed disabled:opacity-55"><Download className="h-4 w-4" />{downloading ? 'Preparing download…' : 'Download MP4'}</button> : <button type="button" disabled={!project || queueing || project.status === 'rendering'} onClick={() => void render()} className="motion-button motion-button--primary disabled:cursor-not-allowed disabled:opacity-55"><Clapperboard className="h-4 w-4" />{project?.status === 'rendering' ? 'Rendering…' : queueing ? 'Rendering…' : 'Render video'}</button>}
     </header>
 
     {error && <p className="mt-8 border border-[#D45235] bg-[#FFF0EC] p-4 text-sm font-semibold text-[#922A12]">{error}</p>}
-    {project?.status === 'rendering' && <p className="mt-8 border border-[#102126] bg-[#7EE7DD] px-4 py-3 text-sm font-bold">Your render is queued. We’ll show the final cut here when the render worker is connected.</p>}
+    {project?.status === 'ready' && <p className="mt-8 border border-[#102126] bg-[#7EE7DD] px-4 py-3 text-sm font-bold">Your MP4 is ready. Download the finished launch cut.</p>}
 
     <section className="mt-10 grid gap-5 xl:grid-cols-[210px_minmax(0,1fr)_280px]">
       <aside className="border border-[#102126] bg-white p-3">
