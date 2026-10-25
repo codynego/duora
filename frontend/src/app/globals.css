@@ -439,3 +439,23 @@ a[href]:focus-visible,
 main.min-h-screen.bg-\[\#fffdfc\] { background: #F3F1EC !important; }
 main.min-h-screen.bg-\[\#fffdfc\] h1,
 main.min-h-screen.bg-\[\#fffdfc\] h2 { font-family: 'Manrope', 'Geist', ui-sans-serif, sans-serif; font-weight: 800; line-height: .98; }
+
+/* The motion landing page is a release desk, not a social feed. */
+.motion-site { font-family: 'Manrope', 'Geist', ui-sans-serif, sans-serif; }
+.motion-site .motion-display { font-family: 'Manrope', 'Geist', ui-sans-serif, sans-serif; font-weight: 800; text-wrap: balance; }
+.motion-site .font-mono, .motion-site .motion-kicker { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+.motion-grid { background-image: linear-gradient(rgba(16,33,38,.11) 1px, transparent 1px), linear-gradient(90deg, rgba(16,33,38,.11) 1px, transparent 1px); background-size: 48px 48px; pointer-events: none; }
+.motion-kicker { display: inline-flex; align-items: center; gap: .55rem; font-size: .67rem; font-weight: 800; letter-spacing: .15em; line-height: 1; text-transform: uppercase; }
+.motion-kicker > span { width: .48rem; height: .48rem; background: #ff6b4a; }
+.motion-brand { font-size: 1.65rem; font-weight: 800; letter-spacing: -.08em; color: #102126; }
+.motion-brand span { color: #ff6b4a; }
+.motion-button { display: inline-flex; align-items: center; justify-content: center; gap: .65rem; min-height: 3.25rem; padding: .85rem 1.15rem; font-size: .875rem; font-weight: 800; transition: transform 160ms ease, background-color 160ms ease, color 160ms ease, box-shadow 160ms ease; }
+.motion-button:hover { transform: translate(-2px, -2px); }
+.motion-button--primary { background: #102126; color: #f8f5ee; box-shadow: 4px 4px 0 #ff6b4a; }
+.motion-button--primary:hover { background: #ff6b4a; box-shadow: 6px 6px 0 #102126; }
+.motion-button--secondary { border: 1px solid #102126; color: #102126; background: #f8f5ee; }
+.motion-button--secondary:hover { background: #7ee7dd; }
+.motion-button--dark { background: #102126; color: #f8f5ee; box-shadow: 4px 4px 0 #ff6b4a; }
+.motion-editor { transform: rotate(1.2deg); }
+@media (max-width: 640px) { .motion-editor { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .motion-button:hover { transform: none; } }
