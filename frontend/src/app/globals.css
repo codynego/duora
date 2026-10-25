@@ -457,5 +457,33 @@ main.min-h-screen.bg-\[\#fffdfc\] h2 { font-family: 'Manrope', 'Geist', ui-sans-
 .motion-button--secondary:hover { background: #7ee7dd; }
 .motion-button--dark { background: #102126; color: #f8f5ee; box-shadow: 4px 4px 0 #ff6b4a; }
 .motion-editor { transform: rotate(1.2deg); }
+.motion-editor__canvas > h2 { animation: motion-copy-cycle 8s ease-in-out infinite; }
+.motion-cursor { z-index: 15; animation: motion-cursor-path 8s cubic-bezier(.42,0,.22,1) infinite; }
+.motion-cursor__pulse { position: absolute; inset: -7px; border: 1px solid #ff6b4a; border-radius: 999px; opacity: 0; animation: motion-cursor-click 8s ease-out infinite; }
+.motion-scene { animation: motion-scene-focus 8s ease-in-out infinite; }
+.motion-scene:nth-child(2) { animation-delay: .45s; }
+.motion-scene:nth-child(3) { animation-delay: .9s; }
+.motion-playhead { transform-origin: left; animation: motion-playhead 8s cubic-bezier(.45,0,.2,1) infinite; }
+@keyframes motion-cursor-path { 0%, 14% { transform: translate3d(0,0,0); } 30%, 48% { transform: translate3d(-120px,90px,0); } 65%, 82% { transform: translate3d(-45px,155px,0); } 100% { transform: translate3d(0,0,0); } }
+@keyframes motion-cursor-click { 0%, 29%, 48%, 64%, 83%, 100% { opacity: 0; transform: scale(.55); } 31%, 66% { opacity: .9; transform: scale(1); } 38%, 74% { opacity: 0; transform: scale(1.9); } }
+@keyframes motion-scene-focus { 0%, 19%, 100% { transform: translateX(0); filter: brightness(1); } 27%, 45% { transform: translateX(-3px); filter: brightness(1.22); } 54%, 92% { transform: translateX(0); filter: brightness(1); } }
+@keyframes motion-playhead { 0%, 8% { transform: scaleX(.18); } 74% { transform: scaleX(1); } 100% { transform: scaleX(.18); } }
+@keyframes motion-copy-cycle { 0%, 8%, 100% { opacity: 1; transform: translateY(0); } 48% { opacity: .7; transform: translateY(-3px); } 55% { opacity: 1; transform: translateY(0); } }
 @media (max-width: 640px) { .motion-editor { transform: none; } }
-@media (prefers-reduced-motion: reduce) { .motion-button:hover { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .motion-button:hover { transform: none; } .motion-editor__canvas > h2, .motion-cursor, .motion-cursor__pulse, .motion-scene, .motion-playhead { animation: none; } }
+
+/* Product workspace: a production slate uses the same release colours with a
+   tighter, utilitarian scale. The coral edge is the single high-energy cue. */
+.motion-dashboard { font-family: 'Manrope', 'Geist', ui-sans-serif, sans-serif; }
+.motion-dashboard .motion-display { font-family: 'Manrope', 'Geist', ui-sans-serif, sans-serif; font-weight: 800; text-wrap: balance; }
+.motion-dashboard aside .motion-brand { color: #f8f5ee; }
+.motion-dashboard .motion-brand span { color: #ff6b4a; }
+.dashboard-new-button { display: inline-flex; width: 100%; align-items: center; justify-content: center; gap: .55rem; background: #ff6b4a; color: #102126; min-height: 3rem; font-size: .875rem; font-weight: 800; transition: transform 160ms ease, background-color 160ms ease; }
+.dashboard-new-button:hover { background: #7ee7dd; transform: translate(-2px, -2px); }
+.dashboard-nav-item { display: flex; width: 100%; align-items: center; gap: .75rem; border: 0; background: transparent; padding: .78rem .75rem; color: rgba(248,245,238,.62); font-size: .875rem; font-weight: 700; text-align: left; transition: background-color 150ms ease, color 150ms ease; }
+.dashboard-nav-item:hover, .dashboard-nav-item--active { background: rgba(255,255,255,.1); color: #f8f5ee; }
+.dashboard-nav-item--active { box-shadow: inset 3px 0 0 #7ee7dd; }
+.dashboard-slate { background: #102126; box-shadow: 8px 8px 0 #ff6b4a; }
+.dashboard-field { display: block; width: 100%; border: 1px solid rgba(16,33,38,.3); background: #f8f5ee; padding: .75rem .8rem; color: #102126; font-size: .9rem; font-weight: 500; outline: none; transition: border-color 150ms ease, box-shadow 150ms ease, background-color 150ms ease; }
+.dashboard-field:focus { border-color: #102126; background: #fff; box-shadow: 3px 3px 0 #7ee7dd; }
+@media (prefers-reduced-motion: reduce) { .dashboard-new-button:hover { transform: none; } }
