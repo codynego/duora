@@ -127,6 +127,38 @@ class SubscriptionMembership(models.Model):
         return f'{self.display_name} · {self.user_id}'
 
 
+class SubscriptionOrder(models.Model):
+    """A buyer's auditable path from a reserved seat to active access."""
+
+    class Status(models.TextChoices):
+        PAYMENT_PENDING = 'payment_pending', 'Payment pending'
+        PAID = 'paid', 'Paid'
+        PROVISIONING = 'provisioning', 'Provisioning'
+        ACTIVE = 'active', 'Active'
+        CANCELLED = 'cancelled', 'Cancelled'
+        REFUNDED = 'refunded', 'Refunded'
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    offer = models.ForeignKey(SubscriptionOffer, on_delete=models.PROTECT, related_name='orders')
+    buyer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='subscription_orders')
+    status = models.CharField(max_length=24, choices=Status.choices, default=Status.PAYMENT_PENDING)
+    amount = models.DecimalField(max_digits=12, decimal_places=2, validators=[MinValueValidator(0)])
+    billing_type = models.CharField(max_length=16, choices=SubscriptionMembership.BillingType.choices)
+    expires_at = models.DateTimeField()
+    paid_at = models.DateTimeField(null=True, blank=True)
+    provisioned_at = models.DateTimeField(null=True, blank=True)
+    membership = models.OneToOneField(SubscriptionMembership, null=True, blank=True, on_delete=models.SET_NULL, related_name='marketplace_order')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ('-created_at',)
+        indexes = [models.Index(fields=('buyer', 'status', 'created_at')), models.Index(fields=('offer', 'status'))]
+
+    def __str__(self):
+        return f'{self.offer} · {self.buyer_id} · {self.status}'
+
+
 class SubscriptionPreference(models.Model):
     """Private, user-owned delivery preferences for the subscriptions product."""
 

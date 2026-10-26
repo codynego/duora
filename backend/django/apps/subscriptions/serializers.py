@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import SubscriptionMembership, SubscriptionOffer, SubscriptionPreference, SubscriptionService
+from .models import SubscriptionMembership, SubscriptionOffer, SubscriptionOrder, SubscriptionPreference, SubscriptionService
 
 
 class SubscriptionServiceSerializer(serializers.ModelSerializer):
@@ -15,6 +15,35 @@ class SubscriptionOfferSerializer(serializers.ModelSerializer):
     class Meta:
         model = SubscriptionOffer
         fields = ('id', 'service', 'access_method', 'price', 'billing_type', 'billing_period', 'seats_available', 'renewal_day')
+
+
+class SubscriptionOfferWriteSerializer(serializers.ModelSerializer):
+    service = SubscriptionServiceSerializer(read_only=True)
+    service_id = serializers.PrimaryKeyRelatedField(source='service', queryset=SubscriptionService.objects.filter(is_active=True), write_only=True)
+
+    class Meta:
+        model = SubscriptionOffer
+        fields = ('id', 'service', 'service_id', 'access_method', 'price', 'billing_type', 'billing_period', 'seats_total', 'seats_available', 'renewal_day', 'status', 'created_at')
+        read_only_fields = ('id', 'status', 'created_at')
+
+    def validate(self, attrs):
+        service = attrs.get('service', getattr(self.instance, 'service', None))
+        access_method = attrs.get('access_method', getattr(self.instance, 'access_method', None))
+        if service and service.permitted_access_methods and access_method not in service.permitted_access_methods:
+            raise serializers.ValidationError({'access_method': 'This access method is not approved for the selected service.'})
+        if attrs.get('billing_type', getattr(self.instance, 'billing_type', None)) == SubscriptionOffer.BillingType.ONE_TIME:
+            attrs['billing_period'] = 'one_time'
+            attrs['renewal_day'] = None
+        return attrs
+
+
+class SubscriptionOrderSerializer(serializers.ModelSerializer):
+    service_name = serializers.CharField(source='offer.service.name', read_only=True)
+    access_method = serializers.CharField(source='offer.access_method', read_only=True)
+
+    class Meta:
+        model = SubscriptionOrder
+        fields = ('id', 'status', 'amount', 'billing_type', 'expires_at', 'paid_at', 'provisioned_at', 'created_at', 'service_name', 'access_method')
 
 
 class SubscriptionMembershipSerializer(serializers.ModelSerializer):

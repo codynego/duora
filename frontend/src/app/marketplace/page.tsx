@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import MarketplaceCatalog from '@/components/subscriptions/MarketplaceCatalog';
+import MarketplaceShell from '@/components/subscriptions/MarketplaceShell';
 
 export const metadata: Metadata = {
   title: 'Marketplace — affordable digital subscription access',
@@ -8,4 +9,4 @@ export const metadata: Metadata = {
   openGraph: { title: 'Dorah Marketplace — affordable digital access', description: 'Browse reviewed subscription offers and open seats.' },
 };
 
-export default function MarketplacePage() { return <main className="min-h-screen bg-[#F5F7FB]"><MarketplaceCatalog /></main>; }
+export default function MarketplacePage() { return <MarketplaceShell><MarketplaceCatalog /></MarketplaceShell>; }

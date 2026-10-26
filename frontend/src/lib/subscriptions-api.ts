@@ -6,6 +6,9 @@ export type SubscriptionMembership = { id: string; name: string; category: strin
 export type SubscriptionDashboard = { monthly_total: string; active_count: number; due_soon_count: number; memberships: SubscriptionMembership[]; due_soon: SubscriptionMembership[] };
 export type SubscriptionPreferences = { id: string; renewal_reminders: boolean; weekly_spend_digest: boolean; updated_at: string };
 export type MarketplaceOffer = { id: string; service: { id: string; name: string; slug: string; category: string; icon_label: string; icon_color: string; permitted_access_methods: string[] }; access_method: string; price: string; billing_type: 'recurring' | 'one_time'; billing_period: string; seats_available: number; renewal_day: number | null };
+export type MarketplaceService = MarketplaceOffer['service'];
+export type SellerOffer = MarketplaceOffer & { seats_total: number; status: 'draft' | 'pending_review' | 'active' | 'paused' | 'archived'; created_at: string };
+export type MarketplaceOrder = { id: string; status: 'payment_pending' | 'paid' | 'provisioning' | 'active' | 'cancelled' | 'refunded'; amount: string; billing_type: 'recurring' | 'one_time'; expires_at: string; paid_at: string | null; provisioned_at: string | null; created_at: string; service_name: string; access_method: string };
 
 async function request(path: string, init: RequestInit = {}) {
   const token = await getAccessToken({ redirectOnFailure: false });
@@ -27,3 +30,8 @@ export async function getPublicMarketplaceOffers() {
   if (!response.ok) throw new Error(body.detail ?? 'Could not load marketplace offers.');
   return (body.data ?? []) as MarketplaceOffer[];
 }
+export const getMarketplaceServices = () => request('services/') as Promise<MarketplaceService[]>;
+export const getSellerOffers = () => request('offers/mine/') as Promise<SellerOffer[]>;
+export const createSellerOffer = (input: { service_id: string; access_method: string; price: string; billing_type: 'recurring' | 'one_time'; billing_period: string; seats_total: number; seats_available: number; renewal_day?: number | null }) => request('offers/mine/', { method: 'POST', body: JSON.stringify(input) }) as Promise<SellerOffer>;
+export const reserveMarketplaceSeat = (offerId: string) => request(`offers/${offerId}/reserve/`, { method: 'POST' }) as Promise<MarketplaceOrder>;
+export const getMarketplaceOrders = () => request('orders/') as Promise<MarketplaceOrder[]>;

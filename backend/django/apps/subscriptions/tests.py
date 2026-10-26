@@ -5,7 +5,7 @@ from django.contrib.auth import get_user_model
 from django.utils import timezone
 from rest_framework.test import APITestCase
 
-from .models import SubscriptionMembership
+from .models import SubscriptionMembership, SubscriptionOffer, SubscriptionService
 
 
 class SubscriptionDashboardTests(APITestCase):
@@ -59,3 +59,28 @@ class SubscriptionDashboardTests(APITestCase):
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.data['data']['billing_type'], 'one_time')
         self.assertIsNone(response.data['data']['next_renewal'])
+
+    def test_seller_listing_starts_in_review(self):
+        service = SubscriptionService.objects.create(name='Canva', slug='canva', permitted_access_methods=['team_seat'])
+
+        response = self.client.post('/api/v1/subscriptions/offers/mine/', {
+            'service_id': str(service.id), 'access_method': 'team_seat', 'price': '2900',
+            'billing_type': 'recurring', 'billing_period': 'monthly', 'seats_total': 2, 'seats_available': 2,
+        }, format='json')
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.data['data']['status'], 'pending_review')
+
+    def test_buyer_reservation_decrements_an_open_seat_once(self):
+        seller = get_user_model().objects.create_user(username='seller@example.com', email='seller@example.com', password='strong-test-password')
+        service = SubscriptionService.objects.create(name='Canva', slug='canva', permitted_access_methods=['team_seat'])
+        offer = SubscriptionOffer.objects.create(seller=seller, service=service, access_method='team_seat', price=Decimal('2900'), seats_total=1, seats_available=1, status='active')
+
+        response = self.client.post(f'/api/v1/subscriptions/offers/{offer.id}/reserve/')
+        offer.refresh_from_db()
+        repeat = self.client.post(f'/api/v1/subscriptions/offers/{offer.id}/reserve/')
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.data['data']['status'], 'payment_pending')
+        self.assertEqual(offer.seats_available, 0)
+        self.assertEqual(repeat.status_code, 200)
