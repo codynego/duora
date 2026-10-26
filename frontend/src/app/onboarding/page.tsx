@@ -177,11 +177,11 @@ export default function Onboarding() {
   }
 
   return (
-    <main className="auth-page min-h-screen bg-[#F3F1EC] px-5 py-6 text-[#171622] sm:px-8">
+    <main className="min-h-screen bg-[#F5F7FB] px-5 py-6 text-[#111B33] sm:px-8">
       <div className="relative z-10 mx-auto flex min-h-[calc(100vh-3rem)] max-w-5xl flex-col">
         <header className="flex items-center justify-between">
-          <Link href="/" className="font-serif text-3xl tracking-[-.075em]">
-            Dorah<span className="text-[#9B84F7]">.</span>
+          <Link href="/" className="inline-flex items-center gap-2 font-[Aptos_Display,Arial,sans-serif] text-2xl font-black tracking-[-.07em]">
+            <span className="grid h-9 w-9 place-items-center rounded-[10px] bg-[#3157F5] text-sm text-white">D</span>Dorah
           </Link>
           <button
             type="button"
@@ -199,7 +199,7 @@ export default function Onboarding() {
           {[1, 2, 3].map((item) => (
             <span
               key={item}
-              className={`h-1 flex-1 rounded-full transition-colors ${item <= step ? "bg-[#9B84F7]" : "bg-[#171622]/10"}`}
+              className={`h-1 flex-1 rounded-full transition-colors ${item <= step ? "bg-[#3157F5]" : "bg-[#111B33]/10"}`}
             />
           ))}
         </div>
@@ -208,7 +208,7 @@ export default function Onboarding() {
           {step === 1 && (
             <section className="w-full">
               <p className="eyebrow">
-                <span className="eyebrow-dot" />
+                <span className="eyebrow-dot bg-[#3157F5]" />
                 Welcome to Dorah
               </p>
               <h1 className="display-heading mt-6 max-w-2xl text-6xl leading-[.92] tracking-[-.07em] sm:text-8xl">
@@ -270,7 +270,7 @@ export default function Onboarding() {
           {step === 2 && (
             <section className="w-full">
               <p className="eyebrow">
-                <span className="eyebrow-dot" />A little context
+                <span className="eyebrow-dot bg-[#3157F5]" />A little context
               </p>
               <h1 className="display-heading mt-6 text-5xl leading-[.94] tracking-[-.07em] sm:text-7xl">
                 Choose what you’re curious about.
@@ -332,7 +332,7 @@ export default function Onboarding() {
           {step === 3 && (
             <section className="w-full">
               <p className="eyebrow">
-                <span className="eyebrow-dot" />
+                <span className="eyebrow-dot bg-[#3157F5]" />
                 Your first Dorah question
               </p>
               <div className="mt-8 rounded-[30px] bg-[#171622] p-6 text-white shadow-[0_24px_70px_rgba(23,22,34,.18)] sm:p-10">

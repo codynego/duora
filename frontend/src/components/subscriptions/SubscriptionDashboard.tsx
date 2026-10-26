@@ -5,12 +5,13 @@ import { FormEvent, useEffect, useState } from 'react';
 import { ArrowRight, BellRing, CalendarDays, CirclePlus, LayoutDashboard, LoaderCircle, Menu, ReceiptText, Search, WalletCards, X } from 'lucide-react';
 import { useCurrentUser } from '@/lib/current-user';
 import { createManualSubscription, getSubscriptionDashboard, type SubscriptionDashboard as DashboardData, type SubscriptionMembership } from '@/lib/subscriptions-api';
+import MobileAppNav from '@/components/subscriptions/MobileAppNav';
 
 const categories = ['AI', 'Creative', 'Productivity', 'Learning', 'Entertainment', 'Other'];
 const formatNaira = (value: string) => new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', maximumFractionDigits: 0 }).format(Number(value));
 const formatDate = (value: string | null) => value ? new Intl.DateTimeFormat('en-NG', { day: 'numeric', month: 'short' }).format(new Date(`${value}T00:00:00`)) : 'No date set';
 
-function Brand() { return <Link href="/dashboard" className="inline-flex items-center gap-2 font-[Aptos_Display,Arial,sans-serif] text-xl font-black tracking-[-.06em]"><span className="flex h-9 w-9 items-end justify-center gap-0.5 rounded-[10px] bg-[#3157F5] p-2 -rotate-3"><i className="h-2 w-1 rounded-t bg-white" /><i className="h-5 w-1 rounded-t bg-white" /><i className="h-3.5 w-1 rounded-t bg-white" /></span>Dorah</Link>; }
+function Brand() { return <><Link href="/dashboard" className="inline-flex items-center gap-2 font-[Aptos_Display,Arial,sans-serif] text-xl font-black tracking-[-.06em]"><span className="flex h-9 w-9 items-end justify-center gap-0.5 rounded-[10px] bg-[#3157F5] p-2 -rotate-3"><i className="h-2 w-1 rounded-t bg-white" /><i className="h-5 w-1 rounded-t bg-white" /><i className="h-3.5 w-1 rounded-t bg-white" /></span>Dorah</Link><MobileAppNav active="dashboard" /></>; }
 
 function AddDialog({ close, reload }: { close: () => void; reload: () => Promise<void> }) {
   const [name, setName] = useState(''); const [cost, setCost] = useState(''); const [date, setDate] = useState(''); const [category, setCategory] = useState('Other'); const [billingType, setBillingType] = useState<'recurring' | 'one_time'>('recurring'); const [error, setError] = useState(''); const [saving, setSaving] = useState(false);

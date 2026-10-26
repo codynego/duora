@@ -19,6 +19,7 @@ export default function robots(): MetadataRoute.Robots {
         '/match',
         '/rooms',
         '/dashboard',
+        '/share-seats',
       ],
     },
     sitemap: `${siteUrl}/sitemap.xml`,

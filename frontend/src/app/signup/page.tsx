@@ -40,7 +40,7 @@ function PasswordField({
           minLength={minLength}
           type={visible ? "text" : "password"}
           autoComplete={autoComplete}
-          className="duora-form-input w-full rounded-xl px-4 py-3 pr-12 font-normal outline-none"
+          className="duora-form-input h-12 w-full rounded-xl border-[#111B33]/15 bg-white px-4 pr-12 font-normal outline-none transition focus:border-[#3157F5] focus:ring-4 focus:ring-[#3157F5]/10"
         />
         <button
           type="button"
@@ -104,8 +104,8 @@ export default function SignupPage() {
 
   return (
     <AuthShell
-      title="Create your account."
-      description="Your identity stays yours. Share only what you need to get started."
+      title="Make room for better choices."
+      description="Create your Dorah account to track renewals, reserve seats, and manage access in one place."
       footer={
         <>
           Already have an account?{" "}
@@ -115,7 +115,7 @@ export default function SignupPage() {
         </>
       }
     >
-      <form onSubmit={submit} className="mt-8 space-y-4">
+      <form onSubmit={submit} className="mt-8 space-y-5">
         <label className="block text-sm font-bold">
           Email address
           <input
@@ -125,7 +125,7 @@ export default function SignupPage() {
             type="email"
             autoComplete="email"
             placeholder="you@example.com"
-            className="duora-form-input mt-2 w-full rounded-xl px-4 py-3 font-normal outline-none"
+            className="duora-form-input mt-2 h-12 w-full rounded-xl border-[#111B33]/15 bg-white px-4 font-normal outline-none transition focus:border-[#3157F5] focus:ring-4 focus:ring-[#3157F5]/10"
           />
         </label>
         <PasswordField
@@ -171,7 +171,7 @@ export default function SignupPage() {
         )}
         <button
           disabled={loading}
-          className="button-primary w-full rounded-full bg-[#171622] px-5 py-3.5 text-sm font-bold text-white disabled:opacity-50"
+          className="button-primary h-12 w-full rounded-xl bg-[#3157F5] px-5 text-sm font-black text-white shadow-[0_5px_0_rgba(49,87,245,.2)] disabled:opacity-50"
         >
           {loading ? "Creating account…" : "Create account"}
         </button>

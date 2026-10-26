@@ -38,7 +38,7 @@ export default function LoginPage() {
   return (
     <AuthShell
       title="Welcome back."
-      description="Pick up where your last good conversation left off."
+      description="Your subscriptions, seats, and account choices are waiting for you."
       footer={
         <>
           New to Dorah?{" "}
@@ -48,7 +48,7 @@ export default function LoginPage() {
         </>
       }
     >
-      <form onSubmit={submit} className="mt-8 space-y-4">
+      <form onSubmit={submit} className="mt-8 space-y-5">
         <label className="block text-sm font-bold">
           Email address or username
           <input
@@ -57,7 +57,7 @@ export default function LoginPage() {
             required
             autoComplete="username"
             placeholder="you@example.com"
-            className="duora-form-input mt-2 w-full rounded-xl px-4 py-3 font-normal outline-none"
+            className="duora-form-input mt-2 h-12 w-full rounded-xl border-[#111B33]/15 bg-white px-4 font-normal outline-none transition focus:border-[#3157F5] focus:ring-4 focus:ring-[#3157F5]/10"
           />
         </label>
         <label className="block text-sm font-bold">
@@ -69,7 +69,7 @@ export default function LoginPage() {
               required
               type={passwordVisible ? "text" : "password"}
               autoComplete="current-password"
-              className="duora-form-input w-full rounded-xl px-4 py-3 pr-12 font-normal outline-none"
+              className="duora-form-input h-12 w-full rounded-xl border-[#111B33]/15 bg-white px-4 pr-12 font-normal outline-none transition focus:border-[#3157F5] focus:ring-4 focus:ring-[#3157F5]/10"
             />
             <button
               type="button"
@@ -96,13 +96,13 @@ export default function LoginPage() {
         )}
         <button
           disabled={loading}
-          className="button-primary w-full rounded-full bg-[#171622] px-5 py-3.5 text-sm font-bold text-white disabled:opacity-50"
+          className="button-primary h-12 w-full rounded-xl bg-[#3157F5] px-5 text-sm font-black text-white shadow-[0_5px_0_rgba(49,87,245,.2)] disabled:opacity-50"
         >
           {loading ? "Signing in…" : "Sign in"}
         </button>
         <Link
           href="/forgot-password"
-          className="block text-center text-sm font-bold text-[#806BE4]"
+          className="block text-center text-xs font-black text-[#3157F5]"
         >
           Forgot password?
         </Link>
