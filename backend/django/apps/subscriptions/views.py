@@ -3,12 +3,12 @@ from datetime import timedelta
 from django.db.models import Sum
 from django.utils import timezone
 from rest_framework import status
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import SubscriptionMembership, SubscriptionOffer
-from .serializers import SubscriptionMembershipSerializer, SubscriptionOfferSerializer
+from .models import SubscriptionMembership, SubscriptionOffer, SubscriptionPreference
+from .serializers import SubscriptionMembershipSerializer, SubscriptionOfferSerializer, SubscriptionPreferenceSerializer
 
 
 class SubscriptionDashboardView(APIView):
@@ -20,8 +20,9 @@ class SubscriptionDashboardView(APIView):
             user=request.user,
             status__in=(SubscriptionMembership.Status.ACTIVE, SubscriptionMembership.Status.OVERDUE),
         ).select_related('service')
-        monthly_total = active_memberships.aggregate(total=Sum('monthly_cost'))['total'] or 0
-        due_soon = active_memberships.filter(next_renewal__gte=today, next_renewal__lte=today + timedelta(days=7))
+        recurring_memberships = active_memberships.filter(billing_type=SubscriptionMembership.BillingType.RECURRING)
+        monthly_total = recurring_memberships.aggregate(total=Sum('monthly_cost'))['total'] or 0
+        due_soon = recurring_memberships.filter(next_renewal__gte=today, next_renewal__lte=today + timedelta(days=7))
         return Response({
             'data': {
                 'monthly_total': monthly_total,
@@ -64,7 +65,7 @@ class SubscriptionMembershipDetailView(APIView):
 
 
 class SubscriptionOfferListView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     def get(self, request):
         offers = SubscriptionOffer.objects.filter(
@@ -73,3 +74,18 @@ class SubscriptionOfferListView(APIView):
             service__is_active=True,
         ).select_related('service')
         return Response({'data': SubscriptionOfferSerializer(offers, many=True).data})
+
+
+class SubscriptionPreferenceView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        preferences, _ = SubscriptionPreference.objects.get_or_create(user=request.user)
+        return Response({'data': SubscriptionPreferenceSerializer(preferences).data})
+
+    def put(self, request):
+        preferences, _ = SubscriptionPreference.objects.get_or_create(user=request.user)
+        serializer = SubscriptionPreferenceSerializer(preferences, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response({'data': serializer.data})

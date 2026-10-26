@@ -33,3 +33,29 @@ class SubscriptionDashboardTests(APITestCase):
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.data['data']['name'], 'Notion Plus')
         self.assertEqual(SubscriptionMembership.objects.filter(user=self.user).count(), 1)
+
+    def test_subscription_preferences_are_uuid_backed_and_saved(self):
+        response = self.client.put('/api/v1/subscriptions/preferences/', {'renewal_reminders': False, 'weekly_spend_digest': True}, format='json')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(str(response.data['data']['id'])), 36)
+        self.assertFalse(response.data['data']['renewal_reminders'])
+        self.assertTrue(response.data['data']['weekly_spend_digest'])
+
+    def test_one_time_purchase_does_not_inflate_recurring_monthly_total(self):
+        SubscriptionMembership.objects.create(user=self.user, custom_name='Canva', monthly_cost=Decimal('2900'))
+        SubscriptionMembership.objects.create(user=self.user, custom_name='Course access', monthly_cost=Decimal('15000'), billing_type='one_time')
+
+        response = self.client.get('/api/v1/subscriptions/dashboard/')
+
+        self.assertEqual(response.data['data']['monthly_total'], Decimal('2900'))
+
+    def test_one_time_purchase_has_no_renewal_date(self):
+        response = self.client.post('/api/v1/subscriptions/memberships/', {
+            'custom_name': 'Design course', 'category': 'learning', 'monthly_cost': '15000',
+            'billing_type': 'one_time', 'next_renewal': '2026-11-15',
+        }, format='json')
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.data['data']['billing_type'], 'one_time')
+        self.assertIsNone(response.data['data']['next_renewal'])

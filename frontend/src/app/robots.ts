@@ -18,6 +18,7 @@ export default function robots(): MetadataRoute.Robots {
         '/experiences',
         '/match',
         '/rooms',
+        '/dashboard',
       ],
     },
     sitemap: `${siteUrl}/sitemap.xml`,

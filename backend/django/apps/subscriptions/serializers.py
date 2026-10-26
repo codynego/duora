@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import SubscriptionMembership, SubscriptionOffer, SubscriptionService
+from .models import SubscriptionMembership, SubscriptionOffer, SubscriptionPreference, SubscriptionService
 
 
 class SubscriptionServiceSerializer(serializers.ModelSerializer):
@@ -14,7 +14,7 @@ class SubscriptionOfferSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = SubscriptionOffer
-        fields = ('id', 'service', 'access_method', 'price', 'billing_period', 'seats_available', 'renewal_day')
+        fields = ('id', 'service', 'access_method', 'price', 'billing_type', 'billing_period', 'seats_available', 'renewal_day')
 
 
 class SubscriptionMembershipSerializer(serializers.ModelSerializer):
@@ -25,7 +25,7 @@ class SubscriptionMembershipSerializer(serializers.ModelSerializer):
     class Meta:
         model = SubscriptionMembership
         fields = (
-            'id', 'name', 'custom_name', 'category', 'source', 'access_method', 'monthly_cost',
+            'id', 'name', 'custom_name', 'category', 'source', 'access_method', 'monthly_cost', 'billing_type',
             'status', 'next_renewal', 'last_paid_at', 'icon_label', 'icon_color', 'created_at', 'updated_at',
         )
         read_only_fields = ('id', 'source', 'last_paid_at', 'created_at', 'updated_at')
@@ -39,4 +39,14 @@ class SubscriptionMembershipSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         if self.instance is None and not attrs.get('custom_name', '').strip():
             raise serializers.ValidationError({'custom_name': 'Enter a subscription name.'})
+        billing_type = attrs.get('billing_type', self.instance.billing_type if self.instance else SubscriptionMembership.BillingType.RECURRING)
+        if billing_type == SubscriptionMembership.BillingType.ONE_TIME:
+            attrs['next_renewal'] = None
         return attrs
+
+
+class SubscriptionPreferenceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SubscriptionPreference
+        fields = ('id', 'renewal_reminders', 'weekly_spend_digest', 'updated_at')
+        read_only_fields = ('id', 'updated_at')

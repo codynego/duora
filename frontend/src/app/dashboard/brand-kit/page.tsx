@@ -1,13 +1,2 @@
-'use client';
-import { useEffect, useState } from 'react';
-import { Check, Palette } from 'lucide-react';
-import StudioShell from '@/components/studio/StudioShell';
-import { getBrandKit, saveBrandKit } from '@/lib/studio-api';
-
-type Kit = { name: string; website: string; primary_color: string; accent_color: string; default_cta: string };
-export default function BrandKitPage() {
-  const [kit, setKit] = useState<Kit | null>(null); const [notice, setNotice] = useState(''); const [error, setError] = useState('');
-  useEffect(() => { void getBrandKit().then(setKit).catch((reason) => setError(reason instanceof Error ? reason.message : 'Could not load brand kit.')); }, []);
-  async function save() { if (!kit) return; try { await saveBrandKit(kit); setNotice('Brand kit saved. New launches will use these settings.'); } catch (reason) { setError(reason instanceof Error ? reason.message : 'Could not save brand kit.'); } }
-  return <StudioShell><header><p className="motion-kicker"><span />The parts that make it yours</p><h1 className="motion-display mt-4 text-5xl leading-[.9] tracking-[-.07em] sm:text-7xl">Brand kit</h1><p className="mt-4 max-w-xl text-base leading-7 text-[#52615F]">Save the visual rules once. Every new release starts recognizably yours.</p></header>{error && <p className="mt-7 border border-[#D45235] bg-[#FFF0EC] p-3 text-sm font-semibold text-[#922A12]">{error}</p>}{notice && <p className="mt-7 flex items-center gap-2 border border-[#1B1D22] bg-[#E9F4EB] p-3 text-sm font-semibold"><Check className="h-4 w-4" />{notice}</p>}{kit ? <section className="mt-10 grid gap-4 lg:grid-cols-[.78fr_1.22fr]"><div className="border border-[#102126] bg-[#EDE9E2] p-7"><p className="font-mono text-[10px] font-bold uppercase tracking-[.14em]">Identity</p><div className="mt-16 grid h-20 w-20 place-items-center bg-[#1B1D22] text-3xl font-black text-white">{kit.name.slice(0, 1).toUpperCase()}</div><p className="mt-5 text-xl font-bold tracking-[-.04em]">{kit.name}</p></div><div className="border border-[#102126] bg-white p-6 sm:p-8"><div className="flex items-center justify-between"><h2 className="text-xl font-bold tracking-[-.04em]">Visual rules</h2><button type="button" onClick={() => void save()} className="text-sm font-bold text-[#D75A3D]">Save changes</button></div><div className="mt-8 grid gap-7 sm:grid-cols-2">{([['name','Brand name'],['primary_color','Primary color'],['accent_color','Accent color'],['website','Website'],['default_cta','Default CTA']] as [keyof Kit,string][]).map(([key,label]) => <label key={key} className="text-sm font-bold">{label}<input value={kit[key]} onChange={(event) => setKit({ ...kit, [key]: event.target.value })} className="dashboard-field mt-2" /></label>)}</div><div className="mt-8 flex items-center gap-2 text-sm text-[#656b74]"><Palette className="h-4 w-4 text-[#D75A3D]" />Applied to future storyboards.</div></div></section> : <div className="mt-10 h-64 animate-pulse bg-[#EDE9E2]" />}</StudioShell>;
-}
+import { redirect } from 'next/navigation';
+export default function DashboardBrandKitPage() { redirect('/dashboard'); }

@@ -50,11 +50,16 @@ class SubscriptionOffer(models.Model):
         PAUSED = 'paused', 'Paused'
         ARCHIVED = 'archived', 'Archived'
 
+    class BillingType(models.TextChoices):
+        RECURRING = 'recurring', 'Recurring'
+        ONE_TIME = 'one_time', 'One-time'
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     seller = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='subscription_offers')
     service = models.ForeignKey(SubscriptionService, on_delete=models.PROTECT, related_name='offers')
     access_method = models.CharField(max_length=32, choices=AccessMethod.choices)
     price = models.DecimalField(max_digits=12, decimal_places=2, validators=[MinValueValidator(0)])
+    billing_type = models.CharField(max_length=16, choices=BillingType.choices, default=BillingType.RECURRING)
     billing_period = models.CharField(max_length=12, default='monthly')
     seats_total = models.PositiveSmallIntegerField(validators=[MinValueValidator(1)])
     seats_available = models.PositiveSmallIntegerField(validators=[MinValueValidator(0)])
@@ -72,7 +77,7 @@ class SubscriptionOffer(models.Model):
 
 
 class SubscriptionMembership(models.Model):
-    """A recurring service a person tracks manually or joins through Dorah."""
+    """A recurring subscription or one-time purchase a person tracks through Dorah."""
 
     class Source(models.TextChoices):
         MARKETPLACE = 'marketplace', 'Marketplace'
@@ -84,6 +89,10 @@ class SubscriptionMembership(models.Model):
         PAUSED = 'paused', 'Paused'
         CANCELLED = 'cancelled', 'Cancelled'
 
+    class BillingType(models.TextChoices):
+        RECURRING = 'recurring', 'Recurring'
+        ONE_TIME = 'one_time', 'One-time'
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='subscription_memberships')
     service = models.ForeignKey(SubscriptionService, null=True, blank=True, on_delete=models.SET_NULL, related_name='memberships')
@@ -93,6 +102,7 @@ class SubscriptionMembership(models.Model):
     source = models.CharField(max_length=16, choices=Source.choices, default=Source.MANUAL)
     access_method = models.CharField(max_length=80, blank=True)
     monthly_cost = models.DecimalField(max_digits=12, decimal_places=2, validators=[MinValueValidator(0)])
+    billing_type = models.CharField(max_length=16, choices=BillingType.choices, default=BillingType.RECURRING)
     status = models.CharField(max_length=16, choices=Status.choices, default=Status.ACTIVE)
     next_renewal = models.DateField(null=True, blank=True)
     last_paid_at = models.DateTimeField(null=True, blank=True)
@@ -115,3 +125,13 @@ class SubscriptionMembership(models.Model):
 
     def __str__(self):
         return f'{self.display_name} · {self.user_id}'
+
+
+class SubscriptionPreference(models.Model):
+    """Private, user-owned delivery preferences for the subscriptions product."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='subscription_preferences')
+    renewal_reminders = models.BooleanField(default=True)
+    weekly_spend_digest = models.BooleanField(default=False)
+    updated_at = models.DateTimeField(auto_now=True)
