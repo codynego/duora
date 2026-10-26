@@ -36,9 +36,9 @@ export default function PwaStartup() {
             <circle cx="46" cy="18" r="6" fill="#7454A6" />
           </svg>
         </div>
-        <p className="pwa-startup__eyebrow">Make the moment yours</p>
+        <p className="pwa-startup__eyebrow">Affordable access, organized</p>
         <p className="pwa-startup__wordmark">dorah</p>
-        <p className="pwa-startup__line">A little closer, every day.</p>
+        <p className="pwa-startup__line">Your subscriptions, in one place.</p>
       </div>
       <span className="pwa-startup__progress" aria-hidden="true" />
     </div>

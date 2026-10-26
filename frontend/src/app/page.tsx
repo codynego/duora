@@ -1,18 +1,18 @@
 import type { Metadata } from 'next';
-import HomiHomepage from '@/components/homi/HomiHomepage';
+import DorahMarketplaceHomepage from '@/components/dorah-market/DorahMarketplaceHomepage';
 
 export const metadata: Metadata = {
-  title: { absolute: 'Homi.ng — Find homes that are still available' },
+  title: { absolute: 'Dorah — Pay for the seat, not the whole plan' },
   description:
-    'Discover recently confirmed rentals, see the full move-in cost, and connect directly with the person responsible for the home.',
+    'Find eligible seats for the digital tools you use, share the cost, and keep every renewal in one clear place.',
   openGraph: {
-    title: 'Homi.ng — Find homes that are still available',
-    description: 'Recently confirmed rentals, transparent move-in costs, and safer direct introductions.',
+    title: 'Dorah — Pay for the seat, not the whole plan',
+    description: 'Affordable access to the digital tools you use, with clear terms and simple renewals.',
     type: 'website',
     locale: 'en_NG',
   },
 };
 
 export default function HomePage() {
-  return <HomiHomepage />;
+  return <DorahMarketplaceHomepage />;
 }

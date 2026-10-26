@@ -32,7 +32,7 @@ export default function PwaRuntime() {
         <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-spark-coral text-white"><Download className="h-4 w-4" /></span>
         <div>
           <p className="text-sm font-bold">Keep Dorah close</p>
-          <p className="mt-1 text-xs leading-5 text-white/65">Install the app for faster room entry and reminders when something is about to begin.</p>
+          <p className="mt-1 text-xs leading-5 text-white/65">Install the app for quicker access to your subscriptions, payments, and renewal reminders.</p>
         </div>
       </div>
       <button type="button" onClick={() => void install()} className="mt-4 w-full rounded-full bg-spark-coral px-4 py-2.5 text-sm font-bold text-white transition hover:bg-spark-flame">Install Dorah</button>

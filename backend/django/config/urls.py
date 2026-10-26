@@ -19,6 +19,7 @@ urlpatterns = [
     path('api/v1/rooms/', include('apps.rooms.urls')),
     path('api/v1/social/', include('apps.social.urls')),
     path('api/v1/studio/', include('apps.studio.urls')),
+    path('api/v1/subscriptions/', include('apps.subscriptions.urls')),
 ]
 
 if settings.DEBUG:

@@ -4,22 +4,22 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: 'Dorah',
     short_name: 'Dorah',
-    description: 'Shared experiences that turn chemistry into conversation.',
+    description: 'Affordable digital access and subscription management in one place.',
     id: '/',
-    start_url: '/home',
+    start_url: '/',
     scope: '/',
     display: 'standalone',
     orientation: 'portrait-primary',
-    background_color: '#F7F5F0',
-    theme_color: '#7454A6',
-    categories: ['social', 'lifestyle', 'games'],
+    background_color: '#F5F7FB',
+    theme_color: '#3157F5',
+    categories: ['finance', 'shopping', 'utilities'],
     icons: [
       { src: '/icon-192.svg', sizes: '192x192', type: 'image/svg+xml', purpose: 'maskable' },
       { src: '/icon-512.svg', sizes: '512x512', type: 'image/svg+xml', purpose: 'maskable' },
     ],
     shortcuts: [
-      { name: 'Moments', short_name: 'Moments', description: 'Find anonymous thoughts and conversations.', url: '/moments', icons: [{ src: '/icon-192.svg', sizes: '192x192' }] },
-      { name: 'Create an experience', short_name: 'Create', description: 'Start a private or public room.', url: '/experiences', icons: [{ src: '/icon-192.svg', sizes: '192x192' }] },
+      { name: 'Browse subscriptions', short_name: 'Marketplace', description: 'Find an eligible open subscription seat.', url: '/#subscriptions', icons: [{ src: '/icon-192.svg', sizes: '192x192' }] },
+      { name: 'My subscriptions', short_name: 'Subscriptions', description: 'Review subscriptions and upcoming renewals.', url: '/home', icons: [{ src: '/icon-192.svg', sizes: '192x192' }] },
     ],
   };
 }

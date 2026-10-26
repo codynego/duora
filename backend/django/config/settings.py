@@ -28,6 +28,7 @@ INSTALLED_APPS = [
     'apps.moderation',
     'apps.social',
     'apps.studio',
+    'apps.subscriptions',
 ]
 
 MIDDLEWARE = [
