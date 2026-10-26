@@ -1,7 +1,6 @@
 // @ts-nocheck
 "use client";
 
-import type { Metadata } from 'next';
 import { ArrowRight, Cable, Check, Smartphone, Tv, Zap } from 'lucide-react';
 import { useState } from 'react';
 import MarketplaceShell from '@/components/subscriptions/MarketplaceShell';
@@ -12,8 +11,6 @@ const suggestions = [
   { label: 'Ikeja electric', detail: '₦10,000 token', price: '₦9,700', oldPrice: '₦10,000', icon: Zap, color: '#D86A28' },
   { label: 'DStv Compact', detail: '30 days access', price: '₦14,500', oldPrice: '₦15,000', icon: Tv, color: '#7B4BD1' },
 ];
-
-export const metadata: Metadata = { title: 'Buy essentials — Dorah', robots: { index: false, follow: false } };
 
 export default function BuyPage() {
   // The quick-link icon tuple is intentionally data-driven for the compact utility row.
