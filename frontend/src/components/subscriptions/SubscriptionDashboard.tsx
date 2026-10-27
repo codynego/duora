@@ -6,7 +6,7 @@ import { type FormEvent, useEffect, useState } from 'react';
 import { ArrowDownLeft, ArrowRight, ArrowUpRight, BarChart3, BellRing, Check, ChevronDown, CircleAlert, CircleDollarSign, LayoutDashboard, MessageCircle, MoreHorizontal, Plus, ReceiptText, Settings, ShieldCheck, Sparkles, UserRound, UsersRound, WalletCards, X } from 'lucide-react';
 import { useCurrentUser } from '@/lib/current-user';
 import { getFinancialOnboardingProfile, type FinancialOnboardingProfile } from '@/lib/financial-onboarding';
-import { createFinanceContact, createFinanceTransaction, getFinanceWorkspace, type FinanceOverview, type FinanceWorkspace, getBusinesses, getFinanceOverview } from '@/lib/finance-api';
+import { createFinanceContact, createFinanceObligation, createFinanceTransaction, getFinanceWorkspace, type FinanceOverview, type FinanceWorkspace, getBusinesses, getFinanceOverview } from '@/lib/finance-api';
 import DashboardSectionContent, { TransactionDetailsModal, type DashboardSection } from './DashboardSectionContent';
 import FinanceQuickCreate from './FinanceQuickCreate';
 
