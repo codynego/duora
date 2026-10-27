@@ -25,7 +25,7 @@ const preferenceItems = [
   { label: 'Settings', href: '/dashboard/settings', icon: Settings },
 ];
 
-type PreviewTransaction = { date: string; dateKey?: string; time?: string; title: string; detail: string; amount: number; direction: 'in' | 'out' | 'transfer' };
+type PreviewTransaction = { transactionId?: string; date: string; dateKey?: string; time?: string; title: string; detail: string; amount: number; direction: 'in' | 'out' | 'transfer'; category?: string; accountName?: string | null; contactName?: string | null };
 const initialTransactions: PreviewTransaction[] = [
   { date: 'Oct 27', dateKey: '2026-10-27', title: 'Shoprite supplies', detail: 'Stock purchase', amount: 86_500, direction: 'out' },
   { date: 'Oct 26', dateKey: '2026-10-26', title: 'Amina Bello', detail: 'Customer payment', amount: 120_000, direction: 'in' },
