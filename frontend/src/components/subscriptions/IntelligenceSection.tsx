@@ -102,7 +102,6 @@ export default function IntelligenceSection({ findings, openFindings, potentialI
           <div className="mt-4 grid gap-2">{['How much do customers owe me?', 'What bills are due this week?', 'Why did expenses increase?'].map((question) => <p key={question} className="rounded-lg border border-white/10 px-3 py-2 text-[10px] font-bold text-white/50">{question}</p>)}</div>
           <p className="mt-4 border-t border-white/10 pt-3 text-[10px] leading-5 text-white/45">Financial figures come from application rules. AI answers are not active yet.</p>
         </section>
-        <section className="rounded-xl border border-[#111B33]/10 bg-white p-5"><p className="text-[10px] font-black uppercase tracking-[.12em] text-[#3157F5]">How findings are made</p><p className="mt-2 text-xs leading-5 text-[#64708A]">Checks use saved transactions, accounts, and outstanding balances. A possible duplicate is a prompt to compare records, not a confirmed error.</p></section>
       </aside>
     </div>
     {!hasLiveRecords && <p className="text-[10px] leading-5 text-[#758096]">Illustrative interface only. Sample findings and amounts are examples, not live financial data.</p>}

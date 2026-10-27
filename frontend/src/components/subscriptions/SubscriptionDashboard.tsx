@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { type FormEvent, useEffect, useState } from 'react';
-import { ArrowDownLeft, ArrowRight, ArrowUpRight, BarChart3, BellRing, BriefcaseBusiness, CircleAlert, CircleDollarSign, FileSpreadsheet, LayoutDashboard, MessageCircle, MoreHorizontal, Plus, ReceiptText, Settings, ShieldCheck, Sparkles, UserRound, UsersRound, WalletCards, X } from 'lucide-react';
+import { ArrowDownLeft, ArrowRight, ArrowUpRight, BarChart3, BellRing, CircleAlert, CircleDollarSign, FileSpreadsheet, LayoutDashboard, MessageCircle, MoreHorizontal, Plus, ReceiptText, Settings, ShieldCheck, Sparkles, UserRound, UsersRound, WalletCards, X } from 'lucide-react';
 import { useCurrentUser } from '@/lib/current-user';
 import { getFinancialOnboardingProfile, type FinancialOnboardingProfile } from '@/lib/financial-onboarding';
 import { createFinanceTransaction, getFinanceWorkspace, type FinanceOverview, type FinanceWorkspace, getBusinesses, getFinanceOverview } from '@/lib/finance-api';
@@ -25,12 +25,12 @@ const preferenceItems = [
   { label: 'Settings', href: '/dashboard/settings', icon: Settings },
 ];
 
-type PreviewTransaction = { date: string; title: string; detail: string; amount: number; direction: 'in' | 'out' | 'transfer' };
+type PreviewTransaction = { date: string; dateKey?: string; title: string; detail: string; amount: number; direction: 'in' | 'out' | 'transfer' };
 const initialTransactions: PreviewTransaction[] = [
-  { date: 'Oct 27', title: 'Shoprite supplies', detail: 'Stock purchase', amount: 86_500, direction: 'out' },
-  { date: 'Oct 26', title: 'Amina Bello', detail: 'Customer payment', amount: 120_000, direction: 'in' },
-  { date: 'Oct 25', title: 'Lagos Water', detail: 'Utility bill', amount: 18_000, direction: 'out' },
-  { date: 'Oct 24', title: 'Walk-in sales', detail: 'Sales received', amount: 245_000, direction: 'in' },
+  { date: 'Oct 27', dateKey: '2026-10-27', title: 'Shoprite supplies', detail: 'Stock purchase', amount: 86_500, direction: 'out' },
+  { date: 'Oct 26', dateKey: '2026-10-26', title: 'Amina Bello', detail: 'Customer payment', amount: 120_000, direction: 'in' },
+  { date: 'Oct 25', dateKey: '2026-10-25', title: 'Lagos Water', detail: 'Utility bill', amount: 18_000, direction: 'out' },
+  { date: 'Oct 24', dateKey: '2026-10-24', title: 'Walk-in sales', detail: 'Sales received', amount: 245_000, direction: 'in' },
 ];
 
 function Brand() {
@@ -90,6 +90,7 @@ export default function SubscriptionDashboard() {
   const dashboardTransactions = financeOverview?.transactions.length
     ? financeOverview.transactions.map((transaction) => ({
         date: new Date(`${transaction.occurred_on}T00:00:00`).toLocaleDateString('en', { month: 'short', day: 'numeric' }),
+        dateKey: transaction.occurred_on,
         title: transaction.description,
         detail: transaction.kind === 'transfer'
           ? `${transaction.account_name || 'Account'} → ${transaction.transfer_account_name || 'Account'}`
@@ -194,7 +195,6 @@ export default function SubscriptionDashboard() {
     <header className="sticky top-0 z-20 flex h-[68px] items-center justify-between border-b border-[#111B33]/10 bg-[#F5F7FB]/95 px-4 backdrop-blur lg:hidden"><Brand /><button type="button" onClick={() => { setRecordNotice(''); setRecordOpen(true); }} className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[#3157F5] px-3 text-xs font-black text-white"><Plus className="h-4 w-4" />Record</button></header>
     <main id="overview" className="pb-24 lg:ml-[250px] lg:pb-0"><div className="mx-auto w-[min(1190px,calc(100%-32px))] px-1 py-6 sm:w-[min(1190px,calc(100%-40px))] sm:px-5 sm:py-10 lg:px-8 lg:py-12">
       {section === 'overview' ? <>
-      <div className="mb-6 flex flex-col gap-3 border border-[#3157F5]/15 bg-[#EEF1FF] p-4 sm:flex-row sm:items-center sm:justify-between"><div className="flex items-start gap-3"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-white text-[#3157F5]"><BriefcaseBusiness className="h-4 w-4" /></span><div><p className="text-xs font-black text-[#243FA9]">{financeOverview ? 'Connected business records' : 'Dashboard preview'}</p><p className="mt-1 text-xs leading-5 text-[#52628F]">{financeOverview ? 'Cash, transactions, accounts, contacts, obligations, performance, and rule-based findings are loaded from your business records.' : 'These figures are labeled sample data. Complete setup and record transactions to start building your financial picture.'}</p></div></div>{financeOverview ? <span className="inline-flex items-center rounded-full border border-[#557516]/20 bg-[#EDF8DC] px-2 py-1 text-[9px] font-black uppercase tracking-[.08em] text-[#557516]">Live records</span> : <SampleTag />}</div>
 
       <header className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between"><div><p className="text-[10px] font-black uppercase tracking-[.14em] text-[#3157F5]">{new Intl.DateTimeFormat('en', { month: 'long', year: 'numeric' }).format(new Date())} · {financeOverview?.business.name || onboardingProfile?.businessName || 'Business overview'}</p><h1 className="mt-3 font-[Aptos_Display,Arial,sans-serif] text-[clamp(2.8rem,5vw,4.6rem)] font-black leading-[.9] tracking-[-.075em]">Good morning, {firstName}.</h1><p className="mt-3 max-w-xl text-sm leading-6 text-[#64708A]">Here’s what’s happening across your business money this month.</p></div><button type="button" onClick={() => { setRecordNotice(''); setRecordOpen(true); }} className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[#3157F5] px-4 text-sm font-black text-white shadow-[0_4px_0_rgba(49,87,245,.18)]"><Plus className="h-4 w-4" />Record transaction</button></header>
 
