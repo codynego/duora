@@ -318,6 +318,9 @@ class ObligationDetailView(APIView):
             return Response({'detail': 'Balance not found.'}, status=status.HTTP_404_NOT_FOUND)
         if obligation.payments.filter(is_voided=False).exists():
             return Response({'detail': 'This balance has recorded payments and cannot be deleted. Void the linked payments first.'}, status=status.HTTP_400_BAD_REQUEST)
+        # Keep voided payments for audit history, but release their protected
+        # foreign-key reference so the now-unused balance can be removed.
+        obligation.payments.filter(is_voided=True).update(obligation=None)
         obligation.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
