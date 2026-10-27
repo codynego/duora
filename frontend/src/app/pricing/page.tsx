@@ -5,7 +5,7 @@ import styles from '@/components/dorah-market/DorahMarketplaceHomepage.module.cs
 
 export const metadata: Metadata = {
   title: 'Pricing — Dorah financial controller',
-  description: 'Start free or get more room to manage your business finances with Dorah Control.',
+  description: 'Compare Dorah Free, Control, and Intelligence plans for small-business financial oversight.',
 };
 
 function Brand({ light = false }: { light?: boolean }) {
@@ -30,13 +30,21 @@ const controlFeatures = [
   '50 AI questions each month',
 ];
 
+const intelligenceFeatures = [
+  'Everything in Control',
+  'Advanced financial monitoring',
+  'AI-powered explanations and recommendations',
+  'Higher AI usage allowance',
+  'Team permissions',
+];
+
 export default function PricingPage() {
   return (
     <div className={styles.site}>
       <header className={styles.navShell}><div className={styles.container}><nav className={styles.nav} aria-label="Primary navigation"><Brand /><div className={styles.navLinks}><Link href="/#oversight">What you can see</Link><Link href="/#how-it-works">How it works</Link><Link href="/pricing" aria-current="page">Pricing</Link></div><div className={styles.navActions}><Link href="/login" className={styles.textLink}>Sign in</Link><Link href="/signup" className={`${styles.button} ${styles.buttonSmall}`}>Get started</Link></div><Link href="/signup" className={`${styles.button} ${styles.buttonSmall} ${styles.mobileStart}`}>Get started</Link></nav></div></header>
 
       <main>
-        <section className={styles.pricingHero}><div className={styles.container}><p className={styles.kicker}><span /> Straightforward plans</p><h1>Start free.<br /><em>Grow with clarity.</em></h1><p>Get a useful view of your business finances at no cost. Move to Control when you need more room for your records and deeper reporting.</p><div className={styles.pricingCurrency}><WalletCards /> Prices shown in USD. If you pay in naira, your provider’s exchange rate may vary.</div></div></section>
+        <section className={styles.pricingHero}><div className={styles.container}><p className={styles.kicker}><span /> Straightforward plans</p><h1>Start free.<br /><em>Grow with clarity.</em></h1><p>Get a useful view of your business finances at no cost. Choose Control for more room to record and report, or Intelligence for deeper monitoring and team permissions.</p><div className={styles.pricingCurrency}><WalletCards /> Prices shown in USD. If you pay in naira, your provider’s exchange rate may vary.</div></div></section>
 
         <section className={styles.pricingSection}><div className={styles.container}>
           <div className={styles.planGrid}>
@@ -58,22 +66,34 @@ export default function PricingPage() {
               <p className={styles.includedLabel}>Everything in Free, plus</p>
               <ul className={styles.planFeatures}>{controlFeatures.slice(1).map((feature) => <li key={feature}><Check />{feature}</li>)}</ul>
             </article>
+
+            <article className={styles.planCard}>
+              <div className={styles.planHeading}><div><p>For deeper oversight</p><h2>Intelligence</h2></div><span className={styles.planBadge}>Advanced insights</span></div>
+              <p className={styles.planDescription}>Understand what changed, why it matters, and what may deserve a closer look.</p>
+              <div className={styles.planPrice}><strong>$7.99</strong><span>/ month</span></div>
+              <div className={styles.annualPrice}>Or $79.99 / year <span>Save about 17%</span></div>
+              <Link href="/signup" className={`${styles.button} ${styles.controlButton}`}>Choose Intelligence <ArrowRight /></Link>
+              <p className={styles.includedLabel}>Everything in Control, plus</p>
+              <ul className={styles.planFeatures}>{intelligenceFeatures.slice(1).map((feature) => <li key={feature}><Check />{feature}</li>)}</ul>
+            </article>
           </div>
-          <p className={styles.launchNote}><ShieldCheck /> Launching with the essentials: Free and Control. Plans for advanced monitoring and team workflows can come as those features are ready.</p>
+          <p className={styles.launchNote}><ShieldCheck /> Start with the plan that fits your records today. You can move to deeper financial monitoring and team tools as your business grows.</p>
         </div></section>
 
-        <section className={styles.compareSection}><div className={styles.container}><header className={styles.sectionHeading}><div><p className={styles.kicker}><span /> Compare plans</p><h2>Room to build better habits.</h2></div><p>Choose the plan that fits how much financial activity you want to keep in view.</p></header><div className={styles.compareTable} role="table" aria-label="Free and Control plan comparison"><div className={`${styles.compareRow} ${styles.compareHead}`} role="row"><span role="columnheader">Included</span><strong role="columnheader">Free</strong><strong role="columnheader">Control</strong></div>
+        <section className={styles.compareSection}><div className={styles.container}><header className={styles.sectionHeading}><div><p className={styles.kicker}><span /> Compare plans</p><h2>Room to build better habits.</h2></div><p>Choose the plan that fits how much financial activity you want to keep in view.</p></header><div className={styles.compareTable} role="table" aria-label="Free, Control, and Intelligence plan comparison"><div className={`${styles.compareRow} ${styles.compareHead}`} role="row"><span role="columnheader">Included</span><strong role="columnheader">Free</strong><strong role="columnheader">Control</strong><strong role="columnheader">Intelligence</strong></div>
             {[
-              ['Businesses', '1', '1'],
-              ['New transactions', '100 / month', 'Unlimited'],
-              ['Customer records', '20', 'Included in Free'],
-              ['Supplier records', '10', 'Included in Free'],
-              ['Spreadsheet imports', '1 / month', 'Unlimited'],
-              ['AI questions', '5 / month', '50 / month'],
-              ['Financial reports', 'Basic', 'Full reports'],
-              ['Reconciliation tools', '—', 'Included'],
-              ['Discrepancy checks', 'Basic', 'Included'],
-            ].map(([feature, free, control]) => <div className={styles.compareRow} role="row" key={feature}><span role="rowheader">{feature}</span><span role="cell">{free}</span><span role="cell">{control}</span></div>)}
+              ['Businesses', '1', '1', '1'],
+              ['New transactions', '100 / month', 'Unlimited', 'Unlimited'],
+              ['Customer records', '20', 'Included in Free', 'Included in Free'],
+              ['Supplier records', '10', 'Included in Free', 'Included in Free'],
+              ['Spreadsheet imports', '1 / month', 'Unlimited', 'Unlimited'],
+              ['AI questions', '5 / month', '50 / month', 'Higher allowance'],
+              ['Financial reports', 'Basic', 'Full reports', 'Full reports'],
+              ['Reconciliation tools', '—', 'Included', 'Included'],
+              ['Discrepancy checks', 'Basic', 'Included', 'Advanced monitoring'],
+              ['AI explanations and recommendations', '—', '—', 'Included'],
+              ['Team permissions', '—', '—', 'Included'],
+            ].map(([feature, free, control, intelligence]) => <div className={styles.compareRow} role="row" key={feature}><span role="rowheader">{feature}</span><span role="cell">{free}</span><span role="cell">{control}</span><span role="cell">{intelligence}</span></div>)}
           </div></div></section>
 
         <section className={styles.pricingFaq}><div className={styles.container}><header className={styles.sectionHeading}><div><p className={styles.kicker}><span /> Good to know</p><h2>Questions about pricing?</h2></div></header><div className={styles.faqGrid}><article><CircleHelp /><h3>Can I start without organized records?</h3><p>Yes. Begin with opening balances and new activity, or import supported records. Your financial picture builds as your records do.</p></article><article><MessageCircle /><h3>What happens when I reach a Free limit?</h3><p>You can continue reviewing your existing records. Control gives you more room for new transactions, imports, reports, and AI questions.</p></article><article><FileSpreadsheet /><h3>Are prices converted to naira?</h3><p>Prices here are in USD. A rough conversion of $1 to ₦1,350 is only an estimate; your payment provider’s rate and charges can differ.</p></article></div></div></section>

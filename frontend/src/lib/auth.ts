@@ -56,13 +56,11 @@ export async function signUp(
   email: string,
   password: string,
   passwordConfirm: string,
-  dateOfBirth: string,
 ) {
   await request("register/", {
     email: email.trim().toLowerCase(),
     password,
     password_confirm: passwordConfirm,
-    date_of_birth: dateOfBirth,
   });
   // Re-authenticate explicitly so the session is fresh even if the browser
   // was carrying a stale cookie from a previous account.

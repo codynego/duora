@@ -67,7 +67,7 @@ class RegisterSerializer(serializers.Serializer):
     email = serializers.EmailField(max_length=150)
     password = serializers.CharField(write_only=True, min_length=10)
     password_confirm = serializers.CharField(write_only=True)
-    date_of_birth = serializers.DateField(input_formats=['%Y-%m-%d', '%m/%d/%Y'])
+    date_of_birth = serializers.DateField(required=False, allow_null=True, input_formats=['%Y-%m-%d', '%m/%d/%Y'])
 
     def validate_email(self, value):
         value = value.strip().lower()
@@ -78,6 +78,8 @@ class RegisterSerializer(serializers.Serializer):
         return value
 
     def validate_date_of_birth(self, value):
+        if value is None:
+            return value
         today = date.today()
         age = today.year - value.year - ((today.month, today.day) < (value.month, value.day))
         if age < 18:
@@ -98,7 +100,7 @@ class RegisterSerializer(serializers.Serializer):
 
     def create(self, validated_data):
         email = validated_data['email']
-        date_of_birth = validated_data['date_of_birth']
+        date_of_birth = validated_data.get('date_of_birth')
         user = User.objects.create_user(username=email, email=email, password=validated_data['password'])
         DiscoveryProfile.objects.create(user=user, date_of_birth=date_of_birth)
         get_or_create_anonymous_identity(user)
