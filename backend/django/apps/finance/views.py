@@ -1,3 +1,5 @@
+import json
+
 from django.db import transaction
 from django.db.models import Count, Sum
 from django.db.models.functions import TruncMonth
@@ -16,6 +18,10 @@ from .serializers import (BusinessSerializer, ContactSerializer, FinancialAccoun
 
 def owned_business(request, business_id):
     return Business.objects.filter(owner=request.user, id=business_id).first()
+
+
+def json_safe(value):
+    return json.loads(json.dumps(value, default=str))
 
 
 class BusinessListView(APIView):
@@ -145,7 +151,7 @@ class TransactionListView(APIView):
         if obligation and not serializer.validated_data.get('contact'):
             save_fields['contact'] = obligation.contact
         saved_transaction = serializer.save(**save_fields)
-        TransactionAudit.objects.create(transaction=saved_transaction, action=TransactionAudit.Action.CREATED, actor=request.user, changes=TransactionSerializer(saved_transaction).data)
+        TransactionAudit.objects.create(transaction=saved_transaction, action=TransactionAudit.Action.CREATED, actor=request.user, changes=json_safe(TransactionSerializer(saved_transaction).data))
         if obligation:
             obligation.balance -= saved_transaction.amount
             obligation.status = Obligation.Status.SETTLED if obligation.balance == 0 else Obligation.Status.PARTIAL
@@ -178,7 +184,7 @@ class TransactionDetailView(APIView):
         saved_transaction = serializer.save()
         after = TransactionSerializer(saved_transaction).data
         changes = {key: {'from': before.get(key), 'to': after.get(key)} for key in after if before.get(key) != after.get(key)}
-        TransactionAudit.objects.create(transaction=saved_transaction, action=TransactionAudit.Action.UPDATED, actor=request.user, changes=changes)
+        TransactionAudit.objects.create(transaction=saved_transaction, action=TransactionAudit.Action.UPDATED, actor=request.user, changes=json_safe(changes))
         return Response({'data': after})
 
     @transaction.atomic
