@@ -1,6 +1,6 @@
 import { ImageResponse } from 'next/og';
 
-export const alt = 'Dorah — Pay for the seat, not the whole plan.';
+export const alt = 'Dorah — Know where your business money stands.';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
@@ -16,10 +16,10 @@ export default function OpenGraphImage() {
             DORAH
           </div>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <div style={{ fontSize: 68, lineHeight: 1.03, fontWeight: 800, letterSpacing: -3 }}>Pay for the seat. Not the whole plan.</div>
-            <div style={{ marginTop: 30, fontSize: 27, lineHeight: 1.35, color: '#c8d1ea' }}>Affordable digital access, payments, and renewals in one place.</div>
+            <div style={{ fontSize: 68, lineHeight: 1.03, fontWeight: 800, letterSpacing: -3 }}>Know where your business money stands.</div>
+            <div style={{ marginTop: 30, fontSize: 27, lineHeight: 1.35, color: '#c8d1ea' }}>An AI-powered financial controller for clearer business decisions.</div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 22, color: '#C9F45D' }}><span style={{ width: 10, height: 10, borderRadius: 10, background: '#C9F45D' }} /> Take the seat. Leave the full bill.</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 22, color: '#C9F45D' }}><span style={{ width: 10, height: 10, borderRadius: 10, background: '#C9F45D' }} /> See what came in. Know what needs attention.</div>
         </div>
       </div>
     ),

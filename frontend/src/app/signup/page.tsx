@@ -86,12 +86,8 @@ export default function SignupPage() {
     try {
       const dateOfBirth = `${birthYear}-${birthMonth}-${birthDay.padStart(2, "0")}`;
       await signUp(email, password, confirm, dateOfBirth);
-      const requestedPath = new URLSearchParams(window.location.search).get(
-        "next",
-      );
-      const destination = requestedPath?.startsWith("/i/")
-        ? requestedPath
-        : "/onboarding";
+      const requestedPath = new URLSearchParams(window.location.search).get("next");
+      const destination = requestedPath?.startsWith("/dashboard") ? requestedPath : "/dashboard";
       router.replace(destination);
     } catch (err) {
       const message =
@@ -104,8 +100,8 @@ export default function SignupPage() {
 
   return (
     <AuthShell
-      title="Make room for better choices."
-      description="Create your Dorah account to track renewals, reserve seats, and manage access in one place."
+      title="Get a clearer view of your business."
+      description="Create your Dorah account to bring business money, customer balances, and upcoming obligations into view."
       footer={
         <>
           Already have an account?{" "}
@@ -144,7 +140,7 @@ export default function SignupPage() {
         <label className="block text-sm font-bold">
           Date of birth
           <span className="mt-1 block text-xs font-normal text-[#6F6470]">
-            Used for age verification and safety. Dorah is 18+.
+            Used to verify account eligibility.
           </span>
           <span className="mt-2 grid grid-cols-[1.35fr_.85fr_1fr] gap-2">
             <select value={birthMonth} onChange={(event) => setBirthMonth(event.target.value)} required aria-label="Birth month" className="duora-form-input w-full rounded-xl px-3 py-3 font-normal outline-none">

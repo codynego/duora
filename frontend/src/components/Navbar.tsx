@@ -4,7 +4,7 @@ import { ArrowUpRight, Menu, X } from 'lucide-react';
 import { useState } from 'react';
 import { useCurrentUser } from '@/lib/current-user';
 
-const defaultLinks = [['Discover', '#discover'], ['Moments', '#discover'], ['How it works', '#how-it-works'], ['Install Dorah', '/install']];
+const defaultLinks = [['Overview', '/#oversight'], ['How it works', '/#how-it-works'], ['Pricing', '/pricing']];
 const motionLinks = [['Workflow', '#workflow'], ['Launch kit', '#launch-kit']];
 
 export default function Navbar({ variant = 'default' }: { variant?: 'default' | 'motion' }) {
@@ -12,8 +12,8 @@ export default function Navbar({ variant = 'default' }: { variant?: 'default' | 
   const { user, ready } = useCurrentUser();
   const isMotion = variant === 'motion';
   const links = isMotion ? motionLinks : defaultLinks;
-  const accountHref = ready && user ? '/home' : '/signup';
-  const accountLabel = ready && user ? 'Home' : 'Join Dorah';
+  const accountHref = ready && user ? '/dashboard' : '/signup';
+  const accountLabel = ready && user ? 'Dashboard' : 'Get started';
   if (isMotion) return (
     <header className="sticky top-0 z-50 border-b border-[#1B1D22]/10 bg-[#F6F4EF]/95 text-[#1B1D22] backdrop-blur-md">
       <div className="mx-auto flex h-[72px] max-w-7xl items-center justify-between px-5 sm:px-8">

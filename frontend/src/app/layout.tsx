@@ -8,12 +8,12 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://duorah.vercel.app';
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: 'Dorah — Pay for the seat, not the whole plan',
+    default: 'Dorah — Know where your business money stands',
     template: '%s · Dorah',
   },
-  description: 'Find eligible seats for digital tools, share the cost, and manage every subscription in one place.',
+  description: 'An AI-powered financial controller to track business money, customer debts, bills, and discrepancies.',
   applicationName: 'Dorah',
-  keywords: ['subscription sharing', 'subscription management', 'digital subscriptions', 'subscription marketplace', 'Dorah'],
+  keywords: ['small business finance', 'financial controller', 'business cash flow', 'customer debt tracking', 'Dorah'],
   authors: [{ name: 'Dorah' }],
   creator: 'Dorah',
   publisher: 'Dorah',
@@ -27,8 +27,8 @@ export const metadata: Metadata = {
   },
   openGraph: {
     url: '/',
-    title: 'Dorah — Pay for the seat, not the whole plan',
-    description: 'Affordable access to digital tools, with clear payments and simple renewals.',
+    title: 'Dorah — Know where your business money stands',
+    description: 'Track business money, customer debts, bills, and financial discrepancies in one place.',
     type: 'website',
     siteName: 'Dorah',
     locale: 'en_NG',
@@ -36,8 +36,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Dorah — Pay for the seat, not the whole plan',
-    description: 'Affordable digital access, organized.',
+    title: 'Dorah — Know where your business money stands',
+    description: 'Your AI-powered financial controller for clearer business decisions.',
     images: ['/opengraph-image'],
   },
 };
@@ -67,7 +67,7 @@ export default function RootLayout({
               '@type': 'WebSite',
               name: 'Dorah',
               url: siteUrl,
-              description: 'Find eligible seats for digital tools, share the cost, and manage every subscription in one place.',
+              description: 'An AI-powered financial controller to track business money and understand what needs attention.',
               inLanguage: 'en-NG',
               potentialAction: {
                 '@type': 'RegisterAction',

@@ -26,7 +26,7 @@ export default function LoginPage() {
       );
       const destination = requestedPath?.startsWith("/")
         ? requestedPath
-        : "/home";
+        : "/dashboard";
       router.replace(destination);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to sign in.");
@@ -38,7 +38,7 @@ export default function LoginPage() {
   return (
     <AuthShell
       title="Welcome back."
-      description="Your subscriptions, seats, and account choices are waiting for you."
+      description="Your business overview and important financial activity are ready when you are."
       footer={
         <>
           New to Dorah?{" "}

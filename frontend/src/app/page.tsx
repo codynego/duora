@@ -2,12 +2,12 @@ import type { Metadata } from 'next';
 import DorahMarketplaceHomepage from '@/components/dorah-market/DorahMarketplaceHomepage';
 
 export const metadata: Metadata = {
-  title: { absolute: 'Dorah — Pay for the seat, not the whole plan' },
+  title: { absolute: 'Dorah — Know where your business money stands' },
   description:
-    'Find eligible seats for the digital tools you use, share the cost, and keep every renewal in one clear place.',
+    'Your AI-powered financial controller helps you track money in and out, manage customer debts, spot discrepancies, and understand what needs attention.',
   openGraph: {
-    title: 'Dorah — Pay for the seat, not the whole plan',
-    description: 'Affordable access to the digital tools you use, with clear terms and simple renewals.',
+    title: 'Dorah — Know where your business money stands',
+    description: 'Track business money, customer debts, bills, and financial discrepancies in one place.',
     type: 'website',
     locale: 'en_NG',
   },

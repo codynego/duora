@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: 'Dorah',
     short_name: 'Dorah',
-    description: 'Affordable digital access and subscription management in one place.',
+    description: 'An AI-powered financial controller for clearer small-business decisions.',
     id: '/',
     start_url: '/',
     scope: '/',
@@ -18,8 +18,8 @@ export default function manifest(): MetadataRoute.Manifest {
       { src: '/icon-512.svg', sizes: '512x512', type: 'image/svg+xml', purpose: 'maskable' },
     ],
     shortcuts: [
-      { name: 'Browse subscriptions', short_name: 'Marketplace', description: 'Find an eligible open subscription seat.', url: '/#subscriptions', icons: [{ src: '/icon-192.svg', sizes: '192x192' }] },
-      { name: 'My subscriptions', short_name: 'Subscriptions', description: 'Review subscriptions and upcoming renewals.', url: '/home', icons: [{ src: '/icon-192.svg', sizes: '192x192' }] },
+      { name: 'Business overview', short_name: 'Overview', description: 'Review your business financial picture.', url: '/dashboard', icons: [{ src: '/icon-192.svg', sizes: '192x192' }] },
+      { name: 'Pricing', short_name: 'Pricing', description: 'Compare Dorah plans.', url: '/pricing', icons: [{ src: '/icon-192.svg', sizes: '192x192' }] },
     ],
   };
 }
