@@ -33,3 +33,10 @@ class TransactionSerializer(serializers.ModelSerializer):
         if value <= 0:
             raise serializers.ValidationError('Amount must be greater than zero.')
         return value
+
+    def validate_occurred_on(self, value):
+        from django.utils import timezone
+
+        if value > timezone.localdate():
+            raise serializers.ValidationError('A recorded transaction cannot have a future date.')
+        return value
