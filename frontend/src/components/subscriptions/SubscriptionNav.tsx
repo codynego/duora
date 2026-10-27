@@ -24,11 +24,11 @@ export default function SubscriptionNav({ active = 'overview', displayName }: { 
       </Link>;
     })}
     <div className="my-2 border-t border-white/10" />
-    <Link href="/profile" className={`group flex items-start gap-3 rounded-xl px-3 py-2.5 transition ${active === 'settings' ? 'bg-white/10 text-white' : 'text-white/60 hover:bg-white/[.07] hover:text-white'}`}>
+    <Link href="/dashboard/settings" className={`group flex items-start gap-3 rounded-xl px-3 py-2.5 transition ${active === 'settings' ? 'bg-white/10 text-white' : 'text-white/60 hover:bg-white/[.07] hover:text-white'}`}>
       <Settings className="mt-0.5 h-4 w-4 shrink-0 text-white/45 group-hover:text-white/75" />
       <span className="min-w-0 text-sm font-bold leading-5">Settings &amp; Support</span>
     </Link>
     <Link href="/help" className="mt-1 flex items-center gap-3 rounded-xl px-3 py-2 text-xs font-bold text-white/45 hover:text-white"><LifeBuoy className="h-4 w-4" />Help center<ArrowUpRight className="ml-auto h-3.5 w-3.5" /></Link>
-    {displayName && <Link href="/profile" className="mt-3 flex items-center gap-3 border-t border-white/10 px-3 pt-4 text-xs font-bold text-white/70"><span className="grid h-8 w-8 place-items-center rounded-full bg-[#C9F45D] text-[#111B33]">{displayName.slice(0, 1).toUpperCase()}</span>{displayName}<CircleUserRound className="ml-auto h-4 w-4 text-white/40" /></Link>}
+    {displayName && <Link href="/dashboard/profile" className="mt-3 flex items-center gap-3 border-t border-white/10 px-3 pt-4 text-xs font-bold text-white/70"><span className="grid h-8 w-8 place-items-center rounded-full bg-[#C9F45D] text-[#111B33]">{displayName.slice(0, 1).toUpperCase()}</span>{displayName}<CircleUserRound className="ml-auto h-4 w-4 text-white/40" /></Link>}
   </nav>;
 }

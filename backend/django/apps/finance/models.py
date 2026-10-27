@@ -46,6 +46,8 @@ class Transaction(models.Model):
     amount = models.DecimalField(max_digits=14, decimal_places=2, validators=[MinValueValidator(0.01)])
     category = models.CharField(max_length=60, blank=True)
     counterparty = models.CharField(max_length=100, blank=True)
+    account = models.ForeignKey('FinancialAccount', on_delete=models.SET_NULL, null=True, blank=True, related_name='transactions')
+    contact = models.ForeignKey('Contact', on_delete=models.SET_NULL, null=True, blank=True, related_name='transactions')
     occurred_on = models.DateField()
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -55,3 +57,81 @@ class Transaction(models.Model):
 
     def __str__(self):
         return f'{self.kind}: {self.description}'
+
+
+class FinancialAccount(models.Model):
+    class Kind(models.TextChoices):
+        CASH = 'cash', 'Cash'
+        BANK = 'bank', 'Bank account'
+        OTHER = 'other', 'Other account'
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    business = models.ForeignKey(Business, on_delete=models.CASCADE, related_name='accounts')
+    name = models.CharField(max_length=100)
+    kind = models.CharField(max_length=10, choices=Kind.choices, default=Kind.CASH)
+    currency = models.CharField(max_length=3)
+    opening_balance = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ('name',)
+
+    def __str__(self):
+        return self.name
+
+
+class Contact(models.Model):
+    class Kind(models.TextChoices):
+        CUSTOMER = 'customer', 'Customer'
+        SUPPLIER = 'supplier', 'Supplier'
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    business = models.ForeignKey(Business, on_delete=models.CASCADE, related_name='contacts')
+    kind = models.CharField(max_length=10, choices=Kind.choices)
+    name = models.CharField(max_length=120)
+    email = models.EmailField(blank=True)
+    phone = models.CharField(max_length=40, blank=True)
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ('name',)
+        constraints = [models.UniqueConstraint(fields=('business', 'kind', 'name'), name='finance_unique_contact_per_kind')]
+
+    def __str__(self):
+        return self.name
+
+
+class Obligation(models.Model):
+    class Kind(models.TextChoices):
+        RECEIVABLE = 'receivable', 'Customer receivable'
+        PAYABLE = 'payable', 'Supplier payable'
+
+    class Status(models.TextChoices):
+        OPEN = 'open', 'Open'
+        PARTIAL = 'partial', 'Partially paid'
+        DISPUTED = 'disputed', 'Disputed'
+        SETTLED = 'settled', 'Settled'
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    business = models.ForeignKey(Business, on_delete=models.CASCADE, related_name='obligations')
+    contact = models.ForeignKey(Contact, on_delete=models.PROTECT, related_name='obligations')
+    kind = models.CharField(max_length=12, choices=Kind.choices)
+    description = models.CharField(max_length=160)
+    reference = models.CharField(max_length=80, blank=True)
+    amount = models.DecimalField(max_digits=14, decimal_places=2, validators=[MinValueValidator(0.01)])
+    balance = models.DecimalField(max_digits=14, decimal_places=2, validators=[MinValueValidator(0)])
+    due_date = models.DateField(null=True, blank=True)
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.OPEN)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ('due_date', 'created_at')
+        indexes = [models.Index(fields=('business', 'kind', 'due_date'))]
+
+    def __str__(self):
+        return f'{self.get_kind_display()}: {self.description}'

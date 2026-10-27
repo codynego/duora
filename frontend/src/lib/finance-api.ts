@@ -22,8 +22,38 @@ export type FinanceTransaction = {
   amount: string;
   category: string;
   counterparty: string;
+  account: string | null;
+  contact: string | null;
   occurred_on: string;
   created_at: string;
+};
+
+export type FinanceAccount = {
+  id: string; name: string; kind: 'cash' | 'bank' | 'other'; currency: string;
+  opening_balance: string; balance: string; is_active: boolean;
+};
+
+export type FinanceContact = {
+  id: string; kind: 'customer' | 'supplier'; name: string; email: string; phone: string;
+  notes: string; outstanding_balance: string; last_transaction_on: string | null;
+};
+
+export type FinanceObligation = {
+  id: string; contact: string; contact_name: string; kind: 'receivable' | 'payable';
+  description: string; reference: string; amount: string; balance: string;
+  due_date: string | null; status: 'open' | 'partial' | 'disputed' | 'settled';
+};
+
+export type FinanceInsight = {
+  id: string; severity: 'high' | 'review'; status: string; title: string; detail: string;
+  evidence_count: number; source: string; action_url: string; transaction_ids?: string[];
+};
+
+export type FinancePerformanceMonth = { month: string; income: string; expenses: string };
+
+export type FinanceWorkspace = {
+  accounts: FinanceAccount[]; contacts: FinanceContact[]; obligations: FinanceObligation[];
+  insights: FinanceInsight[]; performance: FinancePerformanceMonth[];
 };
 
 export type FinanceOverview = {
@@ -64,6 +94,14 @@ export async function getBusinesses() {
   return response.data;
 }
 
+export async function updateFinanceBusiness(businessId: string, input: Partial<Pick<FinanceBusiness,
+  'name' | 'business_type' | 'industry' | 'country' | 'currency' | 'record_keeping' | 'setup_choice' | 'opening_balance'>>) {
+  const response = await financeRequest<{ data: FinanceBusiness }>(`businesses/${businessId}/`, {
+    method: 'PATCH', body: JSON.stringify(input),
+  });
+  return response.data;
+}
+
 export async function createBusiness(input: {
   name: string;
   business_type: string;
@@ -83,11 +121,53 @@ export async function getFinanceOverview(businessId: string) {
   return financeRequest<FinanceOverview>(`businesses/${businessId}/overview/`);
 }
 
+export async function getFinanceWorkspace(businessId: string): Promise<FinanceWorkspace> {
+  const [accounts, contacts, obligations, insights, performance] = await Promise.all([
+    financeRequest<{ data: FinanceAccount[] }>(`businesses/${businessId}/accounts/`),
+    financeRequest<{ data: FinanceContact[] }>(`businesses/${businessId}/contacts/`),
+    financeRequest<{ data: FinanceObligation[] }>(`businesses/${businessId}/obligations/`),
+    financeRequest<{ data: FinanceInsight[] }>(`businesses/${businessId}/intelligence/`),
+    financeRequest<{ data: FinancePerformanceMonth[] }>(`businesses/${businessId}/performance/`),
+  ]);
+  return { accounts: accounts.data, contacts: contacts.data, obligations: obligations.data,
+    insights: insights.data, performance: performance.data };
+}
+
+export async function createFinanceContact(businessId: string, input: {
+  kind: 'customer' | 'supplier'; name: string; email?: string; phone?: string; notes?: string;
+}) {
+  const response = await financeRequest<{ data: FinanceContact }>(`businesses/${businessId}/contacts/`, {
+    method: 'POST', body: JSON.stringify(input),
+  });
+  return response.data;
+}
+
+export async function createFinanceAccount(businessId: string, input: {
+  name: string; kind: 'cash' | 'bank' | 'other'; currency?: string; opening_balance?: number;
+}) {
+  const response = await financeRequest<{ data: FinanceAccount }>(`businesses/${businessId}/accounts/`, {
+    method: 'POST', body: JSON.stringify(input),
+  });
+  return response.data;
+}
+
+export async function createFinanceObligation(businessId: string, input: {
+  contact: string; kind: 'receivable' | 'payable'; description: string; reference?: string;
+  amount: number; balance?: number; due_date?: string | null; status?: 'open' | 'partial' | 'disputed' | 'settled';
+}) {
+  const response = await financeRequest<{ data: FinanceObligation }>(`businesses/${businessId}/obligations/`, {
+    method: 'POST', body: JSON.stringify(input),
+  });
+  return response.data;
+}
+
 export async function createFinanceTransaction(businessId: string, input: {
   kind: 'income' | 'expense';
   description: string;
   amount: number;
   occurred_on: string;
+  account?: string | null;
+  contact?: string | null;
 }) {
   const response = await financeRequest<{ data: FinanceTransaction }>(`businesses/${businessId}/transactions/`, {
     method: 'POST', body: JSON.stringify(input),

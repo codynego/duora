@@ -1,7 +1,67 @@
-import Link from 'next/link';
 import { ArrowRight, ShieldCheck } from 'lucide-react';
-import { ReactNode } from 'react';
+import type { ReactNode } from 'react';
+import DorahPublicShell from '@/components/dorah-market/DorahPublicShell';
 
-export default function AuthShell({ title, description, children, footer }: { title: string; description: string; children: ReactNode; footer: ReactNode }) {
-  return <main className="relative min-h-screen overflow-hidden bg-[#F5F7FB] text-[#111B33]"><div className="absolute inset-y-0 right-0 hidden w-[42%] bg-[#111B33] lg:block" /><div className="absolute -left-24 -top-24 h-72 w-72 rounded-full bg-[#C9F45D]/35 blur-3xl" /><div className="absolute bottom-0 right-[28%] h-64 w-64 rounded-full bg-[#3157F5]/15 blur-3xl" /><div className="relative mx-auto grid min-h-screen w-full max-w-[1440px] lg:grid-cols-[1fr_.85fr]"><section className="flex flex-col px-5 py-7 sm:px-10 lg:px-16 lg:py-10"><Link href="/" className="inline-flex w-fit items-center gap-2 font-[Aptos_Display,Arial,sans-serif] text-2xl font-black tracking-[-.07em]"><span className="grid h-9 w-9 place-items-center rounded-[10px] bg-[#3157F5] text-sm font-black text-white">D</span>Dorah</Link><div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center py-12"><p className="text-[10px] font-black uppercase tracking-[.16em] text-[#3157F5]">A clearer way to run your numbers</p><h1 className="mt-4 font-[Aptos_Display,Arial,sans-serif] text-[clamp(2.8rem,6vw,5.2rem)] font-black leading-[.88] tracking-[-.08em]">{title}</h1><p className="mt-5 max-w-sm text-base leading-7 text-[#64708A]">{description}</p>{children}<p className="mt-7 text-center text-sm text-[#64708A]">{footer}</p></div><p className="flex items-center gap-2 text-xs text-[#758096]"><ShieldCheck className="h-4 w-4 text-[#3157F5]" /> Your financial records stay in your hands</p></section><aside className="relative hidden overflow-hidden px-12 py-16 text-white lg:flex lg:flex-col lg:justify-end"><div className="absolute right-12 top-16 text-[10px] font-black uppercase tracking-[.16em] text-[#C9F45D]">Dorah / your account</div><div className="relative max-w-md pb-8"><span className="grid h-14 w-14 place-items-center rounded-2xl border border-[#C9F45D]/40 text-xl font-black text-[#C9F45D]">↗</span><h2 className="mt-8 font-[Aptos_Display,Arial,sans-serif] text-5xl font-black leading-[.9] tracking-[-.07em]">Small steps.<br />Clearer choices.</h2><p className="mt-6 max-w-sm text-sm leading-7 text-white/60">Bring money in, money out, customer balances, and important obligations into one clearer view.</p><div className="mt-10 flex items-center gap-3 text-xs font-bold text-white/55"><ArrowRight className="h-4 w-4 text-[#C9F45D]" /> Your business finances, in one place</div></div></aside></div></main>;
+export default function AuthShell({
+  title,
+  description,
+  children,
+  footer,
+}: {
+  title: string;
+  description: string;
+  children: ReactNode;
+  footer: ReactNode;
+}) {
+  return (
+    <DorahPublicShell>
+      <main className="relative isolate bg-[#F5F7FB] text-[#111B33]">
+        <div className="absolute inset-y-0 right-0 -z-10 hidden w-[42%] bg-[#111B33] lg:block" />
+        <div className="mx-auto grid min-h-[min(780px,calc(100vh-76px))] w-full max-w-[1180px] lg:grid-cols-[1fr_.9fr]">
+          <section className="flex flex-col justify-center px-5 py-12 sm:px-10 lg:px-16 lg:py-16">
+            <div className="mx-auto w-full max-w-md">
+              <p className="text-[10px] font-black uppercase tracking-[.15em] text-[#3157F5]">
+                Account access
+              </p>
+              <h1 className="mt-3 font-[Aptos_Display,Arial,sans-serif] text-[clamp(2.4rem,5vw,3.7rem)] font-black leading-[.96] tracking-[-.07em]">
+                {title}
+              </h1>
+              <p className="mt-4 max-w-sm text-sm leading-6 text-[#64708A]">
+                {description}
+              </p>
+              {children}
+              <p className="mt-6 text-center text-sm text-[#64708A]">{footer}</p>
+            </div>
+            <p className="mx-auto mt-10 flex w-full max-w-md items-center gap-2 text-[11px] leading-5 text-[#758096]">
+              <ShieldCheck className="h-4 w-4 shrink-0 text-[#3157F5]" />
+              Your financial records stay in your hands.
+            </p>
+          </section>
+
+          <aside className="relative hidden flex-col justify-between overflow-hidden px-10 py-12 text-white lg:flex xl:px-14">
+            <p className="text-[10px] font-black uppercase tracking-[.16em] text-[#C9F45D]">
+              Dorah / financial intelligence
+            </p>
+            <div className="relative max-w-lg py-12">
+              <span className="grid h-12 w-12 place-items-center rounded-xl border border-[#C9F45D]/35 text-[#C9F45D]">
+                <ArrowRight className="h-5 w-5" />
+              </span>
+              <h2 className="mt-7 font-[Aptos_Display,Arial,sans-serif] text-[clamp(2.8rem,4.5vw,4.5rem)] font-black leading-[.92] tracking-[-.075em]">
+                Know where your business money stands.
+              </h2>
+              <p className="mt-5 max-w-sm text-sm leading-7 text-white/65">
+                Bring transactions, customer balances, and upcoming bills into one clear financial picture.
+              </p>
+              <div className="mt-9 grid grid-cols-3 border-y border-white/15 py-4 text-[10px] font-bold uppercase tracking-[.1em] text-white/55">
+                <span>Cash</span>
+                <span>Collections</span>
+                <span>Obligations</span>
+              </div>
+            </div>
+            <p className="text-[10px] text-white/40">Clear records. More confident decisions.</p>
+          </aside>
+        </div>
+      </main>
+    </DorahPublicShell>
+  );
 }

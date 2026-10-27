@@ -38,11 +38,11 @@ export default function LoginPage() {
   return (
     <AuthShell
       title="Welcome back."
-      description="Your business overview and important financial activity are ready when you are."
+      description="Sign in to see your business cash, recorded activity, and items that need attention."
       footer={
         <>
           New to Dorah?{" "}
-          <Link href="/signup" className="font-bold text-spark-coral">
+          <Link href="/signup" className="font-bold text-[#3157F5]">
             Create an account
           </Link>
         </>
@@ -76,7 +76,7 @@ export default function LoginPage() {
               onClick={() => setPasswordVisible((value) => !value)}
               aria-label={passwordVisible ? "Hide password" : "Show password"}
               aria-pressed={passwordVisible}
-              className="absolute inset-y-0 right-0 inline-flex w-11 items-center justify-center text-[#6F6470] transition hover:text-dark-950 focus-visible:outline-none focus-visible:text-spark-coral"
+              className="absolute inset-y-0 right-0 inline-flex w-11 items-center justify-center text-[#64708A] transition hover:text-[#111B33] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#3157F5]"
             >
               {passwordVisible ? (
                 <EyeOff className="h-4 w-4" aria-hidden="true" />

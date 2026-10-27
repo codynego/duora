@@ -15,6 +15,16 @@ const countries = [
   { code: 'US', name: 'United States', currency: 'USD', symbol: '$' },
 ];
 
+const currencies = [
+  { code: 'NGN', name: 'Nigerian naira', symbol: '₦' },
+  { code: 'GHS', name: 'Ghanaian cedi', symbol: 'GH₵' },
+  { code: 'KES', name: 'Kenyan shilling', symbol: 'KSh' },
+  { code: 'ZAR', name: 'South African rand', symbol: 'R' },
+  { code: 'GBP', name: 'British pound', symbol: '£' },
+  { code: 'USD', name: 'US dollar', symbol: '$' },
+  { code: 'EUR', name: 'Euro', symbol: '€' },
+];
+
 const businessTypes = ['Sole proprietor', 'Partnership', 'Limited company', 'Other'];
 const industries = ['Retail and trade', 'Food and agriculture', 'Professional services', 'Manufacturing', 'Health and education', 'Other'];
 
@@ -41,6 +51,8 @@ export default function OnboardingPage() {
   const [businessType, setBusinessType] = useState('');
   const [industry, setIndustry] = useState('');
   const [country, setCountry] = useState('NG');
+  const [currency, setCurrency] = useState('NGN');
+  const [currencyChanged, setCurrencyChanged] = useState(false);
   const [recordKeeping, setRecordKeeping] = useState<RecordKeeping | ''>('');
   const [setupChoice, setSetupChoice] = useState<Exclude<SetupChoice, 'skipped'> | ''>('');
   const [saving, setSaving] = useState(false);
@@ -53,7 +65,7 @@ export default function OnboardingPage() {
     setError('');
     const profile: FinancialOnboardingProfile = {
       businessName: businessName.trim(), businessType, industry, country,
-      currency: selectedCountry.currency, recordKeeping: recordKeeping as RecordKeeping, setupChoice: choice,
+      currency, recordKeeping: recordKeeping as RecordKeeping, setupChoice: choice,
     };
     try {
       const businesses = await getBusinesses();
@@ -96,7 +108,7 @@ export default function OnboardingPage() {
           <form onSubmit={submit} className="mt-7 grid gap-4">
             <label className="grid gap-1.5 text-xs font-black text-[#536078]">Business name<input autoFocus required maxLength={100} value={businessName} onChange={(event) => setBusinessName(event.target.value)} placeholder="e.g. Amina’s Kitchen" className="h-12 rounded-lg border border-[#111B33]/15 bg-white px-4 text-sm font-medium text-[#111B33] outline-none focus:border-[#3157F5] focus:ring-4 focus:ring-[#3157F5]/10" /></label>
             <div className="grid gap-4 sm:grid-cols-2"><label className="grid gap-1.5 text-xs font-black text-[#536078]">Business type<select required value={businessType} onChange={(event) => setBusinessType(event.target.value)} className="h-12 rounded-lg border border-[#111B33]/15 bg-white px-3 text-sm font-medium text-[#111B33] outline-none focus:border-[#3157F5] focus:ring-4 focus:ring-[#3157F5]/10"><option value="">Choose a type</option>{businessTypes.map((type) => <option key={type}>{type}</option>)}</select></label><label className="grid gap-1.5 text-xs font-black text-[#536078]">Industry<select required value={industry} onChange={(event) => setIndustry(event.target.value)} className="h-12 rounded-lg border border-[#111B33]/15 bg-white px-3 text-sm font-medium text-[#111B33] outline-none focus:border-[#3157F5] focus:ring-4 focus:ring-[#3157F5]/10"><option value="">Choose an industry</option>{industries.map((item) => <option key={item}>{item}</option>)}</select></label></div>
-            <div className="grid gap-1.5"><label htmlFor="country" className="text-xs font-black text-[#536078]">Country</label><select id="country" required value={country} onChange={(event) => setCountry(event.target.value)} className="h-12 rounded-lg border border-[#111B33]/15 bg-white px-3 text-sm font-medium text-[#111B33] outline-none focus:border-[#3157F5] focus:ring-4 focus:ring-[#3157F5]/10">{countries.map((item) => <option key={item.code} value={item.code}>{item.name}</option>)}</select><p className="text-[10px] text-[#758096]">Currency set automatically: {selectedCountry.currency} ({selectedCountry.symbol})</p></div>
+            <div className="grid gap-4 sm:grid-cols-2"><label className="grid gap-1.5 text-xs font-black text-[#536078]">Country where your business operates<select required value={country} onChange={(event) => { const nextCountry = countries.find((item) => item.code === event.target.value); setCountry(event.target.value); if (!currencyChanged && nextCountry) setCurrency(nextCountry.currency); }} className="h-12 rounded-lg border border-[#111B33]/15 bg-white px-3 text-sm font-medium text-[#111B33] outline-none focus:border-[#3157F5] focus:ring-4 focus:ring-[#3157F5]/10">{countries.map((item) => <option key={item.code} value={item.code}>{item.name}</option>)}</select></label><label className="grid gap-1.5 text-xs font-black text-[#536078]">Primary business currency<select required value={currency} onChange={(event) => { setCurrency(event.target.value); setCurrencyChanged(true); }} className="h-12 rounded-lg border border-[#111B33]/15 bg-white px-3 text-sm font-medium text-[#111B33] outline-none focus:border-[#3157F5] focus:ring-4 focus:ring-[#3157F5]/10">{currencies.map((item) => <option key={item.code} value={item.code}>{item.code} — {item.name} ({item.symbol})</option>)}</select></label></div><p className="-mt-2 text-[10px] leading-5 text-[#758096]">This currency is used for your main overview and reports. Choose the currency you use most, even if it differs from your country. You can change it later in settings.</p>
             <button className="mt-2 inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-[#3157F5] px-5 text-sm font-black text-white shadow-[0_4px_0_rgba(49,87,245,.18)]">Continue <ArrowRight className="h-4 w-4" /></button>
           </form>
         </>}

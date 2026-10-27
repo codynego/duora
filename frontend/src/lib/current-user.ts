@@ -22,6 +22,23 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
   return body.data ?? null;
 }
 
+export async function updateCurrentUser(input: { username?: string; display_name?: string }) {
+  const token = await getAccessToken();
+  if (!token) throw new Error('Your session has expired. Please sign in again.');
+  const response = await fetch(`${api}/api/v1/auth/me/`, {
+    method: 'PATCH',
+    credentials: 'include',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const detail = payload?.detail ?? Object.values(payload ?? {}).flat().join(' ');
+    throw new Error(typeof detail === 'string' && detail ? detail : 'Could not save your profile.');
+  }
+  return payload.data as CurrentUser;
+}
+
 export function useCurrentUser() {
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [ready, setReady] = useState(false);

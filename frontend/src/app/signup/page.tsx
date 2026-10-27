@@ -44,7 +44,7 @@ function PasswordField({
               : `Show ${label.toLowerCase()}`
           }
           aria-pressed={visible}
-          className="absolute inset-y-0 right-0 inline-flex w-11 items-center justify-center text-[#6F6470] transition hover:text-dark-950 focus-visible:outline-none focus-visible:text-spark-coral"
+              className="absolute inset-y-0 right-0 inline-flex w-11 items-center justify-center text-[#64708A] transition hover:text-[#111B33] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#3157F5]"
         >
           {visible ? (
             <EyeOff className="h-4 w-4" aria-hidden="true" />
@@ -83,12 +83,12 @@ export default function SignupPage() {
 
   return (
     <AuthShell
-      title="Get a clearer view of your business."
-      description="Create your Dorah account to bring business money, customer balances, and upcoming obligations into view."
+      title="Create your account."
+      description="Start with your email and password. You can add your business details and financial records after signup."
       footer={
         <>
           Already have an account?{" "}
-          <Link href="/login" className="font-bold text-spark-coral">
+          <Link href="/login" className="font-bold text-[#3157F5]">
             Sign in
           </Link>
         </>
@@ -114,6 +114,7 @@ export default function SignupPage() {
           autoComplete="new-password"
           minLength={10}
         />
+        <p className="-mt-3 text-[11px] leading-5 text-[#758096]">Use at least 10 characters. A password manager can help you create and store a strong one.</p>
         <PasswordField
           label="Confirm password"
           value={confirm}
