@@ -1,10 +1,10 @@
-const CACHE_NAME = 'dorah-shell-v2';
+const CACHE_NAME = 'dorah-shell-v3';
 const OFFLINE_URL = '/offline';
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then((cache) => cache.addAll([OFFLINE_URL, '/icon-192.svg', '/icon-512.svg']))
+      .then((cache) => cache.addAll([OFFLINE_URL, '/icon-192.png', '/icon-512.png']))
       .then(() => self.skipWaiting()),
   );
 });
