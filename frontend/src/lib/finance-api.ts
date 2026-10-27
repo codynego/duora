@@ -201,7 +201,7 @@ export async function createFinanceTransaction(businessId: string, input: {
 
 export async function updateFinanceTransaction(businessId: string, transactionId: string, input: Partial<{
   description: string; amount: string; occurred_on: string; occurred_at: string | null;
-  category: string; counterparty: string;
+  category: string; counterparty: string; account: string | null;
 }>) {
   const response = await financeRequest<{ data: FinanceTransaction }>(`businesses/${businessId}/transactions/${transactionId}/`, {
     method: 'PATCH', body: JSON.stringify(input),
