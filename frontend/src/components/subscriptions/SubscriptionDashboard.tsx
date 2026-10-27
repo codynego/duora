@@ -41,6 +41,10 @@ function SampleTag() {
   return <span className="inline-flex items-center gap-1 rounded-full border border-[#3157F5]/15 bg-[#EEF1FF] px-2 py-1 text-[9px] font-black uppercase tracking-[.08em] text-[#3157F5]">Sample data</span>;
 }
 
+function DashboardLoading() {
+  return <main className="min-h-screen bg-[#F5F7FB] p-5 text-[#111B33] sm:p-8"><Brand /><div className="mx-auto mt-16 grid max-w-6xl gap-5"><div className="h-3 w-36 animate-pulse rounded-full bg-[#DDE4F5]" /><div className="h-16 w-full max-w-2xl animate-pulse rounded-xl bg-[#E7EBF5]" /><div className="grid gap-4 sm:grid-cols-3"><div className="h-32 animate-pulse rounded-xl bg-white" /><div className="h-32 animate-pulse rounded-xl bg-white" /><div className="h-32 animate-pulse rounded-xl bg-white" /></div><p className="text-xs font-bold text-[#758096]">Loading your saved business records…</p></div></main>;
+}
+
 export default function SubscriptionDashboard() {
   const { user, ready, setUser } = useCurrentUser();
   const pathname = usePathname();
@@ -53,21 +57,33 @@ export default function SubscriptionDashboard() {
   const [onboardingProfile, setOnboardingProfile] = useState<FinancialOnboardingProfile | null>(null);
   const [financeOverview, setFinanceOverview] = useState<FinanceOverview | null>(null);
   const [financeWorkspace, setFinanceWorkspace] = useState<FinanceWorkspace | null>(null);
+  const [workspaceLoading, setWorkspaceLoading] = useState(true);
   const [businessId, setBusinessId] = useState('');
   const [savingTransaction, setSavingTransaction] = useState(false);
   const [transactionKind, setTransactionKind] = useState<'income' | 'expense' | 'transfer'>('income');
   const [selectedObligationId, setSelectedObligationId] = useState('');
 
   useEffect(() => {
+    let cancelled = false;
     setOnboardingProfile(getFinancialOnboardingProfile());
-    void getBusinesses().then(async (businesses) => {
-      const business = businesses[0];
-      if (!business) return;
-      setBusinessId(business.id);
-      const [overview, workspace] = await Promise.all([getFinanceOverview(business.id), getFinanceWorkspace(business.id)]);
-      setFinanceOverview(overview);
-      setFinanceWorkspace(workspace);
-    }).catch((error) => setRecordNotice(error instanceof Error ? error.message : 'Could not load your financial records.'));
+    async function loadWorkspace() {
+      try {
+        const businesses = await getBusinesses();
+        const business = businesses[0];
+        if (!business) return;
+        setBusinessId(business.id);
+        const [overview, workspace] = await Promise.all([getFinanceOverview(business.id), getFinanceWorkspace(business.id)]);
+        if (cancelled) return;
+        setFinanceOverview(overview);
+        setFinanceWorkspace(workspace);
+      } catch (error) {
+        if (!cancelled) setRecordNotice(error instanceof Error ? error.message : 'Could not load your financial records.');
+      } finally {
+        if (!cancelled) setWorkspaceLoading(false);
+      }
+    }
+    void loadWorkspace();
+    return () => { cancelled = true; };
   }, []);
 
   const currency = financeOverview?.business.currency ?? onboardingProfile?.currency ?? 'NGN';
@@ -160,6 +176,7 @@ export default function SubscriptionDashboard() {
 
   if (!ready) return <main className="grid min-h-screen place-items-center bg-[#F5F7FB] text-sm font-bold text-[#64708A]">Opening your dashboard…</main>;
   if (!user) return <main className="min-h-screen bg-[#F5F7FB] p-5 text-[#111B33]"><Brand /><section className="mx-auto flex min-h-[80vh] max-w-4xl flex-col justify-center"><p className="text-[10px] font-black uppercase tracking-[.14em] text-[#3157F5]">Your business, in clearer view</p><h1 className="mt-4 font-[Aptos_Display,Arial,sans-serif] text-[clamp(3.2rem,8vw,6.5rem)] font-black leading-[.86] tracking-[-.08em]">Know where your<br />money stands.</h1><p className="mt-6 max-w-xl text-base leading-7 text-[#64708A]">Sign in to open your financial overview and keep important business activity in view.</p><div className="mt-8 flex flex-wrap gap-3"><Link href="/login?next=%2Fdashboard" className="inline-flex h-12 items-center gap-2 rounded-lg bg-[#3157F5] px-5 text-sm font-black text-white">Sign in <ArrowRight className="h-4 w-4" /></Link><Link href="/signup" className="inline-flex h-12 items-center rounded-lg border border-[#111B33]/15 bg-white px-5 text-sm font-black">Create account</Link></div></section></main>;
+  if (workspaceLoading) return <DashboardLoading />;
 
   const firstName = user.display_name.split(' ')[0] || user.display_name;
   return <div className="min-h-screen bg-[#F5F7FB] pb-[calc(5.25rem+env(safe-area-inset-bottom))] text-[#111B33] lg:pb-0">

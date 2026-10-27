@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import {
   ArrowRight,
   BellRing,
@@ -10,6 +9,7 @@ import {
   WalletCards,
 } from 'lucide-react';
 import styles from './DorahMarketplaceHomepage.module.css';
+import BusinessEntryLink from './BusinessEntryLink';
 
 export default function DorahMarketplaceHomepage() {
   return (
@@ -21,7 +21,7 @@ export default function DorahMarketplaceHomepage() {
               <h1>Know where your business <em>money stands.</em></h1>
               <p className={styles.heroIntro}>Track what comes in, what goes out, what you’re owed, and what needs your attention—with an AI-powered financial controller by your side.</p>
               <div className={styles.heroActions}>
-                <Link href="/signup" className={`${styles.button} ${styles.buttonCobalt}`}>Get started free <ArrowRight /></Link>
+                <BusinessEntryLink className={`${styles.button} ${styles.buttonCobalt}`} />
                 <a href="#how-it-works" className={styles.heroTextLink}>See how it works <ArrowRight /></a>
               </div>
               <p className={styles.searchHint}>No complicated setup. Start with the records you have.</p>
@@ -58,7 +58,7 @@ export default function DorahMarketplaceHomepage() {
 
         <section className={`${styles.section} ${styles.processSection}`}>
           <div className={`${styles.container} ${styles.processGrid}`}>
-            <div className={styles.processIntro}><p className={`${styles.kicker} ${styles.kickerLight}`}><span /> More than bookkeeping</p><h2>Understand what your numbers are telling you.</h2><p>Recording transactions is the start. Dorah helps connect the dots, explain changes, and point you toward records worth reviewing.</p><Link href="/signup" className={`${styles.button} ${styles.buttonLime}`}>Start with your records <ArrowRight /></Link></div>
+            <div className={styles.processIntro}><p className={`${styles.kicker} ${styles.kickerLight}`}><span /> More than bookkeeping</p><h2>Understand what your numbers are telling you.</h2><p>Recording transactions is the start. Dorah helps connect the dots, explain changes, and point you toward records worth reviewing.</p><BusinessEntryLink className={`${styles.button} ${styles.buttonLime}`} label="Start with your records" /></div>
             <ol className={styles.steps}>
               <li><span>01</span><div><h3>Bring your financial activity together</h3><p>Record transactions, enter opening balances, or import supported financial records.</p></div><FileSpreadsheet /></li>
               <li><span>02</span><div><h3>See what stands out</h3><p>Review organized records, outstanding payments, and changes that may need attention.</p></div><CircleAlert /></li>
@@ -84,7 +84,7 @@ export default function DorahMarketplaceHomepage() {
           <div className={`${styles.container} ${styles.trustGrid}`}><div><p className={styles.kicker}><span /> Built for the real work</p><h2>Start with what you have. Get clearer as you go.</h2><p className={styles.trustIntro}>You don’t need an accounting department or perfect records to begin. Build a more complete financial picture over time, one transaction at a time.</p></div><div className={styles.trustPoints}><article><FileSpreadsheet /><h3>Bring existing records</h3><p>Start from scratch or import supported spreadsheets and build from the information you already have.</p></article><article><ShieldCheck /><h3>Review before acting</h3><p>Discrepancies are signals to investigate, not proof of fraud. Your records stay visible behind each insight.</p></article><article><Check /><h3>Work alongside your accountant</h3><p>Keep better organized records. Dorah supports financial oversight; it doesn’t replace professional accounting advice.</p></article></div></div>
         </section>
 
-        <section className={styles.finalCta}><div className={`${styles.container} ${styles.finalInner}`}><div><p className={`${styles.kicker} ${styles.kickerLight}`}><span /> A clearer financial picture</p><h2>Know what came in.<br />Know what needs attention.</h2></div><div><p>Bring your business money into view and make your next decision with better context.</p><Link href="/signup" className={`${styles.button} ${styles.buttonLime}`}>Get started free <ArrowRight /></Link></div></div></section>
+        <section className={styles.finalCta}><div className={`${styles.container} ${styles.finalInner}`}><div><p className={`${styles.kicker} ${styles.kickerLight}`}><span /> A clearer financial picture</p><h2>Know what came in.<br />Know what needs attention.</h2></div><div><p>Bring your business money into view and make your next decision with better context.</p><BusinessEntryLink className={`${styles.button} ${styles.buttonLime}`} /></div></div></section>
       </main>
   );
 }

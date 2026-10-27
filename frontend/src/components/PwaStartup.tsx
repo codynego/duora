@@ -1,13 +1,27 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { getCurrentUser } from '@/lib/current-user';
 
 export default function PwaStartup() {
   const pathname = usePathname();
+  const router = useRouter();
   const [phase, setPhase] = useState<'hidden' | 'entering' | 'leaving'>('hidden');
 
   useEffect(() => {
+    const standalone = window.matchMedia('(display-mode: standalone)').matches
+      || Boolean((navigator as Navigator & { standalone?: boolean }).standalone);
+    if (standalone && (pathname === '/' || pathname.startsWith('/dashboard'))) {
+      void getCurrentUser().then((user) => {
+        if (pathname === '/') {
+          router.replace(user ? '/dashboard' : '/login?next=%2Fdashboard');
+        } else if (!user) {
+          router.replace(`/login?next=${encodeURIComponent(pathname)}`);
+        }
+      });
+    }
+
     const storageKey = 'duorah-startup-seen';
     if (window.sessionStorage.getItem(storageKey)) return;
     window.sessionStorage.setItem(storageKey, 'true');
@@ -21,7 +35,7 @@ export default function PwaStartup() {
       window.clearTimeout(leaveTimer);
       window.clearTimeout(hideTimer);
     };
-  }, []);
+  }, [pathname, router]);
 
   if (phase === 'hidden' || pathname === '/') return null;
 

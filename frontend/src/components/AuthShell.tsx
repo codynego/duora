@@ -16,8 +16,8 @@ export default function AuthShell({
   return (
     <DorahPublicShell>
       <main className="relative isolate bg-[#F5F7FB] text-[#111B33]">
-        <div className="absolute inset-y-0 right-0 -z-10 hidden w-[45%] bg-[#111B33] lg:block" />
-        <div className="mx-auto grid min-h-[min(780px,calc(100svh-76px))] w-full max-w-[1180px] lg:grid-cols-[1fr_.96fr]">
+        <div className="absolute inset-y-0 right-0 -z-10 hidden w-[56%] bg-[#111B33] lg:block" />
+        <div className="mx-auto grid min-h-[min(780px,calc(100svh-76px))] w-full max-w-[1280px] lg:grid-cols-[.84fr_1.16fr]">
           <section className="flex flex-col justify-center px-5 py-12 sm:px-10 lg:px-16 lg:py-16">
             <div className="mx-auto w-full max-w-md">
               <p className="text-[10px] font-black uppercase tracking-[.15em] text-[#3157F5]">
@@ -38,21 +38,21 @@ export default function AuthShell({
             </p>
           </section>
 
-          <aside className="relative hidden min-h-0 flex-col justify-between bg-[#111B33] px-8 py-8 text-white lg:flex xl:px-12 xl:py-10">
+          <aside className="relative hidden min-h-0 flex-col items-center justify-between bg-[#111B33] px-8 py-8 text-center text-white lg:flex xl:px-12 xl:py-10">
             <p className="text-[10px] font-black uppercase tracking-[.16em] text-[#C9F45D]">
               Dorah / financial intelligence
             </p>
-            <div className="relative max-w-lg py-7 xl:py-9">
-              <span className="grid h-12 w-12 place-items-center rounded-xl border border-[#C9F45D]/35 text-[#C9F45D]">
+            <div className="relative w-full max-w-xl min-w-0 py-7 xl:py-9">
+              <span className="mx-auto grid h-12 w-12 place-items-center rounded-xl border border-[#C9F45D]/35 text-[#C9F45D]">
                 <ArrowRight className="h-5 w-5" />
               </span>
-              <h2 className="mt-6 font-[Aptos_Display,Arial,sans-serif] text-[clamp(2rem,3.5vw,3.65rem)] font-black leading-[.94] tracking-[-.075em]">
+              <h2 className="mx-auto mt-6 max-w-lg break-words text-balance font-[Aptos_Display,Arial,sans-serif] text-[clamp(2rem,3.5vw,3.65rem)] font-black leading-[.94] tracking-[-.075em]">
                 Know where your business money stands.
               </h2>
-              <p className="mt-4 max-w-sm text-[13px] leading-6 text-white/65">
+              <p className="mx-auto mt-4 max-w-md break-words text-[13px] leading-6 text-white/65">
                 Bring transactions, customer balances, and upcoming bills into one clear financial picture.
               </p>
-              <div className="mt-6 grid grid-cols-3 border-y border-white/15 py-3 text-[10px] font-bold uppercase tracking-[.1em] text-white/55">
+              <div className="mx-auto mt-6 grid w-full max-w-md grid-cols-3 border-y border-white/15 py-3 text-[10px] font-bold uppercase tracking-[.1em] text-white/55">
                 <span>Cash</span>
                 <span>Collections</span>
                 <span>Obligations</span>
