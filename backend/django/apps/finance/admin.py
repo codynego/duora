@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Business, Contact, FinancialAccount, Obligation, Transaction
+from .models import Business, Contact, FinancialAccount, Obligation, Transaction, TransactionAudit
 
 
 @admin.register(Business)
@@ -46,6 +46,23 @@ class TransactionAdmin(admin.ModelAdmin):
     readonly_fields = ('id', 'business', 'created_by', 'kind', 'description', 'amount', 'category', 'counterparty', 'account', 'transfer_account', 'contact', 'obligation', 'occurred_on', 'created_at')
 
     def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(TransactionAudit)
+class TransactionAuditAdmin(admin.ModelAdmin):
+    list_display = ('transaction', 'action', 'actor', 'created_at')
+    list_filter = ('action', 'created_at')
+    search_fields = ('transaction__description', 'transaction__business__name', 'actor__email', 'actor__username')
+    readonly_fields = ('id', 'transaction', 'action', 'actor', 'changes', 'created_at')
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
         return False
 
     def has_delete_permission(self, request, obj=None):
