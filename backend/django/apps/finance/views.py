@@ -3,6 +3,7 @@ from django.db.models import Count, Sum
 from django.db.models.functions import TruncMonth
 from django.utils import timezone
 from datetime import timedelta
+from decimal import Decimal, InvalidOperation
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -47,6 +48,9 @@ class BusinessSettingsView(APIView):
         next_currency = serializer.validated_data.get('currency', business.currency)
         if next_currency != business.currency and (business.transactions.exists() or business.accounts.exists() or business.obligations.exists()):
             return Response({'currency': 'Primary currency cannot be changed after financial records or accounts have been added.'}, status=status.HTTP_400_BAD_REQUEST)
+        next_opening_balance = serializer.validated_data.get('opening_balance', business.opening_balance)
+        if next_opening_balance != business.opening_balance and (business.transactions.exists() or business.accounts.exists()):
+            return Response({'opening_balance': 'The starting balance cannot be changed after accounts or transactions have been recorded.'}, status=status.HTTP_400_BAD_REQUEST)
         serializer.save()
         return Response({'data': BusinessSerializer(business).data})
 
@@ -62,21 +66,30 @@ class BusinessOverviewView(APIView):
         today = timezone.localdate()
         month_start = today.replace(day=1)
         current_month = transactions.filter(occurred_on__gte=month_start, occurred_on__lte=today)
-        totals = current_month.values('kind').annotate(total=Sum('amount'))
+        cash_activity = current_month.filter(kind__in=(Transaction.Kind.INCOME, Transaction.Kind.EXPENSE))
+        totals = cash_activity.values('kind').annotate(total=Sum('amount'))
         total_by_kind = {row['kind']: row['total'] or 0 for row in totals}
-        all_totals = transactions.values('kind').annotate(total=Sum('amount'))
+        all_totals = transactions.filter(kind__in=(Transaction.Kind.INCOME, Transaction.Kind.EXPENSE)).values('kind').annotate(total=Sum('amount'))
         all_by_kind = {row['kind']: row['total'] or 0 for row in all_totals}
-        accounts = list(FinancialAccount.objects.filter(business=business, is_active=True).values('id', 'opening_balance'))
+        open_obligations = Obligation.objects.filter(business=business, balance__gt=0)
+        next_seven_days = today + timedelta(days=7)
+        obligation_totals = {}
+        for name, queryset in {
+            'receivables_outstanding': open_obligations.filter(kind=Obligation.Kind.RECEIVABLE),
+            'payables_outstanding': open_obligations.filter(kind=Obligation.Kind.PAYABLE),
+            'receivables_overdue': open_obligations.filter(kind=Obligation.Kind.RECEIVABLE, due_date__lt=today),
+            'payables_overdue': open_obligations.filter(kind=Obligation.Kind.PAYABLE, due_date__lt=today),
+            'receivables_due_soon': open_obligations.filter(kind=Obligation.Kind.RECEIVABLE, due_date__gte=today, due_date__lte=next_seven_days),
+            'payables_due_soon': open_obligations.filter(kind=Obligation.Kind.PAYABLE, due_date__gte=today, due_date__lte=next_seven_days),
+            'payables_due_today': open_obligations.filter(kind=Obligation.Kind.PAYABLE, due_date=today),
+        }.items():
+            obligation_totals[name] = queryset.aggregate(total=Sum('balance'))['total'] or Decimal('0.00')
+        accounts = list(FinancialAccount.objects.filter(business=business, is_active=True))
         if accounts:
-            account_totals = {str(account['id']): account['opening_balance'] for account in accounts}
-            assigned_totals = Transaction.objects.filter(account_id__in=[account['id'] for account in accounts]).values('account_id', 'kind').annotate(total=Sum('amount'))
-            for row in assigned_totals:
-                account_id = str(row['account_id'])
-                sign = 1 if row['kind'] == Transaction.Kind.INCOME else -1
-                account_totals[account_id] += sign * (row['total'] or 0)
+            account_totals = FinancialAccountSerializer(accounts, many=True).data
             unassigned_totals = transactions.filter(account__isnull=True).values('kind').annotate(total=Sum('amount'))
             unassigned_by_kind = {row['kind']: row['total'] or 0 for row in unassigned_totals}
-            cash = sum(account_totals.values(), start=0) + unassigned_by_kind.get(Transaction.Kind.INCOME, 0) - unassigned_by_kind.get(Transaction.Kind.EXPENSE, 0)
+            cash = sum((Decimal(row['balance']) for row in account_totals), start=Decimal('0.00')) + unassigned_by_kind.get(Transaction.Kind.INCOME, 0) - unassigned_by_kind.get(Transaction.Kind.EXPENSE, 0)
         else:
             cash = business.opening_balance + all_by_kind.get(Transaction.Kind.INCOME, 0) - all_by_kind.get(Transaction.Kind.EXPENSE, 0)
         monthly = list(
@@ -92,6 +105,7 @@ class BusinessOverviewView(APIView):
                 'expenses_this_month': total_by_kind.get(Transaction.Kind.EXPENSE, 0),
                 'net_this_month': total_by_kind.get(Transaction.Kind.INCOME, 0) - total_by_kind.get(Transaction.Kind.EXPENSE, 0),
                 'transactions_this_month': current_month.count(),
+                **obligation_totals,
             },
             'monthly_activity': monthly,
             'transactions': TransactionSerializer(transactions[:100], many=True).data,
@@ -122,7 +136,19 @@ class TransactionListView(APIView):
             return Response({'detail': 'You have reached the Free plan limit of 100 transactions this month.'}, status=status.HTTP_403_FORBIDDEN)
         serializer = TransactionSerializer(data=request.data, context={'business': business})
         serializer.is_valid(raise_exception=True)
-        saved_transaction = serializer.save(business=business, created_by=request.user)
+        obligation = serializer.validated_data.get('obligation')
+        if obligation:
+            obligation = Obligation.objects.select_for_update().get(pk=obligation.pk, business=business)
+            if serializer.validated_data['amount'] > obligation.balance:
+                return Response({'amount': 'The payment exceeds the remaining balance. Refresh the page and try again.'}, status=status.HTTP_400_BAD_REQUEST)
+        save_fields = {'business': business, 'created_by': request.user}
+        if obligation and not serializer.validated_data.get('contact'):
+            save_fields['contact'] = obligation.contact
+        saved_transaction = serializer.save(**save_fields)
+        if obligation:
+            obligation.balance -= saved_transaction.amount
+            obligation.status = Obligation.Status.SETTLED if obligation.balance == 0 else Obligation.Status.PARTIAL
+            obligation.save(update_fields=('balance', 'status', 'updated_at'))
         return Response({'data': TransactionSerializer(saved_transaction).data}, status=status.HTTP_201_CREATED)
 
 
@@ -142,7 +168,11 @@ class FinancialAccountListView(APIView):
             return Response({'detail': 'Business not found.'}, status=status.HTTP_404_NOT_FOUND)
         data = request.data.copy()
         data.setdefault('currency', business.currency)
-        if not FinancialAccount.objects.filter(business=business).exists() and not data.get('opening_balance'):
+        try:
+            opening_balance_is_zero = Decimal(str(data.get('opening_balance') or '0')) == 0
+        except (InvalidOperation, TypeError, ValueError):
+            opening_balance_is_zero = False
+        if not FinancialAccount.objects.filter(business=business).exists() and opening_balance_is_zero and business.opening_balance:
             data['opening_balance'] = business.opening_balance
         serializer = FinancialAccountSerializer(data=data, context={'business': business})
         serializer.is_valid(raise_exception=True)
@@ -207,15 +237,26 @@ class PerformanceView(APIView):
         first_this_month = today.replace(day=1)
         month_index = first_this_month.year * 12 + first_this_month.month - 1 - 11
         first_month = first_this_month.replace(year=month_index // 12, month=month_index % 12 + 1)
-        rows = list(Transaction.objects.filter(business=business, occurred_on__gte=first_month, occurred_on__lte=today)
+        rows = list(Transaction.objects.filter(business=business, obligation__isnull=True,
+                    kind__in=(Transaction.Kind.INCOME, Transaction.Kind.EXPENSE), occurred_on__gte=first_month, occurred_on__lte=today)
                     .annotate(month=TruncMonth('occurred_on')).values('month', 'kind').annotate(total=Sum('amount')).order_by('month'))
         months = {}
         for row in rows:
             key = row['month'].strftime('%Y-%m')
             months.setdefault(key, {'month': key, 'income': 0, 'expenses': 0})
             months[key]['income' if row['kind'] == Transaction.Kind.INCOME else 'expenses'] = row['total'] or 0
-        return Response({'data': list(months.values()), 'period_start': first_month, 'period_end': today,
-                         'basis': 'recorded_transactions', 'is_complete_profit_and_loss': False})
+        obligations = Obligation.objects.filter(business=business, affects_performance=True,
+                    created_at__date__gte=first_month, created_at__date__lte=today)
+        obligation_rows = obligations.annotate(month=TruncMonth('created_at')).values('month', 'kind').annotate(total=Sum('amount'))
+        for row in obligation_rows:
+            key = row['month'].strftime('%Y-%m')
+            months.setdefault(key, {'month': key, 'income': 0, 'expenses': 0})
+            field = 'income' if row['kind'] == Obligation.Kind.RECEIVABLE else 'expenses'
+            months[key][field] += row['total'] or 0
+        for month in months.values():
+            month['net'] = month['income'] - month['expenses']
+        return Response({'data': sorted(months.values(), key=lambda row: row['month']), 'period_start': first_month, 'period_end': today,
+                         'basis': 'recorded_transactions_and_balances', 'is_complete_profit_and_loss': False})
 
 
 class FinanceInsightsView(APIView):
@@ -227,19 +268,101 @@ class FinanceInsightsView(APIView):
             return Response({'detail': 'Business not found.'}, status=status.HTTP_404_NOT_FOUND)
         today = timezone.localdate()
         findings = []
+        potential_impact = Decimal('0.00')
         overdue = Obligation.objects.filter(business=business, kind=Obligation.Kind.RECEIVABLE,
                                              balance__gt=0, due_date__lt=today).select_related('contact')
         overdue_total = sum((item.balance for item in overdue), start=0)
         if overdue.exists():
+            overdue_evidence = [
+                {'id': str(item.id), 'contact': item.contact.name, 'description': item.description,
+                 'due_date': item.due_date, 'balance': item.balance}
+                for item in overdue.order_by('due_date')[:10]
+            ]
             findings.append({'id': 'overdue-receivables', 'severity': 'high', 'status': 'new',
                              'title': 'Customer balances are overdue',
-                             'detail': f'{overdue.count()} customer balances totaling {overdue_total} are past due.',
+                             'detail': f'{overdue.count()} customer balances totaling {overdue_total:,.2f} {business.currency} are past due.',
                              'evidence_count': overdue.count(), 'source': 'obligations',
+                             'impact_amount': overdue_total,
+                             'action_label': 'Investigate receivables',
+                             'suggestion': 'Check the original due date and recent payments before following up. Keep this amount out of available cash until collected.',
+                             'evidence': overdue_evidence,
                              'action_url': '/dashboard/receivables'})
-        recent = Transaction.objects.filter(business=business, occurred_on__gte=today - timedelta(days=90))
+            potential_impact += overdue_total
+
+        next_week = today + timedelta(days=7)
+        upcoming_payables = Obligation.objects.filter(
+            business=business, kind=Obligation.Kind.PAYABLE, balance__gt=0,
+            due_date__gte=today, due_date__lte=next_week,
+        ).select_related('contact').order_by('due_date')
+        upcoming_total = upcoming_payables.aggregate(total=Sum('balance'))['total'] or Decimal('0.00')
+        if upcoming_total:
+            findings.append({'id': 'upcoming-payables', 'severity': 'review', 'status': 'planning',
+                             'title': 'Supplier obligations due in the next 7 days',
+                             'detail': f'Recorded supplier balances totaling {upcoming_total:,.2f} {business.currency} are due by {next_week}. Compare these dates with current account balances and expected collections before scheduling payments.',
+                             'evidence_count': upcoming_payables.count(), 'source': 'payables',
+                             'impact_amount': upcoming_total,
+                             'period_start': today, 'period_end': next_week,
+                             'action_label': 'Review upcoming bills',
+                             'suggestion': 'Compare these due dates with recorded account balances and expected customer collections.',
+                             'evidence': [{'id': str(item.id), 'contact': item.contact.name, 'description': item.description,
+                                           'due_date': item.due_date, 'balance': item.balance}
+                                          for item in upcoming_payables[:10]],
+                             'action_url': '/dashboard/payables'})
+            potential_impact += upcoming_total
+
+        period_start = today.replace(day=1)
+        previous_month_end = period_start - timedelta(days=1)
+        previous_month_start = previous_month_end.replace(day=1)
+        comparable_days = min(today.day, previous_month_end.day)
+        previous_period_end = previous_month_start + timedelta(days=comparable_days - 1)
+        current_period_expenses = Transaction.objects.filter(
+            business=business, kind=Transaction.Kind.EXPENSE, obligation__isnull=True,
+            occurred_on__gte=period_start, occurred_on__lte=today,
+        )
+        previous_period_expenses = Transaction.objects.filter(
+            business=business, kind=Transaction.Kind.EXPENSE, obligation__isnull=True,
+            occurred_on__gte=previous_month_start, occurred_on__lte=previous_period_end,
+        )
+        current_by_category = {row['category'] or '': row['total'] or Decimal('0.00')
+                               for row in current_period_expenses.values('category').annotate(total=Sum('amount'))}
+        previous_by_category = {row['category'] or '': row['total'] or Decimal('0.00')
+                                for row in previous_period_expenses.values('category').annotate(total=Sum('amount'))}
+        for raw_category, current_total in current_by_category.items():
+            category = raw_category or 'Uncategorized'
+            previous_total = previous_by_category.get(raw_category, Decimal('0.00'))
+            increase = current_total - previous_total
+            if previous_total < Decimal('10000.00') or increase < Decimal('5000.00') or current_total < previous_total * Decimal('1.35'):
+                continue
+            percentage = int((increase * 100 / previous_total).quantize(Decimal('1')))
+            evidence = []
+            for transaction in current_period_expenses.filter(category=raw_category)[:5]:
+                evidence.append({'id': str(transaction.id), 'date': transaction.occurred_on,
+                                 'description': transaction.description, 'amount': transaction.amount,
+                                 'counterparty': transaction.counterparty, 'period': 'current'})
+            for transaction in previous_period_expenses.filter(category=raw_category)[:5]:
+                evidence.append({'id': f'previous-{transaction.id}', 'date': transaction.occurred_on,
+                                 'description': transaction.description, 'amount': transaction.amount,
+                                 'counterparty': transaction.counterparty, 'period': 'previous'})
+            findings.append({'id': f'expense-increase-{raw_category or "uncategorized"}',
+                             'severity': 'review', 'status': 'new',
+                             'title': f'{category} expenses increased',
+                             'detail': f'{category} expenses increased {percentage}% from {previous_total:,.2f} {business.currency} to {current_total:,.2f} {business.currency}, comparing {previous_month_start}–{previous_period_end} with {period_start}–{today}.',
+                             'evidence_count': len(evidence), 'source': 'transactions',
+                             'impact_amount': increase, 'period_start': period_start,
+                             'period_end': today, 'comparison_start': previous_month_start,
+                             'comparison_end': previous_period_end,
+                             'action_label': 'Review expense activity',
+                             'suggestion': 'Inspect the listed transactions for new one-off costs or records filed under the wrong category.',
+                             'evidence': evidence,
+                             'action_url': '/dashboard/transactions'})
+            potential_impact += increase
+
+        recent = Transaction.objects.filter(business=business, kind__in=(Transaction.Kind.INCOME, Transaction.Kind.EXPENSE),
+                                            obligation__isnull=True, occurred_on__gte=today - timedelta(days=90))
         groups = {}
         for item in recent:
-            duplicate_key = (item.kind, item.amount, item.occurred_on, (item.counterparty or '').strip().lower(), item.description.strip().lower())
+            duplicate_key = (item.kind, item.amount, item.occurred_on, item.account_id, item.contact_id,
+                             (item.counterparty or '').strip().lower(), item.description.strip().lower())
             groups.setdefault(duplicate_key, []).append(item)
         for duplicate_rows in groups.values():
             if len(duplicate_rows) > 1:
@@ -247,6 +370,14 @@ class FinanceInsightsView(APIView):
                                  'title': 'Possible duplicate transaction',
                                  'detail': f'{len(duplicate_rows)} saved transactions share the same date, amount, description, and counterparty.',
                                  'evidence_count': len(duplicate_rows), 'source': 'transactions',
+                                 'impact_amount': Decimal('0.00'), 'action_label': 'Compare transactions',
+                                 'suggestion': 'Matching details can also describe two legitimate purchases. Compare dates, counterparties, and account activity before changing either record.',
                                  'transaction_ids': [str(item.id) for item in duplicate_rows],
+                                 'evidence': [{'id': str(item.id), 'date': item.occurred_on, 'description': item.description,
+                                               'amount': item.amount, 'counterparty': item.counterparty}
+                                              for item in duplicate_rows],
                                  'action_url': '/dashboard/transactions'})
-        return Response({'data': findings, 'generated_from': 'saved_records', 'generated_at': timezone.now()})
+        findings.sort(key=lambda item: (item['severity'] != 'high', item['title']))
+        return Response({'data': findings,
+                         'summary': {'open_findings': len(findings), 'potential_impact': potential_impact},
+                         'generated_from': 'saved_records', 'generated_at': timezone.now()})

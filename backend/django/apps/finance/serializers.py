@@ -1,4 +1,6 @@
 from rest_framework import serializers
+from decimal import Decimal
+
 from django.db.models import Sum
 
 from .models import Business, Contact, FinancialAccount, Obligation, Transaction
@@ -26,11 +28,17 @@ class BusinessSerializer(serializers.ModelSerializer):
 
 class TransactionSerializer(serializers.ModelSerializer):
     account = serializers.PrimaryKeyRelatedField(queryset=FinancialAccount.objects.all(), required=False, allow_null=True)
+    transfer_account = serializers.PrimaryKeyRelatedField(queryset=FinancialAccount.objects.all(), required=False, allow_null=True)
     contact = serializers.PrimaryKeyRelatedField(queryset=Contact.objects.all(), required=False, allow_null=True)
+    obligation = serializers.PrimaryKeyRelatedField(queryset=Obligation.objects.all(), required=False, allow_null=True)
+    account_name = serializers.CharField(source='account.name', read_only=True, allow_null=True)
+    transfer_account_name = serializers.CharField(source='transfer_account.name', read_only=True, allow_null=True)
+    contact_name = serializers.CharField(source='contact.name', read_only=True, allow_null=True)
+    obligation_description = serializers.CharField(source='obligation.description', read_only=True, allow_null=True)
 
     class Meta:
         model = Transaction
-        fields = ('id', 'kind', 'description', 'amount', 'category', 'counterparty', 'account', 'contact', 'occurred_on', 'created_at')
+        fields = ('id', 'kind', 'description', 'amount', 'category', 'counterparty', 'account', 'account_name', 'transfer_account', 'transfer_account_name', 'contact', 'contact_name', 'obligation', 'obligation_description', 'occurred_on', 'created_at')
         read_only_fields = ('id', 'created_at')
 
     def validate_amount(self, value):
@@ -48,13 +56,44 @@ class TransactionSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         business = self.context.get('business')
         account = attrs.get('account')
+        transfer_account = attrs.get('transfer_account')
         contact = attrs.get('contact')
+        obligation = attrs.get('obligation')
+        kind = attrs.get('kind')
         if business and account and account.business_id != business.id:
             raise serializers.ValidationError({'account': 'Choose an account in this business.'})
+        if business and transfer_account and transfer_account.business_id != business.id:
+            raise serializers.ValidationError({'transfer_account': 'Choose an account in this business.'})
         if business and contact and contact.business_id != business.id:
             raise serializers.ValidationError({'contact': 'Choose a contact in this business.'})
         if business and account and account.currency != business.currency:
             raise serializers.ValidationError({'account': 'The account currency must match the business primary currency.'})
+        if kind == Transaction.Kind.TRANSFER:
+            if not account or not transfer_account:
+                raise serializers.ValidationError({'transfer_account': 'Choose both the account money leaves and the account receiving it.'})
+            if account.pk == transfer_account.pk:
+                raise serializers.ValidationError({'transfer_account': 'Choose a different destination account.'})
+            if not account.is_active or not transfer_account.is_active:
+                raise serializers.ValidationError({'account': 'Transfers require active accounts.'})
+            if account.currency != transfer_account.currency:
+                raise serializers.ValidationError({'transfer_account': 'Both accounts must use the same currency.'})
+            if contact or obligation:
+                raise serializers.ValidationError({'kind': 'Transfers cannot be linked to a customer, supplier, or outstanding balance.'})
+        elif transfer_account:
+            raise serializers.ValidationError({'transfer_account': 'A destination account is only used for transfers.'})
+        if obligation:
+            if obligation.business_id != business.id:
+                raise serializers.ValidationError({'obligation': 'Choose a balance in this business.'})
+            expected_kind = Transaction.Kind.INCOME if obligation.kind == Obligation.Kind.RECEIVABLE else Transaction.Kind.EXPENSE
+            if kind != expected_kind:
+                raise serializers.ValidationError({'kind': 'The payment direction must match the customer or supplier balance.'})
+            if attrs.get('amount', 0) > obligation.balance:
+                raise serializers.ValidationError({'amount': 'The payment cannot exceed the outstanding balance.'})
+            if contact and contact.pk != obligation.contact_id:
+                raise serializers.ValidationError({'contact': 'Choose the customer or supplier linked to this balance.'})
+        if contact and ((kind == Transaction.Kind.INCOME and contact.kind != Contact.Kind.CUSTOMER)
+                        or (kind == Transaction.Kind.EXPENSE and contact.kind != Contact.Kind.SUPPLIER)):
+            raise serializers.ValidationError({'contact': 'Choose a customer for money received or a supplier for money paid.'})
         return attrs
 
 class FinancialAccountSerializer(serializers.ModelSerializer):
@@ -66,9 +105,12 @@ class FinancialAccountSerializer(serializers.ModelSerializer):
         read_only_fields = ('id', 'balance', 'created_at', 'updated_at')
 
     def get_balance(self, obj):
-        totals = obj.transactions.values('kind').annotate(total=Sum('amount'))
-        by_kind = {row['kind']: row['total'] or 0 for row in totals}
-        return obj.opening_balance + by_kind.get(Transaction.Kind.INCOME, 0) - by_kind.get(Transaction.Kind.EXPENSE, 0)
+        zero = Decimal('0.00')
+        income = obj.transactions.filter(kind=Transaction.Kind.INCOME).aggregate(total=Sum('amount'))['total'] or zero
+        expenses = obj.transactions.filter(kind=Transaction.Kind.EXPENSE).aggregate(total=Sum('amount'))['total'] or zero
+        transfers_out = obj.transactions.filter(kind=Transaction.Kind.TRANSFER).aggregate(total=Sum('amount'))['total'] or zero
+        transfers_in = obj.incoming_transfers.filter(kind=Transaction.Kind.TRANSFER).aggregate(total=Sum('amount'))['total'] or zero
+        return obj.opening_balance + income - expenses - transfers_out + transfers_in
 
     def validate_currency(self, value):
         value = value.upper()
@@ -105,24 +147,19 @@ class ObligationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Obligation
-        fields = ('id', 'contact', 'contact_name', 'kind', 'description', 'reference', 'amount', 'balance', 'due_date', 'status', 'created_at', 'updated_at')
-        read_only_fields = ('id', 'contact_name', 'created_at', 'updated_at')
-        extra_kwargs = {'balance': {'required': False}}
+        fields = ('id', 'contact', 'contact_name', 'kind', 'description', 'reference', 'amount', 'balance', 'due_date', 'status', 'affects_performance', 'created_at', 'updated_at')
+        read_only_fields = ('id', 'contact_name', 'balance', 'status', 'created_at', 'updated_at')
 
     def validate(self, attrs):
         business = self.context['business']
         contact = attrs.get('contact', getattr(self.instance, 'contact', None))
         kind = attrs.get('kind', getattr(self.instance, 'kind', None))
         amount = attrs.get('amount', getattr(self.instance, 'amount', None))
-        balance = attrs.get('balance', getattr(self.instance, 'balance', amount))
-        if self.instance is None and 'balance' not in attrs and amount is not None:
-            attrs['balance'] = amount
-            balance = amount
         expected_contact_kind = Contact.Kind.CUSTOMER if kind == Obligation.Kind.RECEIVABLE else Contact.Kind.SUPPLIER
         if contact and (contact.business_id != business.id or contact.kind != expected_contact_kind):
             raise serializers.ValidationError({'contact': 'Choose a matching customer or supplier in this business.'})
-        if amount is not None and balance is not None and balance > amount:
-            raise serializers.ValidationError({'balance': 'The outstanding balance cannot exceed the original amount.'})
-        if balance == 0 and 'status' not in attrs:
-            attrs['status'] = Obligation.Status.SETTLED
         return attrs
+
+    def create(self, validated_data):
+        validated_data['balance'] = validated_data['amount']
+        return super().create(validated_data)

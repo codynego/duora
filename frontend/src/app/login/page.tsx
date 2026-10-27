@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, LoaderCircle } from "lucide-react";
 import AuthShell from "@/components/AuthShell";
 import { logIn } from "@/lib/auth";
 
@@ -96,9 +96,10 @@ export default function LoginPage() {
         )}
         <button
           disabled={loading}
+          aria-busy={loading}
           className="button-primary h-12 w-full rounded-xl bg-[#3157F5] px-5 text-sm font-black text-white shadow-[0_5px_0_rgba(49,87,245,.2)] disabled:opacity-50"
         >
-          {loading ? "Signing in…" : "Sign in"}
+          {loading ? <><LoaderCircle className="mr-2 inline h-4 w-4 animate-spin" aria-hidden="true" />Signing in…</> : "Sign in"}
         </button>
         <Link
           href="/forgot-password"

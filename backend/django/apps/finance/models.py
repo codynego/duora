@@ -37,6 +37,7 @@ class Transaction(models.Model):
     class Kind(models.TextChoices):
         INCOME = 'income', 'Money in'
         EXPENSE = 'expense', 'Money out'
+        TRANSFER = 'transfer', 'Account transfer'
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     business = models.ForeignKey(Business, on_delete=models.CASCADE, related_name='transactions')
@@ -47,7 +48,9 @@ class Transaction(models.Model):
     category = models.CharField(max_length=60, blank=True)
     counterparty = models.CharField(max_length=100, blank=True)
     account = models.ForeignKey('FinancialAccount', on_delete=models.SET_NULL, null=True, blank=True, related_name='transactions')
+    transfer_account = models.ForeignKey('FinancialAccount', on_delete=models.SET_NULL, null=True, blank=True, related_name='incoming_transfers')
     contact = models.ForeignKey('Contact', on_delete=models.SET_NULL, null=True, blank=True, related_name='transactions')
+    obligation = models.ForeignKey('Obligation', on_delete=models.PROTECT, null=True, blank=True, related_name='payments')
     occurred_on = models.DateField()
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -124,6 +127,7 @@ class Obligation(models.Model):
     reference = models.CharField(max_length=80, blank=True)
     amount = models.DecimalField(max_digits=14, decimal_places=2, validators=[MinValueValidator(0.01)])
     balance = models.DecimalField(max_digits=14, decimal_places=2, validators=[MinValueValidator(0)])
+    affects_performance = models.BooleanField(default=True)
     due_date = models.DateField(null=True, blank=True)
     status = models.CharField(max_length=10, choices=Status.choices, default=Status.OPEN)
     created_at = models.DateTimeField(auto_now_add=True)

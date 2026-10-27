@@ -17,7 +17,7 @@ export default function AuthShell({
     <DorahPublicShell>
       <main className="relative isolate bg-[#F5F7FB] text-[#111B33]">
         <div className="absolute inset-y-0 right-0 -z-10 hidden w-[42%] bg-[#111B33] lg:block" />
-        <div className="mx-auto grid min-h-[min(780px,calc(100vh-76px))] w-full max-w-[1180px] lg:grid-cols-[1fr_.9fr]">
+        <div className="mx-auto grid min-h-[min(780px,calc(100svh-76px))] w-full max-w-[1180px] lg:grid-cols-[1fr_.9fr]">
           <section className="flex flex-col justify-center px-5 py-12 sm:px-10 lg:px-16 lg:py-16">
             <div className="mx-auto w-full max-w-md">
               <p className="text-[10px] font-black uppercase tracking-[.15em] text-[#3157F5]">
@@ -38,21 +38,21 @@ export default function AuthShell({
             </p>
           </section>
 
-          <aside className="relative hidden flex-col justify-between overflow-hidden px-10 py-12 text-white lg:flex xl:px-14">
+          <aside className="relative hidden min-h-0 flex-col justify-between px-8 py-8 text-white lg:flex xl:px-12 xl:py-10">
             <p className="text-[10px] font-black uppercase tracking-[.16em] text-[#C9F45D]">
               Dorah / financial intelligence
             </p>
-            <div className="relative max-w-lg py-12">
+            <div className="relative max-w-lg py-7 xl:py-9">
               <span className="grid h-12 w-12 place-items-center rounded-xl border border-[#C9F45D]/35 text-[#C9F45D]">
                 <ArrowRight className="h-5 w-5" />
               </span>
-              <h2 className="mt-7 font-[Aptos_Display,Arial,sans-serif] text-[clamp(2.8rem,4.5vw,4.5rem)] font-black leading-[.92] tracking-[-.075em]">
+              <h2 className="mt-6 font-[Aptos_Display,Arial,sans-serif] text-[clamp(2rem,3.5vw,3.65rem)] font-black leading-[.94] tracking-[-.075em]">
                 Know where your business money stands.
               </h2>
-              <p className="mt-5 max-w-sm text-sm leading-7 text-white/65">
+              <p className="mt-4 max-w-sm text-[13px] leading-6 text-white/65">
                 Bring transactions, customer balances, and upcoming bills into one clear financial picture.
               </p>
-              <div className="mt-9 grid grid-cols-3 border-y border-white/15 py-4 text-[10px] font-bold uppercase tracking-[.1em] text-white/55">
+              <div className="mt-6 grid grid-cols-3 border-y border-white/15 py-3 text-[10px] font-bold uppercase tracking-[.1em] text-white/55">
                 <span>Cash</span>
                 <span>Collections</span>
                 <span>Obligations</span>

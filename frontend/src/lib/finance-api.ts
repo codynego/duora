@@ -17,13 +17,19 @@ export type FinanceBusiness = {
 
 export type FinanceTransaction = {
   id: string;
-  kind: 'income' | 'expense';
+  kind: 'income' | 'expense' | 'transfer';
   description: string;
   amount: string;
   category: string;
   counterparty: string;
   account: string | null;
+  account_name: string | null;
+  transfer_account: string | null;
+  transfer_account_name: string | null;
   contact: string | null;
+  contact_name: string | null;
+  obligation: string | null;
+  obligation_description: string | null;
   occurred_on: string;
   created_at: string;
 };
@@ -42,18 +48,23 @@ export type FinanceObligation = {
   id: string; contact: string; contact_name: string; kind: 'receivable' | 'payable';
   description: string; reference: string; amount: string; balance: string;
   due_date: string | null; status: 'open' | 'partial' | 'disputed' | 'settled';
+  affects_performance: boolean;
 };
 
 export type FinanceInsight = {
   id: string; severity: 'high' | 'review'; status: string; title: string; detail: string;
   evidence_count: number; source: string; action_url: string; transaction_ids?: string[];
+  impact_amount?: string; action_label?: string; suggestion?: string;
+  period_start?: string; period_end?: string; comparison_start?: string; comparison_end?: string;
+  evidence?: Array<{ id: string; contact?: string; description: string; due_date?: string; balance?: string; date?: string; amount?: string; counterparty?: string; period?: 'current' | 'previous' }>;
 };
 
-export type FinancePerformanceMonth = { month: string; income: string; expenses: string };
+export type FinancePerformanceMonth = { month: string; income: string; expenses: string; net: string };
 
 export type FinanceWorkspace = {
   accounts: FinanceAccount[]; contacts: FinanceContact[]; obligations: FinanceObligation[];
-  insights: FinanceInsight[]; performance: FinancePerformanceMonth[];
+  insights: FinanceInsight[]; intelligenceSummary: { open_findings: number; potential_impact: string };
+  performance: FinancePerformanceMonth[];
 };
 
 export type FinanceOverview = {
@@ -64,6 +75,13 @@ export type FinanceOverview = {
     expenses_this_month: string;
     net_this_month: string;
     transactions_this_month: number;
+    receivables_outstanding?: string;
+    payables_outstanding?: string;
+    receivables_overdue?: string;
+    payables_overdue?: string;
+    receivables_due_soon?: string;
+    payables_due_soon?: string;
+    payables_due_today?: string;
   };
   transactions: FinanceTransaction[];
   is_sample: false;
@@ -126,11 +144,13 @@ export async function getFinanceWorkspace(businessId: string): Promise<FinanceWo
     financeRequest<{ data: FinanceAccount[] }>(`businesses/${businessId}/accounts/`),
     financeRequest<{ data: FinanceContact[] }>(`businesses/${businessId}/contacts/`),
     financeRequest<{ data: FinanceObligation[] }>(`businesses/${businessId}/obligations/`),
-    financeRequest<{ data: FinanceInsight[] }>(`businesses/${businessId}/intelligence/`),
+    financeRequest<{ data: FinanceInsight[]; summary?: { open_findings: number; potential_impact: string } }>(`businesses/${businessId}/intelligence/`),
     financeRequest<{ data: FinancePerformanceMonth[] }>(`businesses/${businessId}/performance/`),
   ]);
   return { accounts: accounts.data, contacts: contacts.data, obligations: obligations.data,
-    insights: insights.data, performance: performance.data };
+    insights: insights.data,
+    intelligenceSummary: insights.summary ?? { open_findings: insights.data.length, potential_impact: '0.00' },
+    performance: performance.data };
 }
 
 export async function createFinanceContact(businessId: string, input: {
@@ -143,7 +163,7 @@ export async function createFinanceContact(businessId: string, input: {
 }
 
 export async function createFinanceAccount(businessId: string, input: {
-  name: string; kind: 'cash' | 'bank' | 'other'; currency?: string; opening_balance?: number;
+  name: string; kind: 'cash' | 'bank' | 'other'; currency?: string; opening_balance?: string;
 }) {
   const response = await financeRequest<{ data: FinanceAccount }>(`businesses/${businessId}/accounts/`, {
     method: 'POST', body: JSON.stringify(input),
@@ -153,7 +173,7 @@ export async function createFinanceAccount(businessId: string, input: {
 
 export async function createFinanceObligation(businessId: string, input: {
   contact: string; kind: 'receivable' | 'payable'; description: string; reference?: string;
-  amount: number; balance?: number; due_date?: string | null; status?: 'open' | 'partial' | 'disputed' | 'settled';
+  amount: string; due_date?: string | null; affects_performance?: boolean;
 }) {
   const response = await financeRequest<{ data: FinanceObligation }>(`businesses/${businessId}/obligations/`, {
     method: 'POST', body: JSON.stringify(input),
@@ -162,12 +182,14 @@ export async function createFinanceObligation(businessId: string, input: {
 }
 
 export async function createFinanceTransaction(businessId: string, input: {
-  kind: 'income' | 'expense';
+  kind: 'income' | 'expense' | 'transfer';
   description: string;
-  amount: number;
+  amount: string;
   occurred_on: string;
   account?: string | null;
+  transfer_account?: string | null;
   contact?: string | null;
+  obligation?: string | null;
 }) {
   const response = await financeRequest<{ data: FinanceTransaction }>(`businesses/${businessId}/transactions/`, {
     method: 'POST', body: JSON.stringify(input),
