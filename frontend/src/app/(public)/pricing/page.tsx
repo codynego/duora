@@ -8,10 +8,6 @@ export const metadata: Metadata = {
   description: 'Compare Dorah Free, Control, and Intelligence plans for small-business financial oversight.',
 };
 
-function Brand({ light = false }: { light?: boolean }) {
-  return <Link href="/" className={`${styles.brand} ${light ? styles.brandLight : ''}`} aria-label="Dorah home"><span className={styles.brandMark} aria-hidden="true"><span /><span /><span /></span><span>Dorah</span></Link>;
-}
-
 const freeFeatures = [
   '1 business',
   '100 new transactions each month',
@@ -40,9 +36,6 @@ const intelligenceFeatures = [
 
 export default function PricingPage() {
   return (
-    <div className={styles.site}>
-      <header className={styles.navShell}><div className={styles.container}><nav className={styles.nav} aria-label="Primary navigation"><Brand /><div className={styles.navLinks}><Link href="/#oversight">What you can see</Link><Link href="/#how-it-works">How it works</Link><Link href="/pricing" aria-current="page">Pricing</Link></div><div className={styles.navActions}><Link href="/login" className={styles.textLink}>Sign in</Link><Link href="/signup" className={`${styles.button} ${styles.buttonSmall}`}>Get started</Link></div><Link href="/signup" className={`${styles.button} ${styles.buttonSmall} ${styles.mobileStart}`}>Get started</Link></nav></div></header>
-
       <main>
         <section className={styles.pricingHero}><div className={styles.container}><p className={styles.kicker}><span /> Straightforward plans</p><h1>Start free.<br /><em>Grow with clarity.</em></h1><p>Get a useful view of your business finances at no cost. Choose Control for more room to record and report, or Intelligence for deeper monitoring and team permissions.</p><div className={styles.pricingCurrency}><WalletCards /> Prices shown in USD. If you pay in naira, your provider’s exchange rate may vary.</div></div></section>
 
@@ -96,12 +89,9 @@ export default function PricingPage() {
             ].map(([feature, free, control, intelligence]) => <div className={styles.compareRow} role="row" key={feature}><span role="rowheader">{feature}</span><span role="cell">{free}</span><span role="cell">{control}</span><span role="cell">{intelligence}</span></div>)}
           </div></div></section>
 
-        <section className={styles.pricingFaq}><div className={styles.container}><header className={styles.sectionHeading}><div><p className={styles.kicker}><span /> Good to know</p><h2>Questions about pricing?</h2></div></header><div className={styles.faqGrid}><article><CircleHelp /><h3>Can I start without organized records?</h3><p>Yes. Begin with opening balances and new activity, or import supported records. Your financial picture builds as your records do.</p></article><article><MessageCircle /><h3>What happens when I reach a Free limit?</h3><p>You can continue reviewing your existing records. Control gives you more room for new transactions, imports, reports, and AI questions.</p></article><article><FileSpreadsheet /><h3>Are prices converted to naira?</h3><p>Prices here are in USD. A rough conversion of $1 to ₦1,350 is only an estimate; your payment provider’s rate and charges can differ.</p></article></div></div></section>
+        <section id="pricing-faq" className={styles.pricingFaq}><div className={styles.container}><header className={styles.sectionHeading}><div><p className={styles.kicker}><span /> Good to know</p><h2>Questions about pricing?</h2></div></header><div className={styles.faqGrid}><article><CircleHelp /><h3>Can I start without organized records?</h3><p>Yes. Begin with opening balances and new activity, or import supported records. Your financial picture builds as your records do.</p></article><article><MessageCircle /><h3>What happens when I reach a Free limit?</h3><p>You can continue reviewing your existing records. Control gives you more room for new transactions, imports, reports, and AI questions.</p></article><article><FileSpreadsheet /><h3>Are prices converted to naira?</h3><p>Prices here are in USD. A rough conversion of $1 to ₦1,350 is only an estimate; your payment provider’s rate and charges can differ.</p></article></div></div></section>
 
         <section className={styles.finalCta}><div className={`${styles.container} ${styles.finalInner}`}><div><p className={`${styles.kicker} ${styles.kickerLight}`}><span /> Begin with the records you have</p><h2>Get clearer about where you stand.</h2></div><div><p>Start free and bring your business money into view.</p><Link href="/signup" className={`${styles.button} ${styles.buttonLime}`}>Get started free <ArrowRight /></Link></div></div></section>
       </main>
-
-      <footer className={styles.footer}><div className={`${styles.container} ${styles.footerGrid}`}><div><Brand light /><p>Your AI-powered financial controller for clearer business decisions.</p></div><div><strong>Explore</strong><Link href="/#oversight">What you can see</Link><Link href="/#how-it-works">How it works</Link><Link href="/pricing">Pricing</Link></div><div><strong>Account</strong><Link href="/login">Sign in</Link><Link href="/signup">Get started</Link><Link href="/help">Help</Link></div><div><strong>Legal</strong><Link href="/terms">Terms</Link><Link href="/privacy">Privacy</Link><p>© {new Date().getFullYear()} Dorah</p></div></div></footer>
-    </div>
   );
 }

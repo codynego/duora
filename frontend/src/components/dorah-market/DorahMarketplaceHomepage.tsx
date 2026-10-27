@@ -11,37 +11,9 @@ import {
 } from 'lucide-react';
 import styles from './DorahMarketplaceHomepage.module.css';
 
-function Brand({ light = false }: { light?: boolean }) {
-  return (
-    <Link href="/" className={`${styles.brand} ${light ? styles.brandLight : ''}`} aria-label="Dorah home">
-      <span className={styles.brandMark} aria-hidden="true"><span /><span /><span /></span>
-      <span>Dorah</span>
-    </Link>
-  );
-}
-
 export default function DorahMarketplaceHomepage() {
   return (
-    <div id="top" className={styles.site}>
-      <header className={styles.navShell}>
-        <div className={styles.container}>
-          <nav className={styles.nav} aria-label="Primary navigation">
-            <Brand />
-            <div className={styles.navLinks}>
-              <a href="#oversight">What you can see</a>
-              <a href="#how-it-works">How it works</a>
-              <Link href="/pricing">Pricing</Link>
-            </div>
-            <div className={styles.navActions}>
-              <Link href="/login" className={styles.textLink}>Sign in</Link>
-              <Link href="/signup" className={`${styles.button} ${styles.buttonSmall}`}>Get started</Link>
-            </div>
-            <Link href="/signup" className={`${styles.button} ${styles.buttonSmall} ${styles.mobileStart}`}>Get started</Link>
-          </nav>
-        </div>
-      </header>
-
-      <main>
+      <main id="top">
         <section className={styles.hero}>
           <div className={`${styles.container} ${styles.heroGrid}`}>
             <div className={styles.heroCopy}>
@@ -114,8 +86,5 @@ export default function DorahMarketplaceHomepage() {
 
         <section className={styles.finalCta}><div className={`${styles.container} ${styles.finalInner}`}><div><p className={`${styles.kicker} ${styles.kickerLight}`}><span /> A clearer financial picture</p><h2>Know what came in.<br />Know what needs attention.</h2></div><div><p>Bring your business money into view and make your next decision with better context.</p><Link href="/signup" className={`${styles.button} ${styles.buttonLime}`}>Get started free <ArrowRight /></Link></div></div></section>
       </main>
-
-      <footer className={styles.footer}><div className={`${styles.container} ${styles.footerGrid}`}><div><Brand light /><p>Your AI-powered financial controller for clearer business decisions.</p></div><div><strong>Explore</strong><a href="#oversight">What you can see</a><a href="#how-it-works">How it works</a><Link href="/pricing">Pricing</Link></div><div><strong>Account</strong><Link href="/login">Sign in</Link><Link href="/signup">Get started</Link><Link href="/help">Help</Link></div><div><strong>Legal</strong><Link href="/terms">Terms</Link><Link href="/privacy">Privacy</Link><p>© {new Date().getFullYear()} Dorah</p></div></div></footer>
-    </div>
   );
 }

@@ -1,6 +1,3 @@
-import Link from 'next/link';
-import Navbar from '@/components/Navbar';
-
 type PublicInfoPageProps = {
   kicker: string;
   title: string;
@@ -10,9 +7,7 @@ type PublicInfoPageProps = {
 
 export default function PublicInfoPage({ kicker, title, description, sections }: PublicInfoPageProps) {
   return (
-    <div className="min-h-screen bg-[#F5F7FB] text-[#111B33]">
-      <Navbar />
-      <main className="px-5 pb-20 pt-16 sm:px-8 sm:pb-28 sm:pt-24">
+    <main className="px-5 pb-20 pt-16 sm:px-8 sm:pb-28 sm:pt-24">
         <header className="mx-auto max-w-4xl">
           <p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[.14em] text-[#3157F5]"><span className="h-0.5 w-6 bg-current" />{kicker}</p>
           <h1 className="mt-6 max-w-3xl font-[Aptos_Display,Arial,sans-serif] text-5xl font-black leading-[.94] tracking-[-.07em] sm:text-7xl">{title}<span className="text-[#3157F5]">.</span></h1>
@@ -26,16 +21,6 @@ export default function PublicInfoPage({ kicker, title, description, sections }:
             </section>
           ))}
         </div>
-        <div className="mx-auto mt-12 max-w-4xl border-t border-[#111B33]/10 pt-6 text-sm text-[#758096]">
-          <Link href="/" className="font-black text-[#3157F5] hover:text-[#1D3DCB]">Back to Dorah home →</Link>
-        </div>
-      </main>
-      <footer className="border-t border-[#111B33]/10 px-5 py-8 text-sm text-[#758096] sm:px-8">
-        <div className="mx-auto flex max-w-4xl flex-col justify-between gap-3 sm:flex-row">
-          <span>© {new Date().getFullYear()} Dorah. All rights reserved.</span>
-          <Link href="/signup" className="font-black text-[#3157F5] hover:text-[#1D3DCB]">Get started →</Link>
-        </div>
-      </footer>
-    </div>
+    </main>
   );
 }
