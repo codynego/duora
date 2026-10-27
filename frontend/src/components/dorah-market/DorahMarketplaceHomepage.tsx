@@ -13,7 +13,7 @@ import styles from './DorahMarketplaceHomepage.module.css';
 import BusinessEntryLink from './BusinessEntryLink';
 
 const testimonials = [
-  { quote: 'I wanted one place to see what came in, what I had spent, and what customers still owed me. Dorah makes that picture much easier to follow.', name: 'Shina Kapture Studio', business: 'Creative studio · Lagos' },
+  { quote: 'I wanted one place to see what came in, what I had spent, and what customers still owed me. Dorah makes that picture much easier to follow.', name: 'Shina Kapture Studio', business: 'Creative studio · Benin City' },
   { quote: 'The useful part is being able to record a partial payment and still know exactly what is left. That is the kind of detail I used to lose in my notebook.', name: 'Amina Bello', business: 'Owner, Amina’s Provision Store' },
   { quote: 'I can review supplier bills before committing cash and see which records need attention first. It gives me a calmer way to run the week.', name: 'Femi Adeyemi', business: 'Director, Northstar Foods' },
   { quote: 'Dorah helps me separate everyday business spending from money customers are still expected to pay. That makes planning the next order less stressful.', name: 'Chioma Okafor', business: 'Founder, Bloomline Events' },
