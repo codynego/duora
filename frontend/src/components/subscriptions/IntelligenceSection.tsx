@@ -44,8 +44,8 @@ const sampleFindings: FinanceInsight[] = [
 ];
 
 function sourceLabel(source: string) {
-  if (source === 'obligations') return 'Receivables';
-  if (source === 'payables') return 'Payables';
+  if (source === 'obligations') return 'Customer balances';
+  if (source === 'payables') return 'Supplier bills';
   return 'Transactions';
 }
 
