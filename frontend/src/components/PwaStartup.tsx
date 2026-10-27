@@ -33,7 +33,7 @@ export default function PwaStartup() {
         <div className="pwa-startup__mark" aria-hidden="true">
           <svg viewBox="0 0 64 64" role="presentation">
             <path d="M18 18h14.5C42.2 18 48 23.8 48 32s-5.8 14-15.5 14H18V18Zm10 8v12h4.1c3.7 0 5.9-2.1 5.9-6s-2.2-6-5.9-6H28Z" fill="currentColor" />
-            <circle cx="46" cy="18" r="6" fill="#7454A6" />
+            <circle cx="46" cy="18" r="6" fill="#C9F45D" />
           </svg>
         </div>
         <p className="pwa-startup__eyebrow">Business finances, in view</p>

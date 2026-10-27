@@ -2,11 +2,9 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowRight, Check, CircleHelp, FileSpreadsheet, MessageCircle, ShieldCheck, WalletCards } from 'lucide-react';
 import styles from '@/components/dorah-market/DorahMarketplaceHomepage.module.css';
+import { publicPageMetadata } from '@/lib/seo';
 
-export const metadata: Metadata = {
-  title: 'Pricing — Dorah financial controller',
-  description: 'Compare Dorah Free, Control, and Intelligence plans for small-business financial oversight.',
-};
+export const metadata: Metadata = publicPageMetadata({ title: 'Pricing', description: 'Compare Dorah Free, Control, and Intelligence plans for small-business financial oversight. Review monthly and annual prices and choose a plan.', path: '/pricing' });
 
 const freeFeatures = [
   '1 business',

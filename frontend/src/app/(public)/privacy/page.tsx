@@ -1,6 +1,7 @@
 import PublicInfoPage from '@/components/PublicInfoPage';
+import { publicPageMetadata } from '@/lib/seo';
 
-export const metadata = { title: 'Privacy Policy' };
+export const metadata = publicPageMetadata({ title: 'Privacy Policy', description: 'Read how Dorah handles account details and business financial records, what information to avoid sharing, and how to contact the team with a privacy request.', path: '/privacy' });
 
 export default function PrivacyPage() {
   return <PublicInfoPage kicker="Your business information" title="Know what you share with Dorah." description="Dorah uses the business and account information you provide to deliver its financial overview and related tools." sections={[

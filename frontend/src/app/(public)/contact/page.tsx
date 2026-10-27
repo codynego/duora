@@ -1,6 +1,7 @@
 import PublicInfoPage from '@/components/PublicInfoPage';
+import { publicPageMetadata } from '@/lib/seo';
 
-export const metadata = { title: 'Contact Us' };
+export const metadata = publicPageMetadata({ title: 'Contact Support', description: 'Contact the Dorah team for help with account access, financial records, product questions, or feedback.', path: '/contact' });
 
 export default function ContactPage() {
   return <PublicInfoPage kicker="We are listening" title="Tell us what you need." description="Questions, feedback, or a problem with Dorah? Get in touch with the team." sections={[

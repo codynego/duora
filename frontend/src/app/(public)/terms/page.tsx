@@ -1,6 +1,7 @@
 import PublicInfoPage from '@/components/PublicInfoPage';
+import { publicPageMetadata } from '@/lib/seo';
 
-export const metadata = { title: 'Terms of Service' };
+export const metadata = publicPageMetadata({ title: 'Terms of Service', description: 'Review the responsibilities, service limitations, and expectations that apply when using Dorah’s small-business financial tools.', path: '/terms' });
 
 export default function TermsPage() {
   return <PublicInfoPage kicker="Using Dorah" title="A few simple expectations." description="These summary points explain how to use Dorah’s business-finance tools responsibly." sections={[

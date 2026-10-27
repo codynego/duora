@@ -2,8 +2,9 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import PwaRuntime from '@/components/PwaRuntime';
 import PwaStartup from '@/components/PwaStartup';
+import { SITE_URL } from '@/lib/seo';
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://duorah.vercel.app';
+const siteUrl = SITE_URL;
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -32,7 +33,7 @@ export const metadata: Metadata = {
     type: 'website',
     siteName: 'Dorah',
     locale: 'en_NG',
-    images: [{ url: '/opengraph-image', width: 1200, height: 630, alt: 'Dorah — Pay for the seat, not the whole plan.' }],
+    images: [{ url: '/opengraph-image', width: 1200, height: 630, alt: 'Dorah — Know where your business money stands.' }],
   },
   twitter: {
     card: 'summary_large_image',
@@ -64,16 +65,26 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
               '@context': 'https://schema.org',
-              '@type': 'WebSite',
-              name: 'Dorah',
-              url: siteUrl,
-              description: 'An AI-powered financial controller to track business money and understand what needs attention.',
-              inLanguage: 'en-NG',
-              potentialAction: {
-                '@type': 'RegisterAction',
-                target: `${siteUrl}/signup`,
-                name: 'Create a Dorah account',
-              },
+              '@graph': [
+                {
+                  '@type': 'Organization',
+                  '@id': `${siteUrl}/#organization`,
+                  name: 'Dorah',
+                  url: siteUrl,
+                  logo: `${siteUrl}/icon-512.svg`,
+                  email: 'support@dorah.me',
+                  description: 'Dorah helps small businesses understand recorded cash, customer balances, supplier bills, and financial activity.',
+                },
+                {
+                  '@type': 'WebSite',
+                  '@id': `${siteUrl}/#website`,
+                  name: 'Dorah',
+                  url: siteUrl,
+                  description: 'A financial controller for small businesses to track money, customer debts, bills, and discrepancies.',
+                  inLanguage: 'en-NG',
+                  publisher: { '@id': `${siteUrl}/#organization` },
+                },
+              ],
             }),
           }}
         />

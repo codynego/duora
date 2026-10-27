@@ -1,7 +1,7 @@
 'use client';
 
 import { type FormEvent, useState } from 'react';
-import { Plus } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, ChevronDown, FileText, Plus, UserRoundPlus } from 'lucide-react';
 import { createFinanceContact, createFinanceObligation, type FinanceContact } from '@/lib/finance-api';
 
 export default function FinanceQuickCreate({ businessId, contacts, onSaved }: {
@@ -11,6 +11,8 @@ export default function FinanceQuickCreate({ businessId, contacts, onSaved }: {
 }) {
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState('');
+  const [balanceKind, setBalanceKind] = useState<'receivable' | 'payable'>('receivable');
+  const balanceContacts = contacts.filter((contact) => contact.kind === (balanceKind === 'receivable' ? 'customer' : 'supplier'));
 
   async function saveContact(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -48,5 +50,37 @@ export default function FinanceQuickCreate({ businessId, contacts, onSaved }: {
     finally { setBusy(false); }
   }
 
-  return <details className="mb-5 rounded-xl border border-[#111B33]/10 bg-white"><summary className="flex cursor-pointer list-none items-center gap-2 p-4 text-xs font-black"><span className="grid h-8 w-8 place-items-center rounded-lg bg-[#EEF1FF] text-[#3157F5]"><Plus className="h-4 w-4" /></span>Add a customer, supplier, or balance</summary><div className="grid gap-4 border-t border-[#111B33]/10 p-4 lg:grid-cols-2"><form onSubmit={saveContact} className="grid content-start gap-3 rounded-lg border border-[#111B33]/[.08] p-4"><h2 className="text-xs font-black">New contact</h2><select name="kind" className="h-10 rounded-lg border border-[#111B33]/15 bg-white px-3 text-xs"><option value="customer">Customer</option><option value="supplier">Supplier</option></select><input name="name" required maxLength={120} placeholder="Name" className="h-10 rounded-lg border border-[#111B33]/15 px-3 text-xs" /><div className="grid grid-cols-2 gap-2"><input name="email" type="email" placeholder="Email (optional)" className="min-w-0 h-10 rounded-lg border border-[#111B33]/15 px-3 text-xs" /><input name="phone" placeholder="Phone (optional)" className="min-w-0 h-10 rounded-lg border border-[#111B33]/15 px-3 text-xs" /></div><button disabled={busy || !businessId} className="h-10 rounded-lg bg-[#111B33] px-4 text-xs font-black text-white disabled:opacity-50">{busy ? 'Saving…' : 'Save contact'}</button></form><form onSubmit={saveObligation} className="grid content-start gap-3 rounded-lg border border-[#111B33]/[.08] p-4"><h2 className="text-xs font-black">New customer balance or supplier bill</h2><select name="kind" className="h-10 rounded-lg border border-[#111B33]/15 bg-white px-3 text-xs"><option value="receivable">Customer owes the business</option><option value="payable">Business owes supplier</option></select><select name="contact" required className="h-10 rounded-lg border border-[#111B33]/15 bg-white px-3 text-xs"><option value="">Choose a contact</option>{contacts.map((contact) => <option key={contact.id} value={contact.id}>{contact.name} · {contact.kind}</option>)}</select><input name="description" required maxLength={160} placeholder="Invoice or bill description" className="h-10 rounded-lg border border-[#111B33]/15 px-3 text-xs" /><div className="grid grid-cols-2 gap-2"><input name="amount" type="number" min="0.01" step="0.01" required placeholder="Original amount" className="min-w-0 h-10 rounded-lg border border-[#111B33]/15 px-3 text-xs" /><input name="due_date" type="date" className="min-w-0 h-10 rounded-lg border border-[#111B33]/15 px-3 text-xs" /></div><label className="flex items-start gap-2 text-[10px] leading-4 text-[#64708A]"><input name="opening_balance" type="checkbox" className="mt-0.5 accent-[#3157F5]" /><span>This balance existed before I started tracking here. Exclude it from this period’s recorded performance.</span></label><button disabled={busy || !businessId || !contacts.length} className="h-10 rounded-lg bg-[#3157F5] px-4 text-xs font-black text-white disabled:opacity-50">{busy ? 'Saving…' : contacts.length ? 'Save balance' : 'Add a contact first'}</button></form></div>{notice && <p role="status" className="px-4 pb-4 text-xs text-[#64708A]">{notice}</p>}</details>;
+  const fieldClass = 'h-11 min-w-0 w-full rounded-lg border border-[#111B33]/12 bg-white px-3 text-xs text-[#111B33] outline-none transition placeholder:text-[#9AA3B5] focus:border-[#3157F5] focus:ring-2 focus:ring-[#3157F5]/10';
+  const selectClass = `${fieldClass} appearance-none pr-9`;
+
+  return <details className="group mb-5 overflow-hidden rounded-2xl border border-[#111B33]/10 bg-white shadow-[0_8px_32px_rgba(17,27,51,.04)]">
+    <summary className="flex cursor-pointer list-none items-center gap-3 p-4 sm:p-5 [&::-webkit-details-marker]:hidden">
+      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#EEF1FF] text-[#3157F5]"><Plus className="h-4 w-4 transition-transform group-open:rotate-45" /></span>
+      <span className="min-w-0 flex-1"><span className="block text-sm font-black">Add a customer, supplier, or balance</span><span className="mt-1 block text-[11px] leading-4 text-[#758096]">Create a contact or record money owed to or by your business.</span></span>
+      <ChevronDown className="h-4 w-4 shrink-0 text-[#758096] transition-transform group-open:rotate-180" />
+    </summary>
+
+    <div className="border-t border-[#111B33]/[.08] bg-[#F8F9FC] p-3 sm:p-5">
+      <div className="grid gap-4 lg:grid-cols-2">
+        <form onSubmit={saveContact} className="grid content-start gap-4 rounded-xl border border-[#111B33]/[.08] bg-white p-4 sm:p-5">
+          <div className="flex items-start gap-3"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-[#EEF1FF] text-[#3157F5]"><UserRoundPlus className="h-4 w-4" /></span><div><h2 className="text-sm font-black">New contact</h2><p className="mt-1 text-[11px] leading-4 text-[#758096]">Save a customer or supplier to connect their activity.</p></div></div>
+          <label className="grid gap-1.5 text-[10px] font-bold text-[#64708A]">Contact type<span className="relative"><select name="kind" className={selectClass}><option value="customer">Customer</option><option value="supplier">Supplier</option></select><ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#758096]" /></span></label>
+          <label className="grid gap-1.5 text-[10px] font-bold text-[#64708A]">Name<input name="name" required maxLength={120} placeholder="e.g. Amina Bello or Northside Supplies" className={fieldClass} /></label>
+          <div className="grid min-w-0 gap-3 sm:grid-cols-2"><label className="grid min-w-0 gap-1.5 text-[10px] font-bold text-[#64708A]">Email <span className="font-normal text-[#9AA3B5]">Optional</span><input name="email" type="email" placeholder="name@business.com" className={fieldClass} /></label><label className="grid min-w-0 gap-1.5 text-[10px] font-bold text-[#64708A]">Phone <span className="font-normal text-[#9AA3B5]">Optional</span><input name="phone" placeholder="Phone number" className={fieldClass} /></label></div>
+          <button disabled={busy || !businessId} className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[#111B33] px-4 text-xs font-black text-white transition hover:bg-[#1E2B4A] disabled:opacity-50"><Plus className="h-4 w-4" />{busy ? 'Saving…' : 'Save contact'}</button>
+        </form>
+
+        <form onSubmit={saveObligation} className="grid content-start gap-4 rounded-xl border border-[#111B33]/[.08] bg-white p-4 sm:p-5">
+          <div className="flex items-start gap-3"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-[#EAF6E4] text-[#557516]"><FileText className="h-4 w-4" /></span><div><h2 className="text-sm font-black">Record an amount due</h2><p className="mt-1 text-[11px] leading-4 text-[#758096]">Track an unpaid customer invoice or supplier bill.</p></div></div>
+          <div className="grid grid-cols-2 gap-2 rounded-lg bg-[#F2F4F9] p-1"><label className="flex min-h-10 cursor-pointer items-center justify-center gap-1.5 rounded-md px-2 text-center text-[10px] font-bold text-[#64708A] has-[:checked]:bg-white has-[:checked]:text-[#3157F5] has-[:checked]:shadow-sm"><input type="radio" name="kind" value="receivable" checked={balanceKind === 'receivable'} onChange={() => setBalanceKind('receivable')} className="sr-only" /><ArrowDownLeft className="h-3.5 w-3.5" />Customer owes you</label><label className="flex min-h-10 cursor-pointer items-center justify-center gap-1.5 rounded-md px-2 text-center text-[10px] font-bold text-[#64708A] has-[:checked]:bg-white has-[:checked]:text-[#3157F5] has-[:checked]:shadow-sm"><input type="radio" name="kind" value="payable" checked={balanceKind === 'payable'} onChange={() => setBalanceKind('payable')} className="sr-only" /><ArrowUpRight className="h-3.5 w-3.5" />You owe supplier</label></div>
+          <label className="grid gap-1.5 text-[10px] font-bold text-[#64708A]">{balanceKind === 'receivable' ? 'Customer' : 'Supplier'}<span className="relative"><select name="contact" required disabled={!balanceContacts.length} className={`${selectClass} disabled:cursor-not-allowed disabled:bg-[#F8F9FC] disabled:text-[#9AA3B5]`}><option value="">{balanceContacts.length ? 'Choose a contact' : `Add a ${balanceKind === 'receivable' ? 'customer' : 'supplier'} first`}</option>{balanceContacts.map((contact) => <option key={contact.id} value={contact.id}>{contact.name}</option>)}</select><ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#758096]" /></span></label>
+          <label className="grid gap-1.5 text-[10px] font-bold text-[#64708A]">Invoice or bill details<input name="description" required maxLength={160} placeholder="e.g. March stock order" className={fieldClass} /></label>
+          <div className="grid min-w-0 gap-3 sm:grid-cols-2"><label className="grid min-w-0 gap-1.5 text-[10px] font-bold text-[#64708A]">Original amount<input name="amount" type="number" min="0.01" step="0.01" required placeholder="0.00" className={fieldClass} /></label><label className="grid min-w-0 gap-1.5 text-[10px] font-bold text-[#64708A]">Due date <span className="font-normal text-[#9AA3B5]">Optional</span><input name="due_date" type="date" className={fieldClass} /></label></div>
+          <label className="flex items-start gap-2 rounded-lg bg-[#F8F9FC] p-3 text-[10px] leading-4 text-[#64708A]"><input name="opening_balance" type="checkbox" className="mt-0.5 shrink-0 accent-[#3157F5]" /><span><strong className="text-[#111B33]">This balance predates my records.</strong> Exclude it from this period’s recorded performance.</span></label>
+          <button disabled={busy || !businessId || !balanceContacts.length} className="h-11 rounded-lg bg-[#3157F5] px-4 text-xs font-black text-white transition hover:bg-[#2748D8] disabled:opacity-50">{busy ? 'Saving…' : 'Save balance'}</button>
+        </form>
+      </div>
+      {notice && <p role="status" className="mt-4 rounded-lg border border-[#3157F5]/10 bg-white px-4 py-3 text-xs text-[#64708A]">{notice}</p>}
+    </div>
+  </details>;
 }

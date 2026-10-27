@@ -1,4 +1,4 @@
-const CACHE_NAME = 'duorah-shell-v1';
+const CACHE_NAME = 'dorah-shell-v2';
 const OFFLINE_URL = '/offline';
 
 self.addEventListener('install', (event) => {
