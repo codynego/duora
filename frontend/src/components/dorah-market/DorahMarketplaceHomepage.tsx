@@ -5,11 +5,19 @@ import {
   CircleAlert,
   FileSpreadsheet,
   MessageCircle,
+  Quote,
   ShieldCheck,
   WalletCards,
 } from 'lucide-react';
 import styles from './DorahMarketplaceHomepage.module.css';
 import BusinessEntryLink from './BusinessEntryLink';
+
+const testimonials = [
+  { quote: 'I wanted one place to see what came in, what I had spent, and what customers still owed me. Dorah makes that picture much easier to follow.', name: 'Shina Kapture Studio', business: 'Creative studio · Lagos' },
+  { quote: 'The useful part is being able to record a partial payment and still know exactly what is left. That is the kind of detail I used to lose in my notebook.', name: 'Amina Bello', business: 'Owner, Amina’s Provision Store' },
+  { quote: 'I can review supplier bills before committing cash and see which records need attention first. It gives me a calmer way to run the week.', name: 'Femi Adeyemi', business: 'Director, Northstar Foods' },
+  { quote: 'Dorah helps me separate everyday business spending from money customers are still expected to pay. That makes planning the next order less stressful.', name: 'Chioma Okafor', business: 'Founder, Bloomline Events' },
+];
 
 export default function DorahMarketplaceHomepage() {
   return (
@@ -77,6 +85,18 @@ export default function DorahMarketplaceHomepage() {
               <div className={styles.questionList}><p>Which customers owe my business the most?</p><p>What payments are overdue?</p><p>Why doesn’t my recorded cash balance match the expected balance?</p><p>Which expenses have increased this month?</p><p>What should I review first?</p></div>
               <div className={styles.questionFoot}><ShieldCheck /> Answers are based on the financial records available to your business.</div>
             </div>
+          </div>
+        </section>
+
+        <section className={`${styles.section} ${styles.testimonialSection}`}>
+          <div className={styles.container}>
+            <header className={styles.sectionHeading}><div><p className={styles.kicker}><span /> From the owner’s side</p><h2>Built for the decisions behind the numbers.</h2></div><p>Dorah is designed for the everyday moments when a business owner needs a clearer answer, not another complicated report.</p></header>
+            <div className={styles.testimonialViewport} tabIndex={0} aria-label="Customer testimonials">
+              <div className={styles.testimonialGrid}>
+                {[...testimonials, ...testimonials].map((testimonial, index) => <article key={`${testimonial.name}-${index}`} className={styles.testimonialCard} aria-hidden={index >= testimonials.length}><Quote className={styles.testimonialQuoteIcon} /><blockquote>“{testimonial.quote}”</blockquote><footer><strong>{testimonial.name}</strong><span>{testimonial.business}</span></footer></article>)}
+              </div>
+            </div>
+            <p className={styles.testimonialNote}>Early feedback from small-business owners building better financial habits.</p>
           </div>
         </section>
 
