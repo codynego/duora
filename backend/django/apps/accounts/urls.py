@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import AnonymousAvatarRegenerateView, AnonymousIdentityRegenerateView, LogoutView, MeView, NotificationListView, NotificationReadView, PasswordResetRequestView, RateLimitedTokenObtainPairView, RateLimitedTokenRefreshView, RegisterView
+from .views import LogoutView, MeView, PasswordResetRequestView, RateLimitedTokenObtainPairView, RateLimitedTokenRefreshView, RegisterView
 
 urlpatterns = [
     path('register/', RegisterView.as_view()),
@@ -7,10 +7,5 @@ urlpatterns = [
     path('token/refresh/', RateLimitedTokenRefreshView.as_view()),
     path('logout/', LogoutView.as_view()),
     path('me/', MeView.as_view()),
-    path('me/identity/regenerate/', AnonymousIdentityRegenerateView.as_view()),
-    path('me/avatar/regenerate/', AnonymousAvatarRegenerateView.as_view()),
     path('password-reset/', PasswordResetRequestView.as_view()),
-    path('notifications/', NotificationListView.as_view()),
-    path('notifications/read-all/', NotificationReadView.as_view()),
-    path('notifications/<uuid:notification_id>/read/', NotificationReadView.as_view()),
 ]

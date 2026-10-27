@@ -22,13 +22,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt.token_blacklist',
     'apps.accounts',
-    'apps.rooms',
-    'apps.matching',
-    'apps.connections',
-    'apps.moderation',
-    'apps.social',
-    'apps.studio',
-    'apps.subscriptions',
+    'apps.finance',
 ]
 
 MIDDLEWARE = [

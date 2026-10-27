@@ -4,6 +4,7 @@ import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, ArrowRight, BriefcaseBusiness, Check, FileSpreadsheet, NotebookPen, Sparkles, WalletCards } from 'lucide-react';
 import { saveFinancialOnboardingProfile, type FinancialOnboardingProfile, type RecordKeeping, type SetupChoice } from '@/lib/financial-onboarding';
+import { createBusiness, getBusinesses } from '@/lib/finance-api';
 
 const countries = [
   { code: 'NG', name: 'Nigeria', currency: 'NGN', symbol: '₦' },
@@ -42,23 +43,44 @@ export default function OnboardingPage() {
   const [country, setCountry] = useState('NG');
   const [recordKeeping, setRecordKeeping] = useState<RecordKeeping | ''>('');
   const [setupChoice, setSetupChoice] = useState<Exclude<SetupChoice, 'skipped'> | ''>('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
 
   const selectedCountry = countries.find((item) => item.code === country) ?? countries[0];
 
-  function finish(choice: SetupChoice) {
+  async function finish(choice: SetupChoice) {
+    setSaving(true);
+    setError('');
     const profile: FinancialOnboardingProfile = {
       businessName: businessName.trim(), businessType, industry, country,
       currency: selectedCountry.currency, recordKeeping: recordKeeping as RecordKeeping, setupChoice: choice,
     };
-    try { saveFinancialOnboardingProfile(profile); } catch { /* The overview can still open if browser storage is unavailable. */ }
-    router.replace('/dashboard');
+    try {
+      const businesses = await getBusinesses();
+      if (!businesses.length) {
+        await createBusiness({
+          name: profile.businessName,
+          business_type: profile.businessType,
+          industry: profile.industry,
+          country: profile.country,
+          currency: profile.currency,
+          record_keeping: profile.recordKeeping,
+          setup_choice: profile.setupChoice,
+        });
+      }
+      try { saveFinancialOnboardingProfile(profile); } catch { /* The business profile is already saved on the server. */ }
+      router.replace('/dashboard');
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'We could not save your business setup. Please try again.');
+      setSaving(false);
+    }
   }
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (step === 1) setStep(2);
     else if (step === 2) setStep(3);
-    else finish(setupChoice || 'skipped');
+    else void finish(setupChoice || 'skipped');
   }
 
   return <main className="min-h-screen bg-[#F5F7FB] text-[#111B33] lg:grid lg:grid-cols-[1fr_.72fr]">
@@ -90,7 +112,8 @@ export default function OnboardingPage() {
           <p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[.14em] text-[#3157F5]"><span className="h-0.5 w-6 bg-current" /> Optional setup</p>
           <h1 className="mt-3 font-[Aptos_Display,Arial,sans-serif] text-4xl font-black leading-[.94] tracking-[-.07em] sm:text-5xl">How would you like to begin?</h1>
           <p className="mt-3 text-sm leading-6 text-[#64708A]">Pick one if it’s useful. You can skip this and decide later.</p>
-          <form onSubmit={submit} className="mt-7 grid gap-3">{setupChoices.map(({ value, title, description, icon: Icon }) => <label key={value} className={`flex cursor-pointer items-center gap-3 rounded-xl border p-4 transition ${setupChoice === value ? 'border-[#3157F5] bg-[#EEF1FF]' : 'border-[#111B33]/12 bg-white hover:border-[#3157F5]/40'}`}><input type="radio" name="setupChoice" value={value} checked={setupChoice === value} onChange={() => setSetupChoice(value)} className="h-4 w-4 accent-[#3157F5]" /><span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-white text-[#3157F5]"><Icon className="h-4 w-4" /></span><span><strong className="block text-sm font-black">{title}</strong><small className="mt-1 block text-xs leading-5 text-[#64708A]">{description}</small></span></label>)}<div className="mt-3 flex flex-col-reverse gap-3 sm:flex-row"><button type="button" onClick={() => finish('skipped')} className="inline-flex h-12 flex-1 items-center justify-center rounded-lg border border-[#111B33]/15 bg-white px-4 text-sm font-black">Skip for now</button><button className="inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-lg bg-[#3157F5] px-5 text-sm font-black text-white shadow-[0_4px_0_rgba(49,87,245,.18)]">Go to overview <ArrowRight className="h-4 w-4" /></button></div></form>
+          {error && <p role="alert" className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-xs font-semibold text-red-700">{error}</p>}
+          <form onSubmit={submit} className="mt-7 grid gap-3">{setupChoices.map(({ value, title, description, icon: Icon }) => <label key={value} className={`flex cursor-pointer items-center gap-3 rounded-xl border p-4 transition ${setupChoice === value ? 'border-[#3157F5] bg-[#EEF1FF]' : 'border-[#111B33]/12 bg-white hover:border-[#3157F5]/40'}`}><input type="radio" name="setupChoice" value={value} checked={setupChoice === value} onChange={() => setSetupChoice(value)} className="h-4 w-4 accent-[#3157F5]" /><span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-white text-[#3157F5]"><Icon className="h-4 w-4" /></span><span><strong className="block text-sm font-black">{title}</strong><small className="mt-1 block text-xs leading-5 text-[#64708A]">{description}</small></span></label>)}<div className="mt-3 flex flex-col-reverse gap-3 sm:flex-row"><button type="button" disabled={saving} onClick={() => void finish('skipped')} className="inline-flex h-12 flex-1 items-center justify-center rounded-lg border border-[#111B33]/15 bg-white px-4 text-sm font-black disabled:opacity-60">{saving ? 'Saving…' : 'Skip for now'}</button><button disabled={saving} className="inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-lg bg-[#3157F5] px-5 text-sm font-black text-white shadow-[0_4px_0_rgba(49,87,245,.18)] disabled:opacity-60">{saving ? 'Saving…' : 'Go to overview'} {!saving && <ArrowRight className="h-4 w-4" />}</button></div></form>
           <p className="mt-4 flex items-center gap-2 text-[10px] leading-5 text-[#758096]"><Check className="h-3.5 w-3.5 shrink-0 text-[#557516]" />You can complete setup gradually from your dashboard.</p>
         </>}
       </div>
