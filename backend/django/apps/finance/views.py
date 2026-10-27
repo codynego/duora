@@ -282,6 +282,46 @@ class ObligationListView(APIView):
         return Response({'data': ObligationSerializer(obligation).data}, status=status.HTTP_201_CREATED)
 
 
+class ObligationDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get_obligation(self, request, business_id, obligation_id):
+        return Obligation.objects.filter(business__owner=request.user, business_id=business_id, id=obligation_id).select_related('contact').first()
+
+    def get(self, request, business_id, obligation_id):
+        obligation = self.get_obligation(request, business_id, obligation_id)
+        if not obligation:
+            return Response({'detail': 'Balance not found.'}, status=status.HTTP_404_NOT_FOUND)
+        return Response({'data': ObligationSerializer(obligation).data})
+
+    @transaction.atomic
+    def patch(self, request, business_id, obligation_id):
+        obligation = self.get_obligation(request, business_id, obligation_id)
+        if not obligation:
+            return Response({'detail': 'Balance not found.'}, status=status.HTTP_404_NOT_FOUND)
+        payments_exist = obligation.payments.filter(is_voided=False).exists()
+        if payments_exist and any(field in request.data for field in ('contact', 'kind')):
+            return Response({'detail': 'A balance with recorded payments cannot change its customer or balance type.'}, status=status.HTTP_400_BAD_REQUEST)
+        serializer = ObligationSerializer(obligation, data=request.data, partial=True, context={'business': obligation.business})
+        serializer.is_valid(raise_exception=True)
+        new_amount = serializer.validated_data.get('amount', obligation.amount)
+        paid_amount = obligation.amount - obligation.balance
+        if new_amount < paid_amount:
+            return Response({'amount': 'The original amount cannot be less than payments already recorded.'}, status=status.HTTP_400_BAD_REQUEST)
+        saved_obligation = serializer.save(balance=new_amount - paid_amount, status=Obligation.Status.SETTLED if new_amount == paid_amount else (Obligation.Status.PARTIAL if paid_amount else Obligation.Status.OPEN))
+        return Response({'data': ObligationSerializer(saved_obligation).data})
+
+    @transaction.atomic
+    def delete(self, request, business_id, obligation_id):
+        obligation = self.get_obligation(request, business_id, obligation_id)
+        if not obligation:
+            return Response({'detail': 'Balance not found.'}, status=status.HTTP_404_NOT_FOUND)
+        if obligation.payments.filter(is_voided=False).exists():
+            return Response({'detail': 'This balance has recorded payments and cannot be deleted. Void the linked payments first.'}, status=status.HTTP_400_BAD_REQUEST)
+        obligation.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
 class PerformanceView(APIView):
     permission_classes = [IsAuthenticated]
 

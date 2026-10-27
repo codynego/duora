@@ -182,6 +182,19 @@ export async function createFinanceObligation(businessId: string, input: {
   return response.data;
 }
 
+export async function updateFinanceObligation(businessId: string, obligationId: string, input: Partial<{
+  description: string; reference: string; amount: string; due_date: string | null; affects_performance: boolean;
+}>) {
+  const response = await financeRequest<{ data: FinanceObligation }>(`businesses/${businessId}/obligations/${obligationId}/`, {
+    method: 'PATCH', body: JSON.stringify(input),
+  });
+  return response.data;
+}
+
+export async function deleteFinanceObligation(businessId: string, obligationId: string) {
+  await financeRequest<unknown>(`businesses/${businessId}/obligations/${obligationId}/`, { method: 'DELETE' });
+}
+
 export async function createFinanceTransaction(businessId: string, input: {
   kind: 'income' | 'expense' | 'transfer';
   description: string;
