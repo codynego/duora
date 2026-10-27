@@ -34,7 +34,7 @@ const initialTransactions: PreviewTransaction[] = [
 ];
 
 function Brand() {
-  return <Link href="/dashboard" className="inline-flex items-center gap-2 font-[Aptos_Display,Arial,sans-serif] text-xl font-black tracking-[-.06em]"><span className="flex h-9 w-9 items-end justify-center gap-0.5 rounded-[10px] bg-[#3157F5] p-2 -rotate-3"><i className="h-2 w-1 rounded-t bg-white" /><i className="h-5 w-1 rounded-t bg-white" /><i className="h-3.5 w-1 rounded-t bg-white" /></span>Dorah</Link>;
+  return <Link href="/" className="inline-flex items-center gap-2 font-[Aptos_Display,Arial,sans-serif] text-xl font-black tracking-[-.06em]"><span className="flex h-9 w-9 items-end justify-center gap-0.5 rounded-[10px] bg-[#3157F5] p-2 -rotate-3"><i className="h-2 w-1 rounded-t bg-white" /><i className="h-5 w-1 rounded-t bg-white" /><i className="h-3.5 w-1 rounded-t bg-white" /></span>Dorah</Link>;
 }
 
 function SampleTag() {
@@ -153,9 +153,9 @@ export default function SubscriptionDashboard() {
   const hasSavedTransactions = Boolean(financeOverview?.transactions.length);
   const checklistItems = [
     { title: 'Record a sale or expense', href: null, complete: hasSavedTransactions },
-    { title: 'Add customer balances', href: '#receivables', complete: Boolean(financeWorkspace?.obligations.some((item) => item.kind === 'receivable')) },
-    { title: 'Add supplier bills', href: '#payables', complete: Boolean(financeWorkspace?.obligations.some((item) => item.kind === 'payable')) },
-    { title: 'Confirm starting balances', href: '#cash-accounts', complete: Boolean(Number(financeOverview?.business.opening_balance ?? 0) !== 0 || financeWorkspace?.accounts.some((account) => Number(account.opening_balance) !== 0)) },
+    { title: 'Add customer balances', href: '/dashboard/receivables', complete: Boolean(financeWorkspace?.obligations.some((item) => item.kind === 'receivable')) },
+    { title: 'Add supplier bills', href: '/dashboard/payables', complete: Boolean(financeWorkspace?.obligations.some((item) => item.kind === 'payable')) },
+    { title: 'Confirm starting balances', href: '/dashboard/cash-accounts', complete: Boolean(Number(financeOverview?.business.opening_balance ?? 0) !== 0 || financeWorkspace?.accounts.some((account) => Number(account.opening_balance) !== 0)) },
   ];
   const pendingChecklistItems = checklistItems.filter((item) => !item.complete);
   const pendingChecklistIndex = Math.min(selectedChecklistIndex, Math.max(0, pendingChecklistItems.length - 1));
@@ -296,7 +296,7 @@ export default function SubscriptionDashboard() {
       </section>
 
 
-      </> : <>{businessId && <FinanceQuickCreate businessId={businessId} contacts={financeWorkspace?.contacts ?? []} onSaved={reloadFinanceData} />}<DashboardSectionContent section={section} formatAmount={formatAmount} transactions={dashboardTransactions} hasLiveRecords={Boolean(financeOverview)} workspace={financeWorkspace} summary={financeOverview?.summary} businessId={businessId} business={financeOverview?.business ?? null} currentUser={user} onUserUpdated={setUser} onRefresh={reloadFinanceData} onRecord={() => { setRecordNotice(''); setRecordOpen(true); }} /></>}
+      </> : <>{businessId && (section === 'receivables' || section === 'payables' || section === 'customers-suppliers') && <FinanceQuickCreate businessId={businessId} contacts={financeWorkspace?.contacts ?? []} mode={section === 'receivables' ? 'receivable' : section === 'payables' ? 'payable' : 'contact'} onSaved={reloadFinanceData} />}<DashboardSectionContent section={section} formatAmount={formatAmount} transactions={dashboardTransactions} hasLiveRecords={Boolean(financeOverview)} workspace={financeWorkspace} summary={financeOverview?.summary} businessId={businessId} business={financeOverview?.business ?? null} currentUser={user} onUserUpdated={setUser} onRefresh={reloadFinanceData} onRecord={() => { setRecordNotice(''); setRecordOpen(true); }} /></>}
       {recordNotice && <p role="status" className="mt-4 border border-[#A5CD4A] bg-[#F2FADA] px-4 py-3 text-xs font-bold text-[#46661A]">{recordNotice}</p>}
     </div></main>
 

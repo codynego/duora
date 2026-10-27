@@ -4,15 +4,16 @@ import { type FormEvent, useState } from 'react';
 import { ArrowDownLeft, ArrowLeft, ArrowRight, ArrowUpRight, ChevronDown, FileText, LoaderCircle, Plus, UserRoundPlus } from 'lucide-react';
 import { createFinanceContact, createFinanceObligation, type FinanceContact } from '@/lib/finance-api';
 
-export default function FinanceQuickCreate({ businessId, contacts, onSaved }: {
+export default function FinanceQuickCreate({ businessId, contacts, onSaved, mode }: {
   businessId: string;
   contacts: FinanceContact[];
   onSaved: () => Promise<void>;
+  mode: 'contact' | 'receivable' | 'payable';
 }) {
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState('');
-  const [activeForm, setActiveForm] = useState<'contact' | 'balance' | null>(null);
-  const [balanceKind, setBalanceKind] = useState<'receivable' | 'payable'>('receivable');
+  const [activeForm, setActiveForm] = useState<'contact' | 'balance' | null>(mode === 'contact' ? 'contact' : 'balance');
+  const [balanceKind, setBalanceKind] = useState<'receivable' | 'payable'>(mode === 'payable' ? 'payable' : 'receivable');
   const balanceContacts = contacts.filter((contact) => contact.kind === (balanceKind === 'receivable' ? 'customer' : 'supplier'));
 
   async function saveContact(event: FormEvent<HTMLFormElement>) {
@@ -27,7 +28,7 @@ export default function FinanceQuickCreate({ businessId, contacts, onSaved }: {
         email: String(form.get('email') ?? '').trim(),
         phone: String(form.get('phone') ?? '').trim(),
       });
-      await onSaved(); formElement.reset(); setActiveForm('balance'); setNotice('Contact saved. You can now record an amount due.');
+      await onSaved(); formElement.reset(); if (!mode) setActiveForm('balance'); setNotice(mode === 'contact' ? 'Contact saved.' : 'Contact saved. You can now record an amount due.');
     } catch (error) { setNotice(error instanceof Error ? error.message : 'Could not save the contact.'); }
     finally { setBusy(false); }
   }
@@ -57,7 +58,7 @@ export default function FinanceQuickCreate({ businessId, contacts, onSaved }: {
   return <details className="group mb-5 overflow-hidden rounded-2xl border border-[#111B33]/10 bg-white shadow-[0_8px_32px_rgba(17,27,51,.04)]">
     <summary className="flex cursor-pointer list-none items-center gap-3 p-4 sm:p-5 [&::-webkit-details-marker]:hidden">
       <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#EEF1FF] text-[#3157F5]"><Plus className="h-4 w-4 transition-transform group-open:rotate-45" /></span>
-      <span className="min-w-0 flex-1"><span className="block text-sm font-black">Add a customer, supplier, or balance</span><span className="mt-1 block text-[11px] leading-4 text-[#758096]">Create a contact or record money owed to or by your business.</span></span>
+      <span className="min-w-0 flex-1"><span className="block text-sm font-black">{mode === 'contact' ? 'Add a customer or supplier' : mode === 'receivable' ? 'Add a customer balance' : 'Add a supplier bill'}</span><span className="mt-1 block text-[11px] leading-4 text-[#758096]">{mode === 'contact' ? 'Save a contact to connect their activity.' : mode === 'receivable' ? 'Record money a customer owes your business.' : 'Record money your business owes a supplier.'}</span></span>
       <ChevronDown className="h-4 w-4 shrink-0 text-[#758096] transition-transform group-open:rotate-180" />
     </summary>
 
@@ -70,7 +71,7 @@ export default function FinanceQuickCreate({ businessId, contacts, onSaved }: {
           <span className="grid h-10 w-10 place-items-center rounded-xl bg-[#EAF6E4] text-[#557516]"><FileText className="h-4 w-4" /></span><h2 className="mt-4 text-sm font-black">Record an amount due</h2><p className="mt-1 text-[11px] leading-5 text-[#758096]">Track an unpaid customer invoice or supplier bill.</p><span className="mt-4 inline-flex items-center gap-1 text-[10px] font-black text-[#557516]">Continue <ArrowRight className="h-3.5 w-3.5" /></span>
         </button>
       </div> : <>
-        <button type="button" onClick={() => { setNotice(''); setActiveForm(null); }} className="mb-4 inline-flex items-center gap-1.5 text-[10px] font-black text-[#64708A] transition hover:text-[#3157F5]"><ArrowLeft className="h-3.5 w-3.5" />Choose another action</button>
+        {!mode && <button type="button" onClick={() => { setNotice(''); setActiveForm(null); }} className="mb-4 inline-flex items-center gap-1.5 text-[10px] font-black text-[#64708A] transition hover:text-[#3157F5]"><ArrowLeft className="h-3.5 w-3.5" />Choose another action</button>}
         {activeForm === 'contact' ? <form onSubmit={saveContact} className="mx-auto grid max-w-2xl content-start gap-4 rounded-xl border border-[#111B33]/[.08] bg-white p-4 sm:p-5">
           <div className="flex items-start gap-3"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-[#EEF1FF] text-[#3157F5]"><UserRoundPlus className="h-4 w-4" /></span><div><h2 className="text-sm font-black">New contact</h2><p className="mt-1 text-[11px] leading-4 text-[#758096]">Save a customer or supplier to connect their activity.</p></div></div>
           <label className="grid gap-1.5 text-[10px] font-bold text-[#64708A]">Contact type<span className="relative"><select name="kind" className={selectClass}><option value="customer">Customer</option><option value="supplier">Supplier</option></select><ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#758096]" /></span></label>
