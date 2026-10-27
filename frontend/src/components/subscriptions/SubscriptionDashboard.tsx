@@ -25,7 +25,7 @@ const preferenceItems = [
   { label: 'Settings', href: '/dashboard/settings', icon: Settings },
 ];
 
-type PreviewTransaction = { date: string; dateKey?: string; title: string; detail: string; amount: number; direction: 'in' | 'out' | 'transfer' };
+type PreviewTransaction = { date: string; dateKey?: string; time?: string; title: string; detail: string; amount: number; direction: 'in' | 'out' | 'transfer' };
 const initialTransactions: PreviewTransaction[] = [
   { date: 'Oct 27', dateKey: '2026-10-27', title: 'Shoprite supplies', detail: 'Stock purchase', amount: 86_500, direction: 'out' },
   { date: 'Oct 26', dateKey: '2026-10-26', title: 'Amina Bello', detail: 'Customer payment', amount: 120_000, direction: 'in' },
@@ -89,8 +89,12 @@ export default function SubscriptionDashboard() {
   const currency = financeOverview?.business.currency ?? onboardingProfile?.currency ?? 'NGN';
   const dashboardTransactions = financeOverview?.transactions.length
     ? financeOverview.transactions.map((transaction) => ({
+        transactionId: transaction.id,
         date: new Date(`${transaction.occurred_on}T00:00:00`).toLocaleDateString('en', { month: 'short', day: 'numeric' }),
         dateKey: transaction.occurred_on,
+        time: transaction.occurred_at
+          ? new Date(transaction.occurred_at).toLocaleTimeString('en-NG', { hour: 'numeric', minute: '2-digit' })
+          : new Date(transaction.created_at).toLocaleTimeString('en-NG', { hour: 'numeric', minute: '2-digit' }),
         title: transaction.description,
         detail: transaction.kind === 'transfer'
           ? `${transaction.account_name || 'Account'} → ${transaction.transfer_account_name || 'Account'}`
@@ -98,6 +102,9 @@ export default function SubscriptionDashboard() {
             ? `${transaction.contact_name || 'Contact'} · payment for ${transaction.obligation_description}`
             : transaction.contact_name || transaction.counterparty || transaction.category || (transaction.kind === 'income' ? 'Money received' : 'Money paid'),
         amount: Number(transaction.amount),
+        category: transaction.category,
+        accountName: transaction.account_name,
+        contactName: transaction.contact_name,
         direction: transaction.kind === 'transfer' ? 'transfer' as const : transaction.kind === 'income' ? 'in' as const : 'out' as const,
       }))
     : financeOverview ? [] : initialTransactions;
@@ -140,6 +147,9 @@ export default function SubscriptionDashboard() {
     const name = String(form.get('name') ?? '').trim();
     const amount = String(form.get('amount') ?? '').trim();
     const numericAmount = Number(amount);
+    const now = new Date();
+    const occurredOn = String(form.get('occurred_on') ?? now.toLocaleDateString('en-CA'));
+    const occurredAtInput = String(form.get('occurred_at') ?? '').trim();
     const obligationId = String(form.get('obligation') ?? '') || null;
     const obligation = obligationId ? financeWorkspace?.obligations.find((item) => item.id === obligationId) : null;
     const kind = obligation ? (obligation.kind === 'receivable' ? 'income' : 'expense') : transactionKind;
@@ -158,7 +168,8 @@ export default function SubscriptionDashboard() {
         kind,
         description: name,
         amount,
-        occurred_on: new Date().toLocaleDateString('en-CA'),
+        occurred_on: occurredOn,
+        occurred_at: occurredAtInput ? `${occurredOn}T${occurredAtInput}:00` : null,
         account: accountId,
         transfer_account: transferAccountId,
         contact: contactId,
@@ -248,6 +259,7 @@ export default function SubscriptionDashboard() {
     {recordOpen && <div className="fixed inset-0 z-[100] grid place-items-center overflow-y-auto bg-[#0A1125]/60 p-3 backdrop-blur-sm sm:p-4" onMouseDown={(event) => { if (event.target === event.currentTarget && !savingTransaction) { setRecordOpen(false); setSelectedObligationId(''); setTransactionKind('income'); } }}><section role="dialog" aria-modal="true" aria-labelledby="record-transaction-title" className="max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-y-auto overscroll-contain rounded-xl border border-[#111B33]/15 bg-white shadow-2xl"><header className="flex items-start justify-between border-b border-[#111B33]/10 p-5"><div><p className="text-[10px] font-black uppercase tracking-[.14em] text-[#3157F5]">{businessId ? 'Business record' : 'Preview entry'}</p><h2 id="record-transaction-title" className="mt-2 text-2xl font-black tracking-[-.05em]">Record money movement</h2></div><button type="button" onClick={() => { setRecordOpen(false); setSelectedObligationId(''); setTransactionKind('income'); }} aria-label="Close" className="grid h-9 w-9 place-items-center rounded-lg bg-[#F2F4F9]"><X className="h-4 w-4" /></button></header><form onSubmit={addPreviewTransaction} className="grid gap-4 p-4 sm:p-5"><p className="border border-[#3157F5]/15 bg-[#EEF1FF] p-3 text-xs leading-5 text-[#52628F]">{businessId ? 'Saved movements update your cash position. Link a payment to a balance to reduce what is owed.' : 'Complete business setup before saving transactions to your account.'}</p>
       {financeWorkspace?.obligations.some((item) => item.status !== 'settled') && <label className="grid gap-1.5 text-xs font-bold text-[#536078]">Apply payment to an outstanding balance<select name="obligation" value={selectedObligationId} onChange={(event) => { const value = event.target.value; setSelectedObligationId(value); const selected = financeWorkspace.obligations.find((item) => item.id === value); if (selected) setTransactionKind(selected.kind === 'receivable' ? 'income' : 'expense'); }} className="h-11 rounded-lg border border-[#111B33]/15 bg-white px-3 text-sm font-normal text-[#111B33]"><option value="">No outstanding balance</option>{financeWorkspace.obligations.filter((item) => item.status !== 'settled').map((item) => <option key={item.id} value={item.id}>{item.contact_name} · {item.description} · {formatAmount(Number(item.balance))} remaining</option>)}</select><span className="text-[10px] font-normal text-[#758096]">Partial payments are allowed and update the remaining balance.</span></label>}
       <label className="grid gap-1.5 text-xs font-bold text-[#536078]">Description<input name="name" required maxLength={120} placeholder={selectedObligationId ? 'e.g. Part payment' : 'e.g. Customer payment'} className="h-11 rounded-lg border border-[#111B33]/15 px-3 text-sm font-normal text-[#111B33] outline-none focus:border-[#3157F5] focus:ring-4 focus:ring-[#3157F5]/10" /></label>
+      <div className="grid grid-cols-2 gap-3"><label className="grid gap-1.5 text-xs font-bold text-[#536078]">Date<input name="occurred_on" type="date" defaultValue={new Date().toLocaleDateString('en-CA')} max={new Date().toLocaleDateString('en-CA')} required className="h-11 rounded-lg border border-[#111B33]/15 px-3 text-sm font-normal text-[#111B33] outline-none focus:border-[#3157F5] focus:ring-4 focus:ring-[#3157F5]/10" /></label><label className="grid gap-1.5 text-xs font-bold text-[#536078]">Time<input name="occurred_at" type="time" defaultValue={new Date().toTimeString().slice(0, 5)} required className="h-11 rounded-lg border border-[#111B33]/15 px-3 text-sm font-normal text-[#111B33] outline-none focus:border-[#3157F5] focus:ring-4 focus:ring-[#3157F5]/10" /></label></div>
       <div className="grid grid-cols-2 gap-3"><label className="grid gap-1.5 text-xs font-bold text-[#536078]">Type{selectedObligationId ? <span className="flex h-11 items-center rounded-lg bg-[#F5F7FB] px-3 text-sm font-normal text-[#758096]">{transactionKind === 'income' ? 'Customer payment received' : 'Supplier bill payment'}</span> : <select name="kind" value={transactionKind} onChange={(event) => setTransactionKind(event.target.value as 'income' | 'expense' | 'transfer')} className="h-11 rounded-lg border border-[#111B33]/15 bg-white px-3 text-sm font-normal text-[#111B33]"><option value="income">Money received</option><option value="expense">Money paid</option><option value="transfer">Move between accounts</option></select>}</label><label className="grid gap-1.5 text-xs font-bold text-[#536078]">Amount<input name="amount" type="number" min="0.01" step="0.01" required placeholder="0.00" className="h-11 rounded-lg border border-[#111B33]/15 px-3 text-sm font-normal text-[#111B33] outline-none focus:border-[#3157F5] focus:ring-4 focus:ring-[#3157F5]/10" /></label></div>
       {financeWorkspace?.accounts.length ? <><label className="grid gap-1.5 text-xs font-bold text-[#536078]">{transactionKind === 'transfer' ? 'Money leaves this account' : 'Account'}<select name="account" required={transactionKind === 'transfer'} defaultValue="" className="h-11 rounded-lg border border-[#111B33]/15 bg-white px-3 text-sm font-normal text-[#111B33]"><option value="">{transactionKind === 'transfer' ? 'Choose source account' : 'No account selected'}</option>{financeWorkspace.accounts.map((account) => <option key={account.id} value={account.id}>{account.name}</option>)}</select></label>{transactionKind === 'transfer' && <label className="grid gap-1.5 text-xs font-bold text-[#536078]">Money goes to<select name="transfer_account" required defaultValue="" className="h-11 rounded-lg border border-[#111B33]/15 bg-white px-3 text-sm font-normal text-[#111B33]"><option value="">Choose destination account</option>{financeWorkspace.accounts.map((account) => <option key={account.id} value={account.id}>{account.name}</option>)}</select></label>}</> : transactionKind === 'transfer' ? <p role="alert" className="text-xs text-[#A4362B]">Add two accounts before recording a transfer.</p> : null}
       {financeWorkspace?.contacts.length && !selectedObligationId ? <label className="grid gap-1.5 text-xs font-bold text-[#536078]">Customer or supplier<select name="contact" defaultValue="" className="h-11 rounded-lg border border-[#111B33]/15 bg-white px-3 text-sm font-normal text-[#111B33]"><option value="">No contact selected</option>{financeWorkspace.contacts.map((contact) => <option key={contact.id} value={contact.id}>{contact.name} · {contact.kind}</option>)}</select></label> : null}<footer className="flex flex-col-reverse gap-2 pt-1 sm:flex-row sm:justify-end"><button type="button" disabled={savingTransaction} onClick={() => { setRecordOpen(false); setSelectedObligationId(''); setTransactionKind('income'); }} className="h-10 rounded-lg border border-[#111B33]/15 px-4 text-xs font-black disabled:opacity-60">Cancel</button><button disabled={savingTransaction || !businessId || (transactionKind === 'transfer' && (financeWorkspace?.accounts.length ?? 0) < 2)} className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#3157F5] px-4 text-xs font-black text-white disabled:opacity-50">{savingTransaction ? 'Saving…' : 'Save movement'} {!savingTransaction && <ArrowRight className="h-4 w-4" />}</button></footer></form></section></div>}

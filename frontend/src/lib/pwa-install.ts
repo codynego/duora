@@ -15,6 +15,10 @@ export function initPwaInstall() {
     installEvent = event as BeforeInstallPromptEvent;
     listeners.forEach((listener) => listener(installEvent));
   });
+  window.addEventListener('appinstalled', () => {
+    installEvent = null;
+    listeners.forEach((listener) => listener(null));
+  });
 }
 
 export function getInstallPrompt() {
@@ -31,9 +35,13 @@ export function subscribeToInstallPrompt(listener: (event: BeforeInstallPromptEv
 
 export async function promptInstall() {
   if (!installEvent) return false;
-  await installEvent.prompt();
-  const choice = await installEvent.userChoice;
-  installEvent = null;
-  listeners.forEach((listener) => listener(null));
-  return choice.outcome === 'accepted';
+  try {
+    await installEvent.prompt();
+    const choice = await installEvent.userChoice;
+    installEvent = null;
+    listeners.forEach((listener) => listener(null));
+    return choice.outcome === 'accepted';
+  } catch {
+    return false;
+  }
 }

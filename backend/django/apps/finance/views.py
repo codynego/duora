@@ -9,7 +9,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Business, Contact, FinancialAccount, Obligation, Transaction
+from .models import Business, Contact, FinancialAccount, Obligation, Transaction, TransactionAudit
 from .serializers import (BusinessSerializer, ContactSerializer, FinancialAccountSerializer,
                           ObligationSerializer, TransactionSerializer)
 
@@ -62,7 +62,7 @@ class BusinessOverviewView(APIView):
         business = owned_business(request, business_id)
         if not business:
             return Response({'detail': 'Business not found.'}, status=status.HTTP_404_NOT_FOUND)
-        transactions = Transaction.objects.filter(business=business)
+        transactions = Transaction.objects.filter(business=business, is_voided=False)
         today = timezone.localdate()
         month_start = today.replace(day=1)
         current_month = transactions.filter(occurred_on__gte=month_start, occurred_on__lte=today)
@@ -123,7 +123,7 @@ class TransactionListView(APIView):
         business = self.get_business(request, business_id)
         if not business:
             return Response({'detail': 'Business not found.'}, status=status.HTTP_404_NOT_FOUND)
-        rows = Transaction.objects.filter(business=business)[:200]
+        rows = Transaction.objects.filter(business=business, is_voided=False)[:200]
         return Response({'data': TransactionSerializer(rows, many=True).data})
 
     @transaction.atomic
@@ -145,11 +145,61 @@ class TransactionListView(APIView):
         if obligation and not serializer.validated_data.get('contact'):
             save_fields['contact'] = obligation.contact
         saved_transaction = serializer.save(**save_fields)
+        TransactionAudit.objects.create(transaction=saved_transaction, action=TransactionAudit.Action.CREATED, actor=request.user, changes=TransactionSerializer(saved_transaction).data)
         if obligation:
             obligation.balance -= saved_transaction.amount
             obligation.status = Obligation.Status.SETTLED if obligation.balance == 0 else Obligation.Status.PARTIAL
             obligation.save(update_fields=('balance', 'status', 'updated_at'))
         return Response({'data': TransactionSerializer(saved_transaction).data}, status=status.HTTP_201_CREATED)
+
+
+class TransactionDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get_transaction(self, request, business_id, transaction_id):
+        return Transaction.objects.filter(business__owner=request.user, business_id=business_id, id=transaction_id).first()
+
+    def get(self, request, business_id, transaction_id):
+        transaction = self.get_transaction(request, business_id, transaction_id)
+        if not transaction:
+            return Response({'detail': 'Transaction not found.'}, status=status.HTTP_404_NOT_FOUND)
+        return Response({'data': TransactionSerializer(transaction).data, 'audit': list(transaction.audit_events.values('action', 'created_at', 'actor__email', 'changes'))})
+
+    @transaction.atomic
+    def patch(self, request, business_id, transaction_id):
+        saved_transaction = self.get_transaction(request, business_id, transaction_id)
+        if not saved_transaction:
+            return Response({'detail': 'Transaction not found.'}, status=status.HTTP_404_NOT_FOUND)
+        if saved_transaction.obligation_id:
+            return Response({'detail': 'Linked payment records cannot be edited. Void this transaction and record a corrected payment instead.'}, status=status.HTTP_400_BAD_REQUEST)
+        before = TransactionSerializer(saved_transaction).data
+        serializer = TransactionSerializer(saved_transaction, data=request.data, partial=True, context={'business': saved_transaction.business})
+        serializer.is_valid(raise_exception=True)
+        saved_transaction = serializer.save()
+        after = TransactionSerializer(saved_transaction).data
+        changes = {key: {'from': before.get(key), 'to': after.get(key)} for key in after if before.get(key) != after.get(key)}
+        TransactionAudit.objects.create(transaction=saved_transaction, action=TransactionAudit.Action.UPDATED, actor=request.user, changes=changes)
+        return Response({'data': after})
+
+    @transaction.atomic
+    def delete(self, request, business_id, transaction_id):
+        saved_transaction = self.get_transaction(request, business_id, transaction_id)
+        if not saved_transaction:
+            return Response({'detail': 'Transaction not found.'}, status=status.HTTP_404_NOT_FOUND)
+        if saved_transaction.is_voided:
+            return Response({'detail': 'This transaction has already been voided.'}, status=status.HTTP_400_BAD_REQUEST)
+        obligation = saved_transaction.obligation
+        if obligation:
+            obligation.balance = min(obligation.amount, obligation.balance + saved_transaction.amount)
+            obligation.status = Obligation.Status.OPEN if obligation.balance == obligation.amount else Obligation.Status.PARTIAL
+            obligation.save(update_fields=('balance', 'status', 'updated_at'))
+        saved_transaction.is_voided = True
+        saved_transaction.voided_at = timezone.now()
+        saved_transaction.voided_by = request.user
+        saved_transaction.void_reason = str(request.data.get('reason') or 'User removed transaction')[:255]
+        saved_transaction.save(update_fields=('is_voided', 'voided_at', 'voided_by', 'void_reason', 'updated_at'))
+        TransactionAudit.objects.create(transaction=saved_transaction, action=TransactionAudit.Action.VOIDED, actor=request.user, changes={'reason': saved_transaction.void_reason, 'linked_obligation_restored': bool(obligation)})
+        return Response({'data': TransactionSerializer(saved_transaction).data})
 
 
 class FinancialAccountListView(APIView):
@@ -237,7 +287,7 @@ class PerformanceView(APIView):
         first_this_month = today.replace(day=1)
         month_index = first_this_month.year * 12 + first_this_month.month - 1 - 11
         first_month = first_this_month.replace(year=month_index // 12, month=month_index % 12 + 1)
-        rows = list(Transaction.objects.filter(business=business, obligation__isnull=True,
+        rows = list(Transaction.objects.filter(business=business, is_voided=False, obligation__isnull=True,
                     kind__in=(Transaction.Kind.INCOME, Transaction.Kind.EXPENSE), occurred_on__gte=first_month, occurred_on__lte=today)
                     .annotate(month=TruncMonth('occurred_on')).values('month', 'kind').annotate(total=Sum('amount')).order_by('month'))
         months = {}
@@ -316,11 +366,11 @@ class FinanceInsightsView(APIView):
         comparable_days = min(today.day, previous_month_end.day)
         previous_period_end = previous_month_start + timedelta(days=comparable_days - 1)
         current_period_expenses = Transaction.objects.filter(
-            business=business, kind=Transaction.Kind.EXPENSE, obligation__isnull=True,
+            business=business, is_voided=False, kind=Transaction.Kind.EXPENSE, obligation__isnull=True,
             occurred_on__gte=period_start, occurred_on__lte=today,
         )
         previous_period_expenses = Transaction.objects.filter(
-            business=business, kind=Transaction.Kind.EXPENSE, obligation__isnull=True,
+            business=business, is_voided=False, kind=Transaction.Kind.EXPENSE, obligation__isnull=True,
             occurred_on__gte=previous_month_start, occurred_on__lte=previous_period_end,
         )
         current_by_category = {row['category'] or '': row['total'] or Decimal('0.00')
@@ -357,7 +407,7 @@ class FinanceInsightsView(APIView):
                              'action_url': '/dashboard/transactions'})
             potential_impact += increase
 
-        recent = Transaction.objects.filter(business=business, kind__in=(Transaction.Kind.INCOME, Transaction.Kind.EXPENSE),
+        recent = Transaction.objects.filter(business=business, is_voided=False, kind__in=(Transaction.Kind.INCOME, Transaction.Kind.EXPENSE),
                                             obligation__isnull=True, occurred_on__gte=today - timedelta(days=90))
         groups = {}
         for item in recent:

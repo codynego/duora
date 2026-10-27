@@ -52,7 +52,13 @@ class Transaction(models.Model):
     contact = models.ForeignKey('Contact', on_delete=models.SET_NULL, null=True, blank=True, related_name='transactions')
     obligation = models.ForeignKey('Obligation', on_delete=models.PROTECT, null=True, blank=True, related_name='payments')
     occurred_on = models.DateField()
+    occurred_at = models.DateTimeField(null=True, blank=True)
+    is_voided = models.BooleanField(default=False)
+    voided_at = models.DateTimeField(null=True, blank=True)
+    voided_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='voided_financial_transactions')
+    void_reason = models.CharField(max_length=255, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ('-occurred_on', '-created_at')
@@ -60,6 +66,23 @@ class Transaction(models.Model):
 
     def __str__(self):
         return f'{self.kind}: {self.description}'
+
+
+class TransactionAudit(models.Model):
+    class Action(models.TextChoices):
+        CREATED = 'created', 'Created'
+        UPDATED = 'updated', 'Updated'
+        VOIDED = 'voided', 'Voided'
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    transaction = models.ForeignKey(Transaction, on_delete=models.CASCADE, related_name='audit_events')
+    action = models.CharField(max_length=12, choices=Action.choices)
+    actor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='financial_transaction_audits')
+    changes = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ('-created_at',)
 
 
 class FinancialAccount(models.Model):

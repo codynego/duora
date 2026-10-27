@@ -38,8 +38,8 @@ class TransactionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Transaction
-        fields = ('id', 'kind', 'description', 'amount', 'category', 'counterparty', 'account', 'account_name', 'transfer_account', 'transfer_account_name', 'contact', 'contact_name', 'obligation', 'obligation_description', 'occurred_on', 'created_at')
-        read_only_fields = ('id', 'created_at')
+        fields = ('id', 'kind', 'description', 'amount', 'category', 'counterparty', 'account', 'account_name', 'transfer_account', 'transfer_account_name', 'contact', 'contact_name', 'obligation', 'obligation_description', 'occurred_on', 'occurred_at', 'is_voided', 'voided_at', 'void_reason', 'created_at', 'updated_at')
+        read_only_fields = ('id', 'is_voided', 'voided_at', 'void_reason', 'created_at', 'updated_at')
 
     def validate_amount(self, value):
         if value <= 0:
@@ -106,10 +106,10 @@ class FinancialAccountSerializer(serializers.ModelSerializer):
 
     def get_balance(self, obj):
         zero = Decimal('0.00')
-        income = obj.transactions.filter(kind=Transaction.Kind.INCOME).aggregate(total=Sum('amount'))['total'] or zero
-        expenses = obj.transactions.filter(kind=Transaction.Kind.EXPENSE).aggregate(total=Sum('amount'))['total'] or zero
-        transfers_out = obj.transactions.filter(kind=Transaction.Kind.TRANSFER).aggregate(total=Sum('amount'))['total'] or zero
-        transfers_in = obj.incoming_transfers.filter(kind=Transaction.Kind.TRANSFER).aggregate(total=Sum('amount'))['total'] or zero
+        income = obj.transactions.filter(is_voided=False, kind=Transaction.Kind.INCOME).aggregate(total=Sum('amount'))['total'] or zero
+        expenses = obj.transactions.filter(is_voided=False, kind=Transaction.Kind.EXPENSE).aggregate(total=Sum('amount'))['total'] or zero
+        transfers_out = obj.transactions.filter(is_voided=False, kind=Transaction.Kind.TRANSFER).aggregate(total=Sum('amount'))['total'] or zero
+        transfers_in = obj.incoming_transfers.filter(is_voided=False, kind=Transaction.Kind.TRANSFER).aggregate(total=Sum('amount'))['total'] or zero
         return obj.opening_balance + income - expenses - transfers_out + transfers_in
 
     def validate_currency(self, value):
@@ -139,7 +139,7 @@ class ContactSerializer(serializers.ModelSerializer):
         return obj.obligations.filter(kind=kind).exclude(status=Obligation.Status.SETTLED).aggregate(total=Sum('balance'))['total'] or 0
 
     def get_last_transaction_on(self, obj):
-        return obj.transactions.order_by('-occurred_on').values_list('occurred_on', flat=True).first()
+        return obj.transactions.filter(is_voided=False).order_by('-occurred_on').values_list('occurred_on', flat=True).first()
 
 
 class ObligationSerializer(serializers.ModelSerializer):

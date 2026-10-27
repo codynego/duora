@@ -2,7 +2,7 @@
 
 import { ArrowDownLeft, ArrowRight, Check, Download, Plus, ShieldCheck, Smartphone, Sparkles, Zap } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import Navbar from '@/components/Navbar';
+import DorahPublicShell from '@/components/dorah-market/DorahPublicShell';
 import { initPwaInstall, promptInstall, subscribeToInstallPrompt, type BeforeInstallPromptEvent } from '@/lib/pwa-install';
 
 export default function InstallDorah() {
@@ -23,8 +23,8 @@ export default function InstallDorah() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F5F7FB] text-[#111B33]">
-      <Navbar />
+    <DorahPublicShell>
+      <div className="min-h-screen bg-[#F5F7FB] text-[#111B33]">
       <main className="overflow-hidden px-4 pb-20 pt-8 sm:px-8 sm:pb-28 sm:pt-12">
         <section className="relative mx-auto grid max-w-6xl items-center gap-10 overflow-hidden rounded-[28px] border border-[#111B33]/[.06] bg-white p-6 shadow-[0_20px_70px_rgba(17,27,51,.07)] sm:p-10 lg:grid-cols-[1fr_.9fr] lg:gap-12 lg:p-14">
           <div className="pointer-events-none absolute -right-32 -top-40 h-96 w-96 rounded-full bg-[#EAF0FF] blur-3xl" />
@@ -51,6 +51,7 @@ export default function InstallDorah() {
         </section>
         <section className="mx-auto mt-4 max-w-6xl rounded-2xl bg-[#111B33] p-5 text-white sm:p-7"><div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between"><div><p className="text-[10px] font-black uppercase tracking-[.14em] text-[#C9F45D]">Set up in seconds</p><h2 className="mt-2 text-lg font-black">Add Dorah to your device</h2></div><div className="grid gap-4 text-xs leading-5 text-white/65 sm:max-w-2xl sm:grid-cols-2"><p><strong className="text-white">Android or desktop:</strong> use the install prompt above, or open your browser menu and select Install app.</p><p><strong className="text-white">iPhone or iPad:</strong> open this page in Safari, tap Share, choose Add to Home Screen, then tap Add.</p></div></div></section>
       </main>
-    </div>
+      </div>
+    </DorahPublicShell>
   );
 }

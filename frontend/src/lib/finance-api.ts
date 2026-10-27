@@ -31,6 +31,7 @@ export type FinanceTransaction = {
   obligation: string | null;
   obligation_description: string | null;
   occurred_on: string;
+  occurred_at: string | null;
   created_at: string;
 };
 
@@ -186,6 +187,7 @@ export async function createFinanceTransaction(businessId: string, input: {
   description: string;
   amount: string;
   occurred_on: string;
+  occurred_at?: string | null;
   account?: string | null;
   transfer_account?: string | null;
   contact?: string | null;
@@ -193,6 +195,23 @@ export async function createFinanceTransaction(businessId: string, input: {
 }) {
   const response = await financeRequest<{ data: FinanceTransaction }>(`businesses/${businessId}/transactions/`, {
     method: 'POST', body: JSON.stringify(input),
+  });
+  return response.data;
+}
+
+export async function updateFinanceTransaction(businessId: string, transactionId: string, input: Partial<{
+  description: string; amount: string; occurred_on: string; occurred_at: string | null;
+  category: string; counterparty: string;
+}>) {
+  const response = await financeRequest<{ data: FinanceTransaction }>(`businesses/${businessId}/transactions/${transactionId}/`, {
+    method: 'PATCH', body: JSON.stringify(input),
+  });
+  return response.data;
+}
+
+export async function voidFinanceTransaction(businessId: string, transactionId: string, reason?: string) {
+  const response = await financeRequest<{ data: FinanceTransaction }>(`businesses/${businessId}/transactions/${transactionId}/`, {
+    method: 'DELETE', body: JSON.stringify({ reason }),
   });
   return response.data;
 }
