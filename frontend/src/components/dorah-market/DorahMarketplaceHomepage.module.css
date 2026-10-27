@@ -31,15 +31,14 @@
 .navLinks { display: flex; align-items: center; gap: 1.7rem; }
 .navLinks a, .textLink { color: #536078; font-size: .78rem; font-weight: 700; }
 .navLinks a:hover, .textLink:hover { color: var(--cobalt); }
-.nav a:focus-visible, .mobileMenu summary:focus-visible, .mobileNavPanel a:focus-visible, .mobileNavActions a:focus-visible, .footer a:focus-visible { outline: 3px solid var(--cobalt); outline-offset: 3px; }
+.nav a:focus-visible, .mobileMenuButton:focus-visible, .mobileNavPanel a:focus-visible, .mobileNavActions a:focus-visible, .footer a:focus-visible { outline: 3px solid var(--cobalt); outline-offset: 3px; }
 .footer a:focus-visible { outline-color: var(--lime); }
 .navActions { display: flex; align-items: center; gap: 1.25rem; }
 .mobileStart { display: none; }
 .mobileMenu { display: none; }
-.mobileMenu summary { display: grid; width: 2.7rem; height: 2.7rem; place-items: center; border: 1px solid var(--line); border-radius: .65rem; background: white; color: var(--ink); cursor: pointer; list-style: none; }
-.mobileMenu[open] summary { border-color: var(--cobalt); background: var(--cobalt); color: white; }
-.mobileMenu summary::-webkit-details-marker { display: none; }
-.mobileMenu summary svg { width: 1.1rem; height: 1.1rem; }
+.mobileMenuButton { display: grid; width: 2.7rem; height: 2.7rem; place-items: center; border: 1px solid var(--line); border-radius: .65rem; background: white; color: var(--ink); cursor: pointer; }
+.mobileMenuButton[aria-expanded='true'] { border-color: var(--cobalt); background: var(--cobalt); color: white; }
+.mobileMenuButton svg { width: 1.1rem; height: 1.1rem; }
 .mobileNavPanel { position: absolute; z-index: 90; inset-inline: 0; top: calc(100% + 8px); display: grid; max-height: calc(100svh - 84px); overflow-y: auto; gap: .2rem; border: 1px solid var(--line); border-radius: .8rem; background: var(--paper); padding: .7rem; box-shadow: 0 18px 40px rgba(17, 27, 51, .16); }
 .mobileNavPanel > a { display: flex; min-height: 2.7rem; align-items: center; justify-content: space-between; padding: .6rem .7rem; color: #536078; font-size: .78rem; font-weight: 750; }
 .mobileNavPanel > a:hover { background: white; color: var(--cobalt); }
