@@ -48,7 +48,7 @@ export default function DashboardProfileSection({ user, onUpdated }: {
           <label className="grid gap-1.5 text-xs font-bold text-[#536078]">Account email<input value={user.email} readOnly className="h-11 cursor-not-allowed rounded-lg border border-[#111B33]/10 bg-[#F5F7FB] px-3 text-sm font-normal text-[#758096]" /><span className="text-[10px] font-normal leading-4 text-[#758096]">Email changes will be available when verification is supported.</span></label>
           {error && <p role="alert" className="rounded-lg bg-[#FFF0F0] p-3 text-xs text-[#A4362B]">{error}</p>}
           {notice && <p role="status" className="rounded-lg border border-[#A5CD4A] bg-[#F2FADA] p-3 text-xs text-[#496436]">{notice}</p>}
-          <button disabled={saving} className="h-11 w-fit rounded-lg bg-[#3157F5] px-5 text-xs font-black text-white disabled:opacity-50">{saving ? 'Saving…' : 'Save profile'}</button>
+          <button disabled={saving} aria-busy={saving} className="button-loading h-11 w-fit rounded-lg bg-[#3157F5] px-5 text-xs font-black text-white disabled:opacity-50">{saving ? 'Saving…' : 'Save profile'}</button>
         </form> : <p className="mt-5 text-sm text-[#758096]">Loading your account details…</p>}
       </section>
       <aside className="grid content-start gap-4">

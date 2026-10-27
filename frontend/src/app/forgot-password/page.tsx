@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { type FormEvent, useState } from 'react';
+import { LoaderCircle } from 'lucide-react';
 import AuthShell from '@/components/AuthShell';
 import { requestPasswordReset } from '@/lib/auth';
 
@@ -52,9 +53,10 @@ export default function ForgotPasswordPage() {
           {error && <p role="alert" className="rounded-xl bg-[#FFF0F0] p-3 text-sm text-[#A4362B]">{error}</p>}
           <button
             disabled={saving}
-            className="button-primary h-12 w-full rounded-xl bg-[#3157F5] px-5 text-sm font-black text-white shadow-[0_5px_0_rgba(49,87,245,.2)] disabled:opacity-50"
+            aria-busy={saving}
+            className="button-primary button-loading inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#3157F5] px-5 text-sm font-black text-white shadow-[0_5px_0_rgba(49,87,245,.2)] disabled:opacity-50"
           >
-            {saving ? 'Sending…' : 'Send reset instructions'}
+            {saving && <LoaderCircle className="h-4 w-4 animate-spin" />}{saving ? 'Sending…' : 'Send reset instructions'}
           </button>
         </form>
       )}

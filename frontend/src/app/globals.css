@@ -177,6 +177,23 @@ a[href]:focus-visible,
   pointer-events: none;
 }
 
+button[aria-busy="true"]:not(.button-loading) {
+  cursor: wait;
+  pointer-events: none;
+}
+
+button[aria-busy="true"]:not(.button-loading)::after {
+  content: "";
+  width: .9em;
+  height: .9em;
+  flex: 0 0 auto;
+  margin-left: .35rem;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 999px;
+  animation: duora-spin .65s linear infinite;
+}
+
 .button-spinner {
   display: inline-block;
   width: 1em;

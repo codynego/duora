@@ -39,6 +39,10 @@ export default function BusinessSettingsSection({ business, currencyLocked, onSa
         currency: currencyLocked ? undefined : String(form.get('currency') ?? ''),
         record_keeping: String(form.get('record_keeping') ?? ''),
       });
+      try {
+        const stored = JSON.parse(window.localStorage.getItem('dorah:financial-controller:onboarding') || '{}');
+        window.localStorage.setItem('dorah:financial-controller:onboarding', JSON.stringify({ ...stored, country: String(form.get('country') ?? '') }));
+      } catch { /* The saved business country remains the source of truth. */ }
       await onSaved();
       setNotice('Business settings saved.');
     } catch (reason) {
@@ -59,7 +63,7 @@ export default function BusinessSettingsSection({ business, currencyLocked, onSa
           <label className="grid gap-1.5 text-xs font-bold text-[#536078] sm:col-span-2">How you keep records<select name="record_keeping" key={business.id + business.record_keeping} defaultValue={business.record_keeping || ''} className="h-11 rounded-lg border border-[#111B33]/15 bg-white px-3 text-sm text-[#111B33] outline-none focus:border-[#3157F5] focus:ring-4 focus:ring-[#3157F5]/10"><option value="">Choose how you keep records</option><option value="paper">Notebook or paper</option><option value="digital">Excel or another digital tool</option><option value="unorganized">I don’t keep organized records</option></select></label>
           {error && <p role="alert" className="rounded-lg bg-[#FFF0F0] p-3 text-xs text-[#A4362B] sm:col-span-2">{error}</p>}
           {notice && <p role="status" className="rounded-lg border border-[#A5CD4A] bg-[#F2FADA] p-3 text-xs text-[#496436] sm:col-span-2">{notice}</p>}
-          <button disabled={saving} className="h-11 w-fit rounded-lg bg-[#3157F5] px-5 text-xs font-black text-white disabled:opacity-50 sm:col-span-2">{saving ? 'Saving…' : 'Save business settings'}</button>
+          <button disabled={saving} aria-busy={saving} className="button-loading h-11 w-fit rounded-lg bg-[#3157F5] px-5 text-xs font-black text-white disabled:opacity-50 sm:col-span-2">{saving ? 'Saving…' : 'Save business settings'}</button>
         </form>
       </section>
       <div className="grid gap-4 md:grid-cols-2"><article className="rounded-xl border border-[#111B33]/10 bg-white p-5"><div className="flex items-center gap-3"><span className="grid h-9 w-9 place-items-center rounded-lg bg-[#EEF1FF] text-[#3157F5]"><CircleDollarSign className="h-4 w-4" /></span><div><p className="text-[10px] font-black uppercase tracking-[.12em] text-[#758096]">Current plan</p><h2 className="mt-1 text-lg font-black capitalize">{business.plan}</h2></div></div><p className="mt-3 text-xs leading-5 text-[#64708A]">Compare plan limits and choose the level of financial oversight that fits your business.</p><Link href="/pricing" className="mt-4 inline-flex items-center gap-2 text-xs font-black text-[#3157F5]">View plans <ArrowRight className="h-4 w-4" /></Link></article><article className="rounded-xl border border-[#111B33]/10 bg-white p-5"><p className="text-[10px] font-black uppercase tracking-[.12em] text-[#758096]">Workspace access</p><h2 className="mt-2 text-lg font-black">Business owner</h2><p className="mt-2 text-xs leading-5 text-[#64708A]">This workspace currently belongs to your account. Team access and approval roles are not enabled yet.</p></article></div>

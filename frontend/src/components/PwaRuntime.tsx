@@ -1,12 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Download, X } from 'lucide-react';
+import { Download, LoaderCircle, X } from 'lucide-react';
 import { initPwaInstall, promptInstall, subscribeToInstallPrompt, type BeforeInstallPromptEvent } from '@/lib/pwa-install';
 
 export default function PwaRuntime() {
   const [installEvent, setInstallEvent] = useState<BeforeInstallPromptEvent | null>(null);
   const [dismissed, setDismissed] = useState(false);
+  const [installing, setInstalling] = useState(false);
 
   useEffect(() => {
     if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
@@ -18,7 +19,9 @@ export default function PwaRuntime() {
   }, []);
 
   async function install() {
-    await promptInstall();
+    if (installing) return;
+    setInstalling(true);
+    try { await promptInstall(); } finally { setInstalling(false); }
   }
 
   if (!installEvent || dismissed) return null;
@@ -35,7 +38,7 @@ export default function PwaRuntime() {
           <p className="mt-1 text-xs leading-5 text-white/65">Install Dorah to open your financial workspace from your home screen.</p>
         </div>
       </div>
-      <button type="button" onClick={() => void install()} className="mt-4 h-11 w-full rounded-xl bg-[#3157F5] px-4 text-sm font-black text-white transition hover:bg-[#2748D8] active:scale-[.99]">Install Dorah</button>
+      <button type="button" disabled={installing} aria-busy={installing} onClick={() => void install()} className="button-loading mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#3157F5] px-4 text-sm font-black text-white transition hover:bg-[#2748D8] active:scale-[.99] disabled:opacity-70">{installing ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}{installing ? 'Opening install…' : 'Install Dorah'}</button>
     </aside>
   );
 }

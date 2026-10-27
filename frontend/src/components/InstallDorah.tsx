@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowDownLeft, ArrowRight, Check, Download, Plus, ShieldCheck, Smartphone, Sparkles, Zap } from 'lucide-react';
+import { ArrowDownLeft, ArrowRight, Check, Download, LoaderCircle, Plus, ShieldCheck, Smartphone, Sparkles, Zap } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import DorahPublicShell from '@/components/dorah-market/DorahPublicShell';
 import { initPwaInstall, promptInstall, subscribeToInstallPrompt, type BeforeInstallPromptEvent } from '@/lib/pwa-install';
@@ -9,6 +9,7 @@ export default function InstallDorah() {
   const [installEvent, setInstallEvent] = useState<BeforeInstallPromptEvent | null>(null);
   const [installed, setInstalled] = useState(false);
   const [showInstallHelp, setShowInstallHelp] = useState(false);
+  const [installing, setInstalling] = useState(false);
 
   useEffect(() => {
     const standalone = window.matchMedia('(display-mode: standalone)').matches || Boolean((navigator as Navigator & { standalone?: boolean }).standalone);
@@ -18,8 +19,14 @@ export default function InstallDorah() {
   }, []);
 
   async function install() {
-    if (await promptInstall()) setInstalled(true);
-    else setShowInstallHelp(true);
+    if (installing) return;
+    setInstalling(true);
+    try {
+      if (await promptInstall()) setInstalled(true);
+      else setShowInstallHelp(true);
+    } finally {
+      setInstalling(false);
+    }
   }
 
   return (
@@ -32,7 +39,7 @@ export default function InstallDorah() {
             <p className="inline-flex items-center gap-2 rounded-full border border-[#3157F5]/10 bg-[#EAF0FF] px-3 py-1.5 text-[10px] font-black uppercase tracking-[.12em] text-[#3157F5]"><span className="h-1.5 w-1.5 rounded-full bg-[#3157F5]" />Dorah for your home screen</p>
             <h1 className="mt-6 max-w-xl font-[Aptos_Display,Arial,sans-serif] text-5xl font-black leading-[.93] tracking-[-.075em] sm:text-6xl">Your financial picture, one tap away<span className="text-[#3157F5]">.</span></h1>
             <p className="mt-5 max-w-lg text-sm leading-6 text-[#64708A] sm:text-base sm:leading-7">Open your business overview quickly, review what needs attention, and record money as it moves.</p>
-            {installed ? <p role="status" className="mt-7 inline-flex items-center gap-2 rounded-xl border border-[#557516]/15 bg-[#EAF6E4] px-4 py-3 text-sm font-bold text-[#45652D]"><Check className="h-4 w-4" />Dorah is ready on this device.</p> : <><button type="button" onClick={() => void install()} className="mt-7 inline-flex h-12 items-center gap-2 rounded-xl bg-[#3157F5] px-5 text-sm font-black text-white shadow-[0_8px_20px_rgba(49,87,245,.24)] transition hover:-translate-y-0.5 hover:bg-[#2748D8] active:translate-y-0"><Download className="h-4 w-4" />Install Dorah <ArrowRight className="h-4 w-4" /></button>{(!installEvent || showInstallHelp) && <div className="mt-4 max-w-lg rounded-xl border border-[#111B33]/[.08] bg-[#F8F9FC] p-4 text-xs leading-5 text-[#64708A]"><strong className="text-[#111B33]">If the install button does not open a prompt:</strong> on Chrome or Edge desktop, use the install icon at the right side of the address bar, or open the browser menu and choose <strong className="text-[#111B33]">Install Dorah</strong> or <strong className="text-[#111B33]">Install page as app</strong>. On iPhone or iPad, tap Share in Safari and choose Add to Home Screen.</div>}</>}
+            {installed ? <p role="status" className="mt-7 inline-flex items-center gap-2 rounded-xl border border-[#557516]/15 bg-[#EAF6E4] px-4 py-3 text-sm font-bold text-[#45652D]"><Check className="h-4 w-4" />Dorah is ready on this device.</p> : <><button type="button" disabled={installing} aria-busy={installing} onClick={() => void install()} className="button-loading mt-7 inline-flex h-12 items-center gap-2 rounded-xl bg-[#3157F5] px-5 text-sm font-black text-white shadow-[0_8px_20px_rgba(49,87,245,.24)] transition hover:-translate-y-0.5 hover:bg-[#2748D8] active:translate-y-0 disabled:opacity-70">{installing ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}{installing ? 'Opening install…' : 'Install Dorah'} {!installing && <ArrowRight className="h-4 w-4" />}</button>{(!installEvent || showInstallHelp) && <div className="mt-4 max-w-lg rounded-xl border border-[#111B33]/[.08] bg-[#F8F9FC] p-4 text-xs leading-5 text-[#64708A]"><strong className="text-[#111B33]">If the install button does not open a prompt:</strong> on Chrome or Edge desktop, use the install icon at the right side of the address bar, or open the browser menu and choose <strong className="text-[#111B33]">Install Dorah</strong> or <strong className="text-[#111B33]">Install page as app</strong>. On iPhone or iPad, tap Share in Safari and choose Add to Home Screen.</div>}</>}
             <p className="mt-4 flex items-center gap-2 text-[10px] font-semibold text-[#758096]"><ShieldCheck className="h-3.5 w-3.5 text-[#557516]" />Same account. Same protected financial workspace.</p>
           </div>
 
