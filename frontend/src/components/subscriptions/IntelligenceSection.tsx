@@ -79,7 +79,7 @@ export default function IntelligenceSection({ findings, openFindings, potentialI
 
     <div className="grid gap-5 xl:grid-cols-[1.25fr_.75fr]">
       <section className="grid content-start gap-3">
-        <div className="flex items-end justify-between gap-3"><div><p className="text-[10px] font-black uppercase tracking-[.12em] text-[#3157F5]">Priority findings</p><h2 className="mt-1 text-xl font-black">What needs a closer look?</h2></div><span className="text-[10px] text-[#758096]">{hasLiveRecords ? 'Rule-based checks' : 'Examples only'}</span></div>
+        <div className="flex items-end justify-between gap-3"><div><p className="text-[10px] font-black uppercase tracking-[.12em] text-[#3157F5]">Priority findings</p><h2 className="mt-1 text-xl font-black">What needs a closer look?</h2></div><span className="text-[10px] text-[#758096]">{hasLiveRecords ? 'Saved findings' : 'Examples only'}</span></div>
         {visibleFindings.length ? visibleFindings.map((finding) => <article key={finding.id} className={`rounded-xl border p-5 ${finding.severity === 'high' ? 'border-[#E8D89F] bg-[#FFF9E8]' : 'border-[#111B33]/10 bg-white'}`}>
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div><p className="text-[9px] font-black uppercase tracking-[.1em] text-[#758096]">{sourceLabel(finding.source)}{finding.period_start && finding.period_end ? ` · ${finding.period_start} to ${finding.period_end}` : ''}</p><h3 className="mt-2 text-base font-black sm:text-lg">{finding.title}</h3></div>
