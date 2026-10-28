@@ -1,4 +1,5 @@
 import uuid
+from decimal import Decimal
 
 from django.conf import settings
 from django.core.validators import MinValueValidator
@@ -44,7 +45,7 @@ class Transaction(models.Model):
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='financial_transactions')
     kind = models.CharField(max_length=8, choices=Kind.choices)
     description = models.CharField(max_length=120)
-    amount = models.DecimalField(max_digits=14, decimal_places=2, validators=[MinValueValidator(0.01)])
+    amount = models.DecimalField(max_digits=14, decimal_places=2, validators=[MinValueValidator(Decimal('0.01'))])
     category = models.CharField(max_length=60, blank=True)
     counterparty = models.CharField(max_length=100, blank=True)
     account = models.ForeignKey('FinancialAccount', on_delete=models.SET_NULL, null=True, blank=True, related_name='transactions')
@@ -148,7 +149,7 @@ class Obligation(models.Model):
     kind = models.CharField(max_length=12, choices=Kind.choices)
     description = models.CharField(max_length=160)
     reference = models.CharField(max_length=80, blank=True)
-    amount = models.DecimalField(max_digits=14, decimal_places=2, validators=[MinValueValidator(0.01)])
+    amount = models.DecimalField(max_digits=14, decimal_places=2, validators=[MinValueValidator(Decimal('0.01'))])
     balance = models.DecimalField(max_digits=14, decimal_places=2, validators=[MinValueValidator(0)])
     affects_performance = models.BooleanField(default=True)
     due_date = models.DateField(null=True, blank=True)

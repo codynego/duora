@@ -266,10 +266,10 @@ class IntelligenceChatView(APIView):
         if not api_key:
             return Response({'detail': 'Financial controller chat is not configured yet. Add OPENAI_API_KEY to the backend environment.'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
-        transactions = list(Transaction.objects.filter(business=business, is_voided=False).select_related('account', 'contact').order_by('-occurred_on', '-created_at')[:100])
+        transactions = list(Transaction.objects.filter(business=business, is_voided=False).select_related('account', 'contact').order_by('-occurred_on', '-created_at')[:40])
         accounts = list(FinancialAccount.objects.filter(business=business, is_active=True))
         account_rows = FinancialAccountSerializer(accounts, many=True).data
-        obligations = list(Obligation.objects.filter(business=business).select_related('contact').order_by('due_date', '-updated_at')[:100])
+        obligations = list(Obligation.objects.filter(business=business).select_related('contact').order_by('due_date', '-updated_at')[:40])
         insights_response = FinanceInsightsView().get(request, business_id)
         insights = insights_response.data.get('data', []) if insights_response.status_code == 200 else []
         context = {
@@ -293,6 +293,7 @@ class IntelligenceChatView(APIView):
             model = 'gpt-4o-mini'
         body = json.dumps({
             'model': model,
+            'max_output_tokens': 600,
             'input': [
                 {'role': 'system', 'content': 'You are Dorah, a careful financial controller for a small business. Answer only from the supplied saved-record context. Do not invent transactions, balances, dates, customers, or explanations. Show relevant amounts with the business currency. Distinguish recorded cash from receivables, payables, expected collections, repayments, and internal transfers. When the records are incomplete, say so plainly. Possible findings are review prompts, not confirmed errors. Never authorize, save, delete, or change records. Keep answers practical and concise: answer the question, cite the relevant record categories or figures, and end with one sensible next step. Return plain text, not JSON or markdown tables.'},
                 {'role': 'user', 'content': json.dumps({'today': timezone.localdate().isoformat(), 'question': question, 'recent_conversation': history, 'saved_financial_context': context}, default=str)},
@@ -312,9 +313,9 @@ class IntelligenceChatView(APIView):
             else:
                 detail = 'Financial controller chat is temporarily unavailable. Please try again.'
             return Response({'detail': detail}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
-        except (urllib.error.URLError, TimeoutError):
-            logger.exception('OpenAI intelligence chat request failed')
-            return Response({'detail': 'Financial controller chat timed out. Please try again.'}, status=status.HTTP_502_BAD_GATEWAY)
+        except (urllib.error.URLError, TimeoutError) as error:
+            logger.exception('OpenAI intelligence chat request failed: %s', error)
+            return Response({'detail': 'Financial controller chat could not reach OpenAI. Please try again.'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
         except json.JSONDecodeError:
             logger.exception('OpenAI intelligence chat returned invalid JSON')
             return Response({'detail': 'The controller returned an incomplete answer. Please try again.'}, status=status.HTTP_502_BAD_GATEWAY)
