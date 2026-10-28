@@ -251,8 +251,13 @@ export default function DashboardSectionContent({ section, findingId, formatAmou
     const inputs = Array.from(document.querySelectorAll<HTMLInputElement>('input[type="number"]'));
     const handlers = inputs.map((input) => {
       const handler = () => {
+        const caret = input.selectionStart ?? input.value.length;
+        const valueBeforeCaret = input.value.slice(0, caret);
+        const formatted = formatMoneyInputValue(input.value);
+        const formattedCaret = formatMoneyInputValue(valueBeforeCaret).length;
         input.type = 'text';
-        input.value = formatMoneyInputValue(input.value);
+        input.value = formatted;
+        input.setSelectionRange(formattedCaret, formattedCaret);
       };
       input.addEventListener('input', handler);
       return [input, handler] as const;
