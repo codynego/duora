@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import urllib.error
 import urllib.request
@@ -17,6 +18,8 @@ from rest_framework.views import APIView
 from .models import Business, Contact, FinancialAccount, Obligation, Transaction, TransactionAudit
 from .serializers import (BusinessSerializer, ContactSerializer, FinancialAccountSerializer,
                           ObligationSerializer, TransactionSerializer)
+
+logger = logging.getLogger(__name__)
 
 
 def owned_business(request, business_id):
@@ -184,28 +187,30 @@ class TransactionParseView(APIView):
             'known_accounts': [{'name': name, 'kind': kind} for name, kind in accounts],
             'description': text,
         }
+        nullable_number = {'anyOf': [{'type': 'number'}, {'type': 'null'}]}
+        nullable_string = {'anyOf': [{'type': 'string'}, {'type': 'null'}]}
         schema = {
             'type': 'object', 'additionalProperties': False,
             'properties': {
                 'kind': {'type': 'string', 'enum': ['income', 'expense', 'transfer', 'unknown']},
                 'description': {'type': 'string'},
-                'total_amount': {'type': ['number', 'null']},
-                'paid_amount': {'type': ['number', 'null']},
-                'contact_name': {'type': ['string', 'null']},
-                'account_name': {'type': ['string', 'null']},
-                'transfer_account_name': {'type': ['string', 'null']},
-                'due_date': {'type': ['string', 'null']},
-                'payment_method': {'type': ['string', 'null']},
+                'total_amount': nullable_number,
+                'paid_amount': nullable_number,
+                'contact_name': nullable_string,
+                'account_name': nullable_string,
+                'transfer_account_name': nullable_string,
+                'due_date': nullable_string,
+                'payment_method': nullable_string,
                 'missing_details': {'type': 'array', 'items': {'type': 'string'}},
                 'note': {'type': 'string'},
             },
             'required': ['kind', 'description', 'total_amount', 'paid_amount', 'contact_name', 'account_name', 'transfer_account_name', 'due_date', 'payment_method', 'missing_details', 'note'],
         }
         body = json.dumps({
-            'model': os.environ.get('OPENAI_TRANSACTION_MODEL', 'gpt-5-mini'),
+            'model': os.environ.get('OPENAI_TRANSACTION_MODEL', 'gpt-4o-mini'),
             'input': [
                 {'role': 'system', 'content': 'You extract one small-business transaction into a reviewable draft. Never invent amounts, names, accounts, or dates. Distinguish a customer repayment from new income, a supplier payment from a new expense, and an internal transfer from both. For a sale or bill, total_amount is the full value and paid_amount is the amount paid now; if only one amount is given, use it for both. Use ISO YYYY-MM-DD only for dates explicitly stated or clearly relative to today.'},
-                {'role': 'user', 'content': json.dumps(prompt)},
+                {'role': 'user', 'content': json.dumps({**prompt, 'today': timezone.localdate().isoformat()})},
             ],
             'text': {'format': {'type': 'json_schema', 'name': 'transaction_draft', 'strict': True, 'schema': schema}},
         }).encode('utf-8')
@@ -213,8 +218,16 @@ class TransactionParseView(APIView):
         try:
             with urllib.request.urlopen(req, timeout=30) as response:
                 payload = json.loads(response.read().decode('utf-8'))
-        except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError, json.JSONDecodeError):
-            return Response({'detail': 'We could not understand that transaction. Check the wording and try again.'}, status=status.HTTP_502_BAD_GATEWAY)
+        except urllib.error.HTTPError as error:
+            provider_body = error.read().decode('utf-8', errors='replace')[:2000]
+            logger.error('OpenAI transaction parsing rejected the request: status=%s body=%s', error.code, provider_body)
+            return Response({'detail': 'Text entry could not create a draft right now. Please try again or enter the transaction manually.'}, status=status.HTTP_502_BAD_GATEWAY)
+        except (urllib.error.URLError, TimeoutError) as error:
+            logger.error('OpenAI transaction parsing request failed: %s', error)
+            return Response({'detail': 'Text entry is temporarily unavailable. Please try again or enter the transaction manually.'}, status=status.HTTP_502_BAD_GATEWAY)
+        except json.JSONDecodeError:
+            logger.error('OpenAI transaction parsing returned invalid JSON.')
+            return Response({'detail': 'The transaction draft was incomplete. Please try again or enter it manually.'}, status=status.HTTP_502_BAD_GATEWAY)
         output_text = payload.get('output_text', '')
         try:
             draft = json.loads(output_text)
