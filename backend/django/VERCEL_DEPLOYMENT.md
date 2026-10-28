@@ -10,6 +10,8 @@ Set these production environment variables:
 - `DJANGO_ALLOWED_HOSTS`: your API domain and `.vercel.app`.
 - `DUORA_CORS_ORIGINS`: the exact URL of the deployed frontend, for example `https://duora.vercel.app`.
 - `DJANGO_SECURE_SSL_REDIRECT=true`
+- `OPENAI_API_KEY`: a server-side OpenAI API key; never expose this in the frontend.
+- `OPENAI_TRANSACTION_MODEL`: set to `gpt-4o-mini` for text-to-transaction parsing.
 
 The backend build runs `python manage.py migrate --noinput` before serving requests. Keep preview deployments on a separate database branch; do not point preview builds at production data.
 

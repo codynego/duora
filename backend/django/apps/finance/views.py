@@ -187,8 +187,8 @@ class TransactionParseView(APIView):
             'known_accounts': [{'name': name, 'kind': kind} for name, kind in accounts],
             'description': text,
         }
-        nullable_number = {'anyOf': [{'type': 'number'}, {'type': 'null'}]}
-        nullable_string = {'anyOf': [{'type': 'string'}, {'type': 'null'}]}
+        nullable_number = {'type': ['number', 'null']}
+        nullable_string = {'type': ['string', 'null']}
         schema = {
             'type': 'object', 'additionalProperties': False,
             'properties': {
@@ -221,7 +221,15 @@ class TransactionParseView(APIView):
         except urllib.error.HTTPError as error:
             provider_body = error.read().decode('utf-8', errors='replace')[:2000]
             logger.error('OpenAI transaction parsing rejected the request: status=%s body=%s', error.code, provider_body)
-            return Response({'detail': 'Text entry could not create a draft right now. Please try again or enter the transaction manually.'}, status=status.HTTP_502_BAD_GATEWAY)
+            if error.code in (401, 403):
+                detail = 'Text entry is not authorized. Check OPENAI_API_KEY in the deployed backend environment.'
+            elif error.code == 404:
+                detail = 'The configured text-entry model is unavailable. Set OPENAI_TRANSACTION_MODEL to gpt-4o-mini and redeploy the backend.'
+            elif error.code == 400:
+                detail = 'The text-entry request was rejected. Check OPENAI_TRANSACTION_MODEL and try again.'
+            else:
+                detail = 'Text entry could not create a draft right now. Please try again or enter the transaction manually.'
+            return Response({'detail': detail}, status=status.HTTP_503_SERVICE_UNAVAILABLE if error.code in (401, 403, 404) else status.HTTP_502_BAD_GATEWAY)
         except (urllib.error.URLError, TimeoutError) as error:
             logger.error('OpenAI transaction parsing request failed: %s', error)
             return Response({'detail': 'Text entry is temporarily unavailable. Please try again or enter the transaction manually.'}, status=status.HTTP_502_BAD_GATEWAY)
