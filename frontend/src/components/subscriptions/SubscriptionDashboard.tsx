@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import DorahLogo from '@/components/DorahLogo';
-import { type FormEvent, useEffect, useState } from 'react';
+import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { ArrowDownLeft, ArrowRight, ArrowUpRight, BarChart3, BellRing, Check, ChevronDown, CircleAlert, CircleDollarSign, CircleHelp, LayoutDashboard, MessageCircle, MoreHorizontal, Plus, ReceiptText, Settings, ShieldCheck, Sparkles, UserRound, UsersRound, WalletCards, X } from 'lucide-react';
 import { useCurrentUser } from '@/lib/current-user';
 import { getFinancialOnboardingProfile, type FinancialOnboardingProfile } from '@/lib/financial-onboarding';
@@ -95,6 +95,7 @@ export default function SubscriptionDashboard() {
   const [transactionDraft, setTransactionDraft] = useState<TransactionDraft | null>(null);
   const [parsingTransaction, setParsingTransaction] = useState(false);
   const [transactionFormRevision, setTransactionFormRevision] = useState(0);
+  const transactionAmounts = useRef<Record<string, string>>({});
   const [quickSaveRequested, setQuickSaveRequested] = useState(false);
 
   useEffect(() => {
@@ -134,11 +135,14 @@ export default function SubscriptionDashboard() {
     const handlers = inputs.map((input) => {
       input.type = 'text';
       input.inputMode = 'decimal';
+      const savedValue = transactionAmounts.current[input.name];
+      if (savedValue && !input.value) input.value = savedValue;
       const handler = () => {
         const caret = input.selectionStart ?? input.value.length;
         const digitsBeforeCaret = input.value.slice(0, caret).replace(/[^\d.]/g, '').length;
         const formatted = formatMoneyInput(input.value);
         input.value = formatted;
+        transactionAmounts.current[input.name] = formatted;
         if (digitsBeforeCaret === 0) {
           input.setSelectionRange(0, 0);
           return;
@@ -158,7 +162,7 @@ export default function SubscriptionDashboard() {
       return [input, handler] as const;
     });
     return () => handlers.forEach(([input, handler]) => input.removeEventListener('input', handler));
-  }, [recordOpen, entryMode, transactionDraft]);
+  }, [recordOpen, entryMode, transactionDraft, contactSearch, newContactName, newContactPhone, newContactEmail, selectedContactId]);
 
   const currency = financeOverview?.business.currency ?? onboardingProfile?.currency ?? 'NGN';
   const dashboardTransactions = financeOverview?.transactions.length
