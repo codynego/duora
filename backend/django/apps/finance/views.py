@@ -251,6 +251,77 @@ class TransactionParseView(APIView):
         return Response({'data': draft})
 
 
+class IntelligenceChatView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, business_id):
+        business = owned_business(request, business_id)
+        if not business:
+            return Response({'detail': 'Business not found.'}, status=status.HTTP_404_NOT_FOUND)
+        question = str(request.data.get('question') or '').strip()
+        if not question or len(question) > 2000:
+            return Response({'detail': 'Ask one question in 2,000 characters or less.'}, status=status.HTTP_400_BAD_REQUEST)
+        api_key = os.environ.get('OPENAI_API_KEY', '').strip()
+        if not api_key:
+            return Response({'detail': 'Financial controller chat is not configured yet. Add OPENAI_API_KEY to the backend environment.'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+        transactions = list(Transaction.objects.filter(business=business, is_voided=False).select_related('account', 'contact').order_by('-occurred_on', '-created_at')[:100])
+        accounts = list(FinancialAccount.objects.filter(business=business, is_active=True))
+        obligations = list(Obligation.objects.filter(business=business).select_related('contact').order_by('due_date', '-updated_at')[:100])
+        insights_response = FinanceInsightsView().get(request, business_id)
+        insights = insights_response.data.get('data', []) if insights_response.status_code == 200 else []
+        context = {
+            'business': {'name': business.name, 'currency': business.currency, 'opening_balance': business.opening_balance},
+            'accounts': [{'name': account.name, 'kind': account.kind, 'balance': account.balance} for account in accounts],
+            'transactions': [{'date': row.occurred_on, 'kind': row.kind, 'description': row.description, 'amount': row.amount,
+                              'account': row.account.name if row.account else None,
+                              'contact': row.contact.name if row.contact else None} for row in transactions],
+            'obligations': [{'kind': row.kind, 'contact': row.contact.name, 'description': row.description,
+                             'amount': row.amount, 'balance': row.balance, 'due_date': row.due_date,
+                             'status': row.status} for row in obligations],
+            'findings': [{'title': item.get('title'), 'severity': item.get('severity'), 'detail': item.get('detail'),
+                          'impact_amount': item.get('impact_amount'), 'suggestion': item.get('suggestion')}
+                         for item in insights[:20]],
+        }
+        history = request.data.get('history') if isinstance(request.data.get('history'), list) else []
+        history = [{'role': item.get('role'), 'content': str(item.get('content', ''))[:2000]}
+                   for item in history[-8:] if item.get('role') in ('user', 'assistant') and item.get('content')]
+        model = os.environ.get('OPENAI_INTELLIGENCE_MODEL', '').strip()
+        if model not in {'gpt-4o-mini', 'gpt-4.1-mini'}:
+            model = 'gpt-4o-mini'
+        body = json.dumps({
+            'model': model,
+            'input': [
+                {'role': 'system', 'content': 'You are Dorah, a careful financial controller for a small business. Answer only from the supplied saved-record context. Do not invent transactions, balances, dates, customers, or explanations. Show relevant amounts with the business currency. Distinguish recorded cash from receivables, payables, expected collections, repayments, and internal transfers. When the records are incomplete, say so plainly. Possible findings are review prompts, not confirmed errors. Never authorize, save, delete, or change records. Keep answers practical and concise: answer the question, cite the relevant record categories or figures, and end with one sensible next step. Return plain text, not JSON or markdown tables.'},
+                {'role': 'user', 'content': json.dumps({'today': timezone.localdate().isoformat(), 'question': question, 'recent_conversation': history, 'saved_financial_context': context}, default=str)},
+            ],
+        }).encode('utf-8')
+        req = urllib.request.Request('https://api.openai.com/v1/responses', data=body, method='POST', headers={'Authorization': f'Bearer {api_key}', 'Content-Type': 'application/json'})
+        try:
+            with urllib.request.urlopen(req, timeout=45) as response:
+                payload = json.loads(response.read().decode('utf-8'))
+        except urllib.error.HTTPError as error:
+            provider_body = error.read().decode('utf-8', errors='replace')[:2000]
+            logger.error('OpenAI intelligence chat rejected the request: status=%s body=%s', error.code, provider_body)
+            if error.code in (401, 403):
+                detail = 'Financial controller chat is not authorized. Check OPENAI_API_KEY in the deployed backend environment.'
+            elif error.code == 404:
+                detail = 'The intelligence chat model is unavailable. The backend is configured to use gpt-4o-mini.'
+            else:
+                detail = 'Financial controller chat is temporarily unavailable. Please try again.'
+            return Response({'detail': detail}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        except (urllib.error.URLError, TimeoutError):
+            logger.exception('OpenAI intelligence chat request failed')
+            return Response({'detail': 'Financial controller chat timed out. Please try again.'}, status=status.HTTP_502_BAD_GATEWAY)
+        except json.JSONDecodeError:
+            logger.exception('OpenAI intelligence chat returned invalid JSON')
+            return Response({'detail': 'The controller returned an incomplete answer. Please try again.'}, status=status.HTTP_502_BAD_GATEWAY)
+        answer = str(payload.get('output_text') or '').strip()
+        if not answer:
+            return Response({'detail': 'The controller returned an empty answer. Please try again.'}, status=status.HTTP_502_BAD_GATEWAY)
+        return Response({'data': {'answer': answer, 'grounded': True}})
+
+
 class TransactionDetailView(APIView):
     permission_classes = [IsAuthenticated]
 

@@ -1,7 +1,7 @@
 from django.urls import path
 
 from .views import (BusinessListView, BusinessOverviewView, BusinessSettingsView, ContactListView,
-                    FinanceInsightsView, FinancialAccountListView, ObligationDetailView, ObligationListView,
+                    FinanceInsightsView, FinancialAccountListView, IntelligenceChatView, ObligationDetailView, ObligationListView,
                     PerformanceView, TransactionDetailView, TransactionListView, TransactionParseView)
 
 urlpatterns = [
@@ -17,4 +17,5 @@ urlpatterns = [
     path('businesses/<uuid:business_id>/obligations/<uuid:obligation_id>/', ObligationDetailView.as_view()),
     path('businesses/<uuid:business_id>/performance/', PerformanceView.as_view()),
     path('businesses/<uuid:business_id>/intelligence/', FinanceInsightsView.as_view()),
+    path('businesses/<uuid:business_id>/intelligence/chat/', IntelligenceChatView.as_view()),
 ]

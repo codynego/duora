@@ -233,6 +233,15 @@ export async function parseFinanceTransaction(businessId: string, text: string) 
   return response.data;
 }
 
+export type FinanceChatMessage = { role: 'user' | 'assistant'; content: string };
+
+export async function askFinanceController(businessId: string, question: string, history: FinanceChatMessage[] = []) {
+  const response = await financeRequest<{ data: { answer: string; grounded: boolean } }>(`businesses/${businessId}/intelligence/chat/`, {
+    method: 'POST', body: JSON.stringify({ question, history: history.slice(-8) }),
+  });
+  return response.data;
+}
+
 export async function updateFinanceTransaction(businessId: string, transactionId: string, input: Partial<{
   description: string; amount: string; occurred_on: string; occurred_at: string | null;
   category: string; counterparty: string; account: string | null;
