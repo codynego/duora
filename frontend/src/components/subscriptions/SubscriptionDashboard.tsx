@@ -130,7 +130,7 @@ export default function SubscriptionDashboard() {
 
   useEffect(() => {
     if (!recordOpen) return;
-    const inputs = Array.from(document.querySelectorAll<HTMLInputElement>('input[type="number"]'));
+    const inputs = Array.from(document.querySelectorAll<HTMLInputElement>('section[aria-labelledby="record-transaction-title"] input[type="number"]'));
     const handlers = inputs.map((input) => {
       input.type = 'text';
       input.inputMode = 'decimal';
