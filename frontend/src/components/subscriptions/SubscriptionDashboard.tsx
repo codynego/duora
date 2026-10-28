@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import DorahLogo from '@/components/DorahLogo';
 import { type FormEvent, useEffect, useState } from 'react';
-import { ArrowDownLeft, ArrowRight, ArrowUpRight, BarChart3, BellRing, Check, ChevronDown, CircleAlert, CircleDollarSign, LayoutDashboard, MessageCircle, MoreHorizontal, Plus, ReceiptText, Settings, ShieldCheck, Sparkles, UserRound, UsersRound, WalletCards, X } from 'lucide-react';
+import { ArrowDownLeft, ArrowRight, ArrowUpRight, BarChart3, BellRing, Check, ChevronDown, CircleAlert, CircleDollarSign, CircleHelp, LayoutDashboard, MessageCircle, MoreHorizontal, Plus, ReceiptText, Settings, ShieldCheck, Sparkles, UserRound, UsersRound, WalletCards, X } from 'lucide-react';
 import { useCurrentUser } from '@/lib/current-user';
 import { getFinancialOnboardingProfile, type FinancialOnboardingProfile } from '@/lib/financial-onboarding';
 import { createFinanceContact, createFinanceObligation, createFinanceTransaction, getFinanceWorkspace, parseFinanceTransaction, type FinanceOverview, type FinanceWorkspace, type TransactionDraft, getBusinesses, getFinanceOverview } from '@/lib/finance-api';
@@ -30,6 +30,7 @@ const workspaceItems = [
   { label: 'Customers & Suppliers', href: '/dashboard/customers-suppliers', icon: UsersRound },
 ];
 const preferenceItems = [
+  { label: 'Help', href: '/help', icon: CircleHelp },
   { label: 'Profile', href: '/dashboard/profile', icon: UserRound },
   { label: 'Settings', href: '/dashboard/settings', icon: Settings },
 ];
