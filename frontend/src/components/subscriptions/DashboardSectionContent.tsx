@@ -55,7 +55,14 @@ function DataTable({ headers, rows, onRowClick }: { headers: string[]; rows: (st
 }
 
 function DateFilterBar({ fromDate, toDate, setFromDate, setToDate, label = 'Reporting period' }: { fromDate: string; toDate: string; setFromDate: (value: string) => void; setToDate: (value: string) => void; label?: string }) {
-  const [preset, setPreset] = useState<DatePreset>(fromDate || toDate ? 'custom' : 'all');
+  const [preset, setPreset] = useState<DatePreset>(fromDate || toDate ? 'custom' : 'today');
+  useEffect(() => {
+    if (!fromDate && !toDate && preset === 'today') {
+      const dates = presetDates('today');
+      setFromDate(dates.from);
+      setToDate(dates.to);
+    }
+  }, [fromDate, toDate, preset, setFromDate, setToDate]);
   return <PresetDateFilter preset={preset} setPreset={(value) => { setPreset(value); const dates = presetDates(value); if (value !== 'custom') { setFromDate(dates.from); setToDate(dates.to); } }} label={label} customFrom={fromDate} customTo={toDate} setCustomFrom={setFromDate} setCustomTo={setToDate} />;
 }
 
