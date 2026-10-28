@@ -64,10 +64,10 @@ function DataTable({ headers, rows, onRowClick }: { headers: string[]; rows: (st
 }
 
 function DateFilterBar({ fromDate, toDate, setFromDate, setToDate, label = 'Reporting period' }: { fromDate: string; toDate: string; setFromDate: (value: string) => void; setToDate: (value: string) => void; label?: string }) {
-  const [preset, setPreset] = useState<DatePreset>(fromDate || toDate ? 'custom' : 'today');
+  const [preset, setPreset] = useState<DatePreset>(fromDate || toDate ? 'custom' : '30days');
   useEffect(() => {
-    if (!fromDate && !toDate && preset === 'today') {
-      const dates = presetDates('today');
+    if (!fromDate && !toDate && preset === '30days') {
+      const dates = presetDates('30days');
       setFromDate(dates.from);
       setToDate(dates.to);
     }
