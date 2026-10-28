@@ -187,34 +187,15 @@ class TransactionParseView(APIView):
             'known_accounts': [{'name': name, 'kind': kind} for name, kind in accounts],
             'description': text,
         }
-        nullable_number = {'type': ['number', 'null']}
-        nullable_string = {'type': ['string', 'null']}
-        schema = {
-            'type': 'object', 'additionalProperties': False,
-            'properties': {
-                'kind': {'type': 'string', 'enum': ['income', 'expense', 'transfer', 'unknown']},
-                'description': {'type': 'string'},
-                'total_amount': nullable_number,
-                'paid_amount': nullable_number,
-                'contact_name': nullable_string,
-                'account_name': nullable_string,
-                'transfer_account_name': nullable_string,
-                'due_date': nullable_string,
-                'payment_method': nullable_string,
-                'missing_details': {'type': 'array', 'items': {'type': 'string'}},
-                'note': {'type': 'string'},
-            },
-            'required': ['kind', 'description', 'total_amount', 'paid_amount', 'contact_name', 'account_name', 'transfer_account_name', 'due_date', 'payment_method', 'missing_details', 'note'],
-        }
         configured_model = os.environ.get('OPENAI_TRANSACTION_MODEL', '').strip()
         model = configured_model if configured_model in {'gpt-4o-mini', 'gpt-4.1-mini'} else 'gpt-4o-mini'
         body = json.dumps({
             'model': model,
             'input': [
-                {'role': 'system', 'content': 'You extract one small-business transaction into a reviewable draft. Never invent amounts, names, accounts, or dates. Distinguish a customer repayment from new income, a supplier payment from a new expense, and an internal transfer from both. For a sale or bill, total_amount is the full value and paid_amount is the amount paid now; if only one amount is given, use it for both. Use ISO YYYY-MM-DD only for dates explicitly stated or clearly relative to today.'},
+                {'role': 'system', 'content': 'You extract one small-business transaction into a reviewable draft. Never invent amounts, names, accounts, or dates. Distinguish a customer repayment from new income, a supplier payment from a new expense, and an internal transfer from both. For a sale or bill, total_amount is the full value and paid_amount is the amount paid now; if only one amount is given, use it for both. Use ISO YYYY-MM-DD only for dates explicitly stated or clearly relative to today. Return only valid JSON with exactly these keys: kind (income, expense, transfer, or unknown), description (string), total_amount (number or null), paid_amount (number or null), contact_name (string or null), account_name (string or null), transfer_account_name (string or null), due_date (string or null), payment_method (string or null), missing_details (array of strings), note (string).'},
                 {'role': 'user', 'content': json.dumps({**prompt, 'today': timezone.localdate().isoformat()})},
             ],
-            'text': {'format': {'type': 'json_schema', 'name': 'transaction_draft', 'strict': True, 'schema': schema}},
+            'text': {'format': {'type': 'json_object'}},
         }).encode('utf-8')
         req = urllib.request.Request('https://api.openai.com/v1/responses', data=body, method='POST', headers={'Authorization': f'Bearer {api_key}', 'Content-Type': 'application/json'})
         try:
@@ -238,8 +219,11 @@ class TransactionParseView(APIView):
             elif error.code == 400:
                 detail = 'The text-entry request was rejected' + (f': {provider_message}' if provider_message else '. Check the deployed OpenAI configuration and try again.')
             else:
-                detail = 'Text entry could not create a draft right now. Please try again or enter the transaction manually.'
-            return Response({'detail': detail, 'provider_code': provider_code} if provider_code else {'detail': detail}, status=status.HTTP_503_SERVICE_UNAVAILABLE if error.code in (401, 403, 404) else status.HTTP_400_BAD_REQUEST)
+                detail = 'Text entry provider error' + (f' ({error.code})' if error.code else '') + (f': {provider_message}' if provider_message else '. Please try again or enter the transaction manually.')
+            response_data = {'detail': detail, 'provider_status': error.code}
+            if provider_code:
+                response_data['provider_code'] = provider_code
+            return Response(response_data, status=status.HTTP_503_SERVICE_UNAVAILABLE if error.code in (401, 403, 404, 429) else status.HTTP_400_BAD_REQUEST)
         except (urllib.error.URLError, TimeoutError) as error:
             logger.error('OpenAI transaction parsing request failed: %s', error)
             return Response({'detail': 'Text entry is temporarily unavailable. Please try again or enter the transaction manually.'}, status=status.HTTP_502_BAD_GATEWAY)
@@ -251,6 +235,19 @@ class TransactionParseView(APIView):
             draft = json.loads(output_text)
         except (TypeError, json.JSONDecodeError):
             return Response({'detail': 'The transaction draft was incomplete. Please try again.'}, status=status.HTTP_502_BAD_GATEWAY)
+        draft = {
+            'kind': draft.get('kind', 'unknown'),
+            'description': draft.get('description', ''),
+            'total_amount': draft.get('total_amount'),
+            'paid_amount': draft.get('paid_amount'),
+            'contact_name': draft.get('contact_name'),
+            'account_name': draft.get('account_name'),
+            'transfer_account_name': draft.get('transfer_account_name'),
+            'due_date': draft.get('due_date'),
+            'payment_method': draft.get('payment_method'),
+            'missing_details': draft.get('missing_details') if isinstance(draft.get('missing_details'), list) else [],
+            'note': draft.get('note', ''),
+        }
         return Response({'data': draft})
 
 
