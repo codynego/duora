@@ -7,7 +7,7 @@ import urllib.request
 from collections import defaultdict
 
 from django.db import transaction
-from django.db.models import Count, Sum
+from django.db.models import Count, Min, Sum
 from django.db.models.functions import TruncMonth
 from django.utils import timezone
 from datetime import datetime, timedelta
@@ -735,9 +735,21 @@ class PerformanceView(APIView):
         today = timezone.localdate()
         first_this_month = today.replace(day=1)
         month_index = first_this_month.year * 12 + first_this_month.month - 1 - 11
-        first_month = first_this_month.replace(year=month_index // 12, month=month_index % 12 + 1)
-        rows = list(Transaction.objects.filter(business=business, is_voided=False, obligation__isnull=True,
+        default_first_month = first_this_month.replace(year=month_index // 12, month=month_index % 12 + 1)
+        first_transaction_date = Transaction.objects.filter(
+            business=business, is_voided=False, obligation__isnull=True,
+            kind__in=(Transaction.Kind.INCOME, Transaction.Kind.EXPENSE),
+        ).aggregate(first=Min('occurred_on'))['first']
+        first_obligation_date = Obligation.objects.filter(
+            business=business, affects_performance=True,
+        ).aggregate(first=Min('created_at'))['first']
+        first_month = min(
+            [date for date in (first_transaction_date, first_obligation_date.date() if first_obligation_date else None) if date]
+            or [default_first_month]
+        ).replace(day=1)
+        performance_transactions = Transaction.objects.filter(business=business, is_voided=False, obligation__isnull=True,
                     kind__in=(Transaction.Kind.INCOME, Transaction.Kind.EXPENSE), occurred_on__gte=first_month, occurred_on__lte=today)
+        rows = list(performance_transactions
                     .annotate(month=TruncMonth('occurred_on')).values('month', 'kind').annotate(total=Sum('amount')).order_by('month'))
         months = {}
         for row in rows:
@@ -754,7 +766,21 @@ class PerformanceView(APIView):
             months[key][field] += row['total'] or 0
         for month in months.values():
             month['net'] = month['income'] - month['expenses']
-        return Response({'data': sorted(months.values(), key=lambda row: row['month']), 'period_start': first_month, 'period_end': today,
+        daily = {}
+        daily_rows = list(performance_transactions.values('occurred_on', 'kind').annotate(total=Sum('amount')).order_by('occurred_on'))
+        for row in daily_rows:
+            key = row['occurred_on'].isoformat()
+            daily.setdefault(key, {'date': key, 'income': 0, 'expenses': 0})
+            daily[key]['income' if row['kind'] == Transaction.Kind.INCOME else 'expenses'] = row['total'] or 0
+        obligation_daily_rows = obligations.values('created_at__date', 'kind').annotate(total=Sum('amount')).order_by('created_at__date')
+        for row in obligation_daily_rows:
+            key = row['created_at__date'].isoformat()
+            daily.setdefault(key, {'date': key, 'income': 0, 'expenses': 0})
+            field = 'income' if row['kind'] == Obligation.Kind.RECEIVABLE else 'expenses'
+            daily[key][field] += row['total'] or 0
+        for day in daily.values():
+            day['net'] = day['income'] - day['expenses']
+        return Response({'data': sorted(months.values(), key=lambda row: row['month']), 'daily_data': sorted(daily.values(), key=lambda row: row['date']), 'period_start': first_month, 'period_end': today,
                          'basis': 'recorded_transactions_and_balances', 'is_complete_profit_and_loss': False})
 
 

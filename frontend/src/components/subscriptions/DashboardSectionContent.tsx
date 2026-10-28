@@ -119,6 +119,44 @@ function Pagination({ page, setPage, total, pageSize = 10 }: { page: number; set
   return <div className="flex items-center justify-between border-t border-[#111B33]/10 px-4 py-3"><span className="text-[10px] font-bold text-[#758096]">Page {page} of {pages} · {total} records</span><div className="flex gap-2"><button type="button" disabled={page === 1} onClick={() => setPage(Math.max(1, page - 1))} className="h-8 rounded-md border border-[#111B33]/10 px-3 text-[10px] font-black disabled:cursor-not-allowed disabled:opacity-40">Previous</button><button type="button" disabled={page === pages} onClick={() => setPage(Math.min(pages, page + 1))} className="h-8 rounded-md bg-[#111B33] px-3 text-[10px] font-black text-white disabled:cursor-not-allowed disabled:opacity-40">Next</button></div></div>;
 }
 
+type PerformanceInterval = 'daily' | 'weekly' | 'monthly';
+
+function PerformanceSection({ fromDate, toDate, setFromDate, setToDate, interval, setInterval, workspace, hasLiveRecords, summary, formatAmount }: {
+  fromDate: string; toDate: string; setFromDate: (value: string) => void; setToDate: (value: string) => void;
+  interval: PerformanceInterval; setInterval: (value: PerformanceInterval) => void; workspace: FinanceWorkspace | null;
+  hasLiveRecords: boolean; summary?: FinanceOverview['summary']; formatAmount: (amount: number) => string;
+}) {
+  const dailyRows = workspace?.performanceDaily ?? [];
+  const selectedRows = dailyRows.filter((item) => (!fromDate || item.date >= fromDate) && (!toDate || item.date <= toDate));
+  const totalIncome = fromDate || toDate ? selectedRows.reduce((sum, item) => sum + Number(item.income), 0) : (workspace?.performance ?? []).reduce((sum, item) => sum + Number(item.income), 0);
+  const totalExpenses = fromDate || toDate ? selectedRows.reduce((sum, item) => sum + Number(item.expenses), 0) : (workspace?.performance ?? []).reduce((sum, item) => sum + Number(item.expenses), 0);
+  const reportingLabel = fromDate || toDate ? (fromDate && toDate ? `${fromDate} to ${toDate}` : fromDate ? `From ${fromDate}` : `Through ${toDate}`) : 'All recorded history';
+  const chartRows = useMemo(() => {
+    if (!hasLiveRecords) return [];
+    if (!fromDate && !toDate) return workspace?.performance ?? [];
+    const grouped = new Map<string, { month: string; income: number; expenses: number; net: number }>();
+    for (const item of selectedRows) {
+      const date = new Date(`${item.date}T00:00:00`);
+      let key = item.date;
+      if (interval === 'weekly') {
+        const day = date.getDay() || 7;
+        date.setDate(date.getDate() - day + 1);
+        key = date.toLocaleDateString('en-CA');
+      } else if (interval === 'monthly') {
+        key = item.date.slice(0, 7);
+      }
+      const current = grouped.get(key) ?? { month: key, income: 0, expenses: 0, net: 0 };
+      current.income += Number(item.income); current.expenses += Number(item.expenses); current.net += Number(item.net);
+      grouped.set(key, current);
+    }
+    return Array.from(grouped.values()).sort((a, b) => a.month.localeCompare(b.month));
+  }, [fromDate, toDate, hasLiveRecords, interval, selectedRows, workspace?.performance]);
+  const chartMax = Math.max(1, ...chartRows.flatMap((item) => [Number(item.income), Number(item.expenses)]));
+  const selectedLabel = fromDate || toDate ? (interval === 'daily' ? 'Daily' : interval === 'weekly' ? 'Weekly' : 'Monthly') : 'Monthly';
+  const displayDate = (value: string) => new Date(`${value.length === 7 ? `${value}-01` : value}T00:00:00`).toLocaleDateString('en', { month: 'short', day: value.length === 10 ? 'numeric' : undefined });
+  return <div className="grid gap-6"><PageHeading eyebrow="Recorded results" title="Performance" description="Understand how your business is performing over time." sample={!hasLiveRecords} /><DateFilterBar fromDate={fromDate} toDate={toDate} setFromDate={setFromDate} setToDate={setToDate} label="Reporting period" /><div className="grid gap-3 sm:grid-cols-2"><Metric label="Recorded sales" value={formatAmount(totalIncome || (hasLiveRecords ? 0 : Number(summary?.income_this_month ?? 940_000)))} note={reportingLabel} /><Metric label="Recorded expenses" value={formatAmount(totalExpenses || (hasLiveRecords ? 0 : Number(summary?.expenses_this_month ?? 1_140_000)))} note={reportingLabel} /></div><section className="rounded-xl border border-[#111B33]/10 bg-white p-5"><div className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="text-lg font-black">Sales vs expenses</h2><p className="mt-1 text-xs text-[#758096]">{hasLiveRecords ? `${selectedLabel} recorded figures · ${reportingLabel}` : 'Illustrative monthly figures'}</p></div>{hasLiveRecords && <div className="flex items-center gap-1 rounded-lg border border-[#111B33]/10 p-1">{(['daily', 'weekly', 'monthly'] as PerformanceInterval[]).map((value) => <button key={value} type="button" onClick={() => setInterval(value)} className={`rounded-md px-2.5 py-1.5 text-[10px] font-black capitalize ${interval === value ? 'bg-[#111B33] text-white' : 'text-[#64708A]'}`}>{value}</button>)}</div>}{!hasLiveRecords && <SampleTag />}</div>{hasLiveRecords && chartRows.length ? <div className="mt-7 flex h-56 items-end gap-3 overflow-x-auto border-b border-l border-[#111B33]/10 px-3 pb-2">{chartRows.map((item) => <div key={item.month} className="flex h-full min-w-[30px] flex-1 flex-col items-center justify-end gap-2"><div className="flex h-full w-full items-end justify-center gap-1"><span className="w-3 rounded-t-sm bg-[#3157F5]" style={{ height: `${Number(item.income) / chartMax * 100}%` }} /><span className="w-3 rounded-t-sm bg-[#C9F45D]" style={{ height: `${Number(item.expenses) / chartMax * 100}%` }} /></div><span className="text-[9px] font-bold text-[#758096]">{displayDate(item.month)}</span></div>)}</div> : <div className="mt-7 grid h-56 grid-cols-3 items-end gap-3 border-b border-l border-[#111B33]/10 px-3 pb-2 sm:grid-cols-6" />}</section><div className="grid gap-4 sm:grid-cols-2"><article className="rounded-xl border border-[#111B33]/10 bg-white p-5"><p className="text-[10px] font-black uppercase tracking-[.1em] text-[#3157F5]">Profitability</p><strong className="mt-3 block text-2xl font-black">{formatAmount(totalIncome - totalExpenses)}</strong><p className="mt-1 text-xs text-[#758096]">Recorded sales less recorded expenses</p></article><article className="rounded-xl border border-[#111B33]/10 bg-white p-5"><p className="text-[10px] font-black uppercase tracking-[.1em] text-[#3157F5]">Cash flow</p><strong className="mt-3 block text-2xl font-black">{formatAmount(totalIncome - totalExpenses)}</strong><p className="mt-1 text-xs text-[#758096]">Money received less money paid in the selected period</p></article></div></div>;
+}
+
 export function TransactionDetailsModal({ businessId, transaction, accounts, formatAmount, onClose, onRefresh }: { businessId: string; transaction: PreviewTransaction; accounts: FinanceAccount[]; formatAmount: (amount: number) => string; onClose: () => void; onRefresh: () => Promise<void> }) {
   const [editing, setEditing] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -228,6 +266,7 @@ export default function DashboardSectionContent({ section, findingId, formatAmou
   const [kind, setKind] = useState('all');
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
+  const [performanceInterval, setPerformanceInterval] = useState<PerformanceInterval>('daily');
   const [transactionPreset, setTransactionPreset] = useState<DatePreset>('today');
   const [transactionCustomFrom, setTransactionCustomFrom] = useState('');
   const [transactionCustomTo, setTransactionCustomTo] = useState('');
@@ -333,21 +372,26 @@ export default function DashboardSectionContent({ section, findingId, formatAmou
   }
 
   if (section === 'performance') {
-    const performanceMonths = workspace?.performance.filter((item) => (!fromDate || item.month >= fromDate.slice(0, 7)) && (!toDate || item.month <= toDate.slice(0, 7))) ?? [];
-    const latest = performanceMonths[performanceMonths.length - 1] ?? workspace?.performance[workspace.performance.length - 1];
+    const performanceDays = workspace?.performanceDaily ?? [];
+    const selectedDailyRows = performanceDays.filter((item) => (!fromDate || item.date >= fromDate) && (!toDate || item.date <= toDate));
+    const performanceMonths = fromDate || toDate
+      ? [{ month: (fromDate || toDate).slice(0, 7), income: selectedDailyRows.reduce((sum, item) => sum + Number(item.income), 0), expenses: selectedDailyRows.reduce((sum, item) => sum + Number(item.expenses), 0), net: selectedDailyRows.reduce((sum, item) => sum + Number(item.net), 0) }]
+      : (workspace?.performance ?? []);
+    const latest = performanceMonths[performanceMonths.length - 1];
     const latestIndex = latest ? (workspace?.performance.findIndex((item) => item.month === latest.month) ?? -1) : -1;
     const previous = latestIndex > 0 ? workspace?.performance[latestIndex - 1] : undefined;
-    const selectedIncome = fromDate || toDate ? filteredAccountIncome : Number(latest?.income ?? (hasLiveRecords ? 0 : summary?.income_this_month ?? 940_000));
-    const selectedExpenses = fromDate || toDate ? filteredAccountExpenses : Number(latest?.expenses ?? (hasLiveRecords ? 0 : summary?.expenses_this_month ?? 1_140_000));
+    const selectedIncome = fromDate || toDate ? selectedDailyRows.reduce((sum, item) => sum + Number(item.income), 0) : Number(latest?.income ?? (hasLiveRecords ? 0 : summary?.income_this_month ?? 940_000));
+    const selectedExpenses = fromDate || toDate ? selectedDailyRows.reduce((sum, item) => sum + Number(item.expenses), 0) : Number(latest?.expenses ?? (hasLiveRecords ? 0 : summary?.expenses_this_month ?? 1_140_000));
     const selectedNet = selectedIncome - selectedExpenses;
     const percentageChange = (value: number, prior?: string) => {
       const previousValue = Number(prior ?? 0);
       return previousValue > 0 ? Math.round(((value - previousValue) / previousValue) * 100) : null;
     };
-    const incomeChange = percentageChange(selectedIncome, previous?.income);
-    const expenseChange = percentageChange(selectedExpenses, previous?.expenses);
+    const incomeChange = percentageChange(selectedIncome, previous?.income) ?? 0;
+    const expenseChange = percentageChange(selectedExpenses, previous?.expenses) ?? 0;
     const chartMax = Math.max(1, ...performanceMonths.flatMap((item) => [Number(item.income), Number(item.expenses)]));
     const reportingLabel = fromDate || toDate ? (fromDate && toDate ? fromDate + ' to ' + toDate : fromDate ? 'From ' + fromDate : 'Through ' + toDate) : (latest ? new Date(latest.month + '-01T00:00:00').toLocaleDateString('en', { month: 'long', year: 'numeric' }) : 'Current period');
+    return <PerformanceSection fromDate={fromDate} toDate={toDate} setFromDate={setFromDate} setToDate={setToDate} interval={performanceInterval} setInterval={setPerformanceInterval} workspace={workspace} hasLiveRecords={hasLiveRecords} summary={summary} formatAmount={formatAmount} />;
     return <div className="grid gap-6"><PageHeading eyebrow="Recorded results" title="Performance" description="Understand how your business is performing over time." sample={!hasLiveRecords} /><DateFilterBar fromDate={fromDate} toDate={toDate} setFromDate={setFromDate} setToDate={setToDate} label="Reporting period" /><div className="grid gap-3 sm:grid-cols-2"><Metric label="Recorded sales" value={formatAmount(selectedIncome)} note={incomeChange === null ? reportingLabel : (incomeChange >= 0 ? '↑ ' : '↓ ') + Math.abs(incomeChange) + '% vs previous period'} /><Metric label="Recorded expenses" value={formatAmount(selectedExpenses)} note={expenseChange === null ? reportingLabel : (expenseChange >= 0 ? '↑ ' : '↓ ') + Math.abs(expenseChange) + '% vs previous period'} /></div><section className="rounded-xl border border-[#111B33]/10 bg-white p-5"><div className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="text-lg font-black">Sales vs expenses</h2><p className="mt-1 text-xs text-[#758096]">{hasLiveRecords ? 'Monthly recorded figures · ' + reportingLabel : 'Illustrative monthly figures'}</p></div>{!hasLiveRecords && <SampleTag />}</div>{hasLiveRecords && performanceMonths.length ? <div className="mt-7 grid h-56 grid-cols-3 items-end gap-3 border-b border-l border-[#111B33]/10 px-3 pb-2 sm:grid-cols-6">{performanceMonths.slice(-6).map((item) => <div key={item.month} className="flex h-full flex-col items-center justify-end gap-2"><div className="flex h-full w-full items-end justify-center gap-1"><span className="w-3 rounded-t-sm bg-[#3157F5] sm:w-5" style={{ height: (Number(item.income) / chartMax * 100) + '%' }} /><span className="w-3 rounded-t-sm bg-[#C9F45D] sm:w-5" style={{ height: (Number(item.expenses) / chartMax * 100) + '%' }} /></div><span className="text-[9px] font-bold text-[#758096]">{new Date(item.month + '-01T00:00:00').toLocaleDateString('en', { month: 'short' })}</span></div>)}</div> : <div className="mt-7 grid h-56 grid-cols-3 items-end gap-3 border-b border-l border-[#111B33]/10 px-3 pb-2 sm:grid-cols-6">{[['May','53%','30%'],['Jun','65%','42%'],['Jul','48%','35%'],['Aug','78%','46%'],['Sep','60%','39%'],['Oct','88%','52%']].map(([month, sales, expenses]) => <div key={month} className="flex h-full flex-col items-center justify-end gap-2"><div className="flex h-full w-full items-end justify-center gap-1"><span className="w-3 rounded-t-sm bg-[#3157F5] sm:w-5" style={{ height: sales }} /><span className="w-3 rounded-t-sm bg-[#C9F45D] sm:w-5" style={{ height: expenses }} /></div><span className="text-[9px] font-bold text-[#758096]">{month}</span></div>)}</div>}<div className="mt-4 flex gap-4 text-[10px] font-bold text-[#64708A]"><span><b className="text-[#3157F5]">■</b> Sales</span><span><b className="text-[#557516]">■</b> Expenses</span></div></section><div className="grid gap-4 sm:grid-cols-2"><article className="rounded-xl border border-[#111B33]/10 bg-white p-5"><p className="text-[10px] font-black uppercase tracking-[.1em] text-[#3157F5]">Profitability</p><strong className="mt-3 block text-2xl font-black">{formatAmount(selectedNet)}</strong><p className="mt-1 text-xs text-[#758096]">Recorded sales less recorded expenses</p></article><article className="rounded-xl border border-[#111B33]/10 bg-white p-5"><p className="text-[10px] font-black uppercase tracking-[.1em] text-[#3157F5]">Cash flow</p><strong className="mt-3 block text-2xl font-black">{formatAmount(selectedNet)}</strong><p className="mt-1 text-xs text-[#758096]">Money received less money paid in the selected period</p></article></div></div>;
   }
 

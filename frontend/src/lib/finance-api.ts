@@ -61,11 +61,12 @@ export type FinanceInsight = {
 };
 
 export type FinancePerformanceMonth = { month: string; income: string; expenses: string; net: string };
+export type FinancePerformanceDay = { date: string; income: string; expenses: string; net: string };
 
 export type FinanceWorkspace = {
   accounts: FinanceAccount[]; contacts: FinanceContact[]; obligations: FinanceObligation[];
   insights: FinanceInsight[]; intelligenceSummary: { open_findings: number; potential_impact: string };
-  performance: FinancePerformanceMonth[];
+  performance: FinancePerformanceMonth[]; performanceDaily: FinancePerformanceDay[];
 };
 
 export type FinanceOverview = {
@@ -146,12 +147,12 @@ export async function getFinanceWorkspace(businessId: string): Promise<FinanceWo
     financeRequest<{ data: FinanceContact[] }>(`businesses/${businessId}/contacts/`),
     financeRequest<{ data: FinanceObligation[] }>(`businesses/${businessId}/obligations/`),
     financeRequest<{ data: FinanceInsight[]; summary?: { open_findings: number; potential_impact: string } }>(`businesses/${businessId}/intelligence/`),
-    financeRequest<{ data: FinancePerformanceMonth[] }>(`businesses/${businessId}/performance/`),
+    financeRequest<{ data: FinancePerformanceMonth[]; daily_data?: FinancePerformanceDay[] }>(`businesses/${businessId}/performance/`),
   ]);
   return { accounts: accounts.data, contacts: contacts.data, obligations: obligations.data,
     insights: insights.data,
     intelligenceSummary: insights.summary ?? { open_findings: insights.data.length, potential_impact: '0.00' },
-    performance: performance.data };
+    performance: performance.data, performanceDaily: performance.daily_data ?? [] };
 }
 
 export async function createFinanceContact(businessId: string, input: {
