@@ -42,7 +42,7 @@ export default function PublicGuidePage({ path, kicker, title, description, sect
     <div className="relative mx-auto max-w-6xl">
       <nav aria-label="Breadcrumb" className="text-[10px] font-bold text-[#758096]"><Link href="/" className="transition hover:text-[#3157F5]">Home</Link><span aria-hidden="true" className="mx-2">/</span><span className="text-[#3157F5]">{kicker}</span></nav>
       <header className="mt-10 grid gap-10 border-b border-[#111B33]/10 pb-14 lg:grid-cols-[1.22fr_.78fr] lg:items-end lg:pb-20">
-        <div><p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[.16em] text-[#3157F5]"><span className="h-0.5 w-7 bg-current" />{kicker}</p><h1 className="mt-6 max-w-4xl font-[Aptos_Display,Arial,sans-serif] text-5xl font-black leading-[.89] tracking-[-.08em] sm:text-7xl lg:text-[5.6rem]">{title}<span className="text-[#3157F5]">.</span></h1></div>
+        <div><p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[.16em] text-[#3157F5]"><span className="h-0.5 w-7 bg-current" />{kicker}</p><h1 className="mt-6 max-w-4xl font-[Aptos_Display,Arial,sans-serif] text-5xl font-black leading-[.93] tracking-[-.075em] sm:text-6xl lg:text-[clamp(4rem,5.2vw,4.9rem)]">{title}<span className="text-[#3157F5]">.</span></h1></div>
         <div className="border-l-2 border-[#C9F45D] pl-5"><p className="max-w-xl text-base font-medium leading-8 text-[#536078] sm:text-lg sm:leading-9">{description}</p></div>
       </header>
       <section className="mt-12 border-t border-[#111B33]/15 bg-white px-5 sm:px-8 lg:mt-16">
