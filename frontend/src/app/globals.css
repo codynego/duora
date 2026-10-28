@@ -4,6 +4,18 @@
 @tailwind components;
 @tailwind utilities;
 
+.dorah-logo { display: inline-flex; align-items: center; gap: .65rem; font-family: 'Aptos Display', 'Arial Narrow', 'Segoe UI', sans-serif; font-size: 1.35rem; font-weight: 800; letter-spacing: -.055em; }
+.dorah-logo-mark { position: relative; display: flex; width: 2.2rem; height: 2.2rem; align-items: flex-end; justify-content: center; gap: 2px; overflow: hidden; border-radius: .65rem; background: #3157F5; padding: .52rem; transform: rotate(-3deg); }
+.dorah-logo-mark span { width: 4px; border-radius: 3px 3px 0 0; background: #fff; }
+.dorah-logo-mark span:nth-child(1) { height: 45%; }
+.dorah-logo-mark span:nth-child(2) { height: 100%; }
+.dorah-logo-mark span:nth-child(3) { height: 70%; }
+.dorah-logo-light { color: #fff; }
+.dorah-logo-light .dorah-logo-mark { background: #C9F45D; }
+.dorah-logo-light .dorah-logo-mark span { background: #111B33; }
+.dorah-sidebar-brand .dorah-logo { gap: .7rem; font-size: 1.5rem; letter-spacing: -.065em; }
+.dorah-sidebar-brand .dorah-logo-mark { width: 2.35rem; height: 2.35rem; border: 1px solid rgba(201,244,93,.4); border-radius: .78rem; box-shadow: 0 8px 20px rgba(0,0,0,.18); }
+
 :root { --ink: #281D32; --coral: #7454A6; --rose: #C9B9E2; --canvas: #ffffff; }
 
 html { scroll-behavior: smooth; }
