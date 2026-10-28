@@ -1,0 +1,25 @@
+import type { Metadata } from 'next';
+import Link from 'next/link';
+import { notFound } from 'next/navigation';
+import { ArrowLeft, ArrowRight, Check, Lightbulb, ShieldCheck } from 'lucide-react';
+import { helpGuides } from '@/lib/help-guides';
+import { publicPageMetadata } from '@/lib/seo';
+
+export function generateStaticParams() { return helpGuides.map(({ slug }) => ({ slug })); }
+
+function getGuide(slug: string) { return helpGuides.find((guide) => guide.slug === slug); }
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const guide = getGuide(slug);
+  if (!guide) return {};
+  return publicPageMetadata({ title: guide.title, description: guide.summary, path: `/help/${guide.slug}` });
+}
+
+export default async function HelpGuidePage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const guide = getGuide(slug);
+  if (!guide) notFound();
+  const Icon = guide.icon;
+  return <main className="bg-[#F5F7FB] px-5 pb-20 pt-12 text-[#111B33] sm:px-8 sm:pb-28 sm:pt-16"><div className="mx-auto max-w-5xl"><nav aria-label="Breadcrumb" className="text-[10px] font-bold text-[#758096]"><Link href="/" className="hover:text-[#3157F5]">Home</Link><span aria-hidden="true" className="mx-2">/</span><Link href="/help" className="hover:text-[#3157F5]">How-to guides</Link><span aria-hidden="true" className="mx-2">/</span><span className="text-[#3157F5]">{guide.eyebrow}</span></nav><header className="mt-8 rounded-2xl border border-[#111B33]/[.08] bg-white p-5 sm:p-9"><Link href="/help" className="inline-flex items-center gap-2 text-xs font-black text-[#64708A] hover:text-[#3157F5]"><ArrowLeft className="h-4 w-4" />All how-to guides</Link><div className="mt-8 flex items-start gap-4"><span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-[#EEF1FF] text-[#3157F5]"><Icon className="h-6 w-6" /></span><div><p className="text-[10px] font-black uppercase tracking-[.14em] text-[#3157F5]">{guide.eyebrow}</p><h1 className="mt-3 max-w-3xl font-[Aptos_Display,Arial,sans-serif] text-4xl font-black leading-[.94] tracking-[-.07em] sm:text-6xl">{guide.title}<span className="text-[#3157F5]">.</span></h1></div></div><p className="mt-6 max-w-3xl text-base leading-7 text-[#64708A] sm:text-lg sm:leading-8">{guide.summary}</p></header><div className="mt-5 grid gap-5 lg:grid-cols-[1.15fr_.85fr]"><article className="rounded-2xl border border-[#111B33]/[.08] bg-white p-5 sm:p-8"><p className="text-[10px] font-black uppercase tracking-[.14em] text-[#3157F5]">Why this matters</p><h2 className="mt-3 text-2xl font-black tracking-[-.05em]">Give every record a clear meaning.</h2><p className="mt-3 text-sm leading-7 text-[#64708A]">{guide.why}</p><div className="mt-8 border-t border-[#111B33]/10 pt-6"><p className="text-[10px] font-black uppercase tracking-[.14em] text-[#3157F5]">How to do it</p><ol className="mt-4 grid gap-4">{guide.steps.map((step, index) => <li key={step} className="flex gap-3 text-sm leading-6 text-[#46516A]"><span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[#EEF1FF] text-[10px] font-black text-[#3157F5]">{index + 1}</span><span>{step}</span></li>)}</ol></div><div className="mt-8 flex gap-3 rounded-xl border border-[#C9F45D]/50 bg-[#F7FBEA] p-4 text-sm leading-6 text-[#52652A]"><Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-[#557516]" /><p><strong>Keep in mind: </strong>{guide.check}</p></div></article><aside className="grid content-start gap-5"><section className="rounded-2xl border border-[#3157F5]/15 bg-[#EEF1FF] p-5 sm:p-6"><p className="text-[10px] font-black uppercase tracking-[.14em] text-[#3157F5]">Example</p><p className="mt-3 text-sm leading-7 text-[#52628F]">{guide.example}</p></section><section className="rounded-2xl border border-[#E8D89F] bg-[#FFF9E8] p-5 sm:p-6"><p className="text-[10px] font-black uppercase tracking-[.14em] text-[#765A14]">Avoid these mistakes</p><ul className="mt-4 grid gap-3">{guide.mistakes.map((mistake) => <li key={mistake} className="flex gap-2 text-xs leading-5 text-[#786B4C]"><span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#D6A928]" />{mistake}</li>)}</ul></section><section className="rounded-2xl bg-[#111B33] p-5 text-white sm:p-6"><div className="flex items-center gap-2 text-[#C9F45D]"><ShieldCheck className="h-4 w-4" /><p className="text-[10px] font-black uppercase tracking-[.14em]">Ready to try it?</p></div><Link href={guide.actionHref} className="mt-4 inline-flex h-11 w-full items-center justify-between rounded-lg bg-[#C9F45D] px-4 text-xs font-black text-[#111B33]">{guide.actionLabel}<ArrowRight className="h-4 w-4" /></Link></section></aside></div><div className="mt-5 flex flex-wrap items-center justify-between gap-3"><Link href="/help" className="inline-flex items-center gap-2 text-xs font-black text-[#3157F5]"><ArrowLeft className="h-4 w-4" />Back to all guides</Link><Link href="/signup" className="inline-flex items-center gap-2 text-xs font-black text-[#3157F5]">Create a workspace <ArrowRight className="h-4 w-4" /></Link></div></div></main>;
+}
