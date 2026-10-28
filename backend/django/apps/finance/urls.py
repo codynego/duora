@@ -2,13 +2,14 @@ from django.urls import path
 
 from .views import (BusinessListView, BusinessOverviewView, BusinessSettingsView, ContactListView,
                     FinanceInsightsView, FinancialAccountListView, ObligationDetailView, ObligationListView,
-                    PerformanceView, TransactionDetailView, TransactionListView)
+                    PerformanceView, TransactionDetailView, TransactionListView, TransactionParseView)
 
 urlpatterns = [
     path('businesses/', BusinessListView.as_view()),
     path('businesses/<uuid:business_id>/', BusinessSettingsView.as_view()),
     path('businesses/<uuid:business_id>/overview/', BusinessOverviewView.as_view()),
     path('businesses/<uuid:business_id>/transactions/', TransactionListView.as_view()),
+    path('businesses/<uuid:business_id>/transactions/parse/', TransactionParseView.as_view()),
     path('businesses/<uuid:business_id>/transactions/<uuid:transaction_id>/', TransactionDetailView.as_view()),
     path('businesses/<uuid:business_id>/accounts/', FinancialAccountListView.as_view()),
     path('businesses/<uuid:business_id>/contacts/', ContactListView.as_view()),

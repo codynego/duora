@@ -1,4 +1,7 @@
 import json
+import os
+import urllib.error
+import urllib.request
 
 from django.db import transaction
 from django.db.models import Count, Sum
@@ -157,6 +160,67 @@ class TransactionListView(APIView):
             obligation.status = Obligation.Status.SETTLED if obligation.balance == 0 else Obligation.Status.PARTIAL
             obligation.save(update_fields=('balance', 'status', 'updated_at'))
         return Response({'data': TransactionSerializer(saved_transaction).data}, status=status.HTTP_201_CREATED)
+
+
+class TransactionParseView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, business_id):
+        business = owned_business(request, business_id)
+        if not business:
+            return Response({'detail': 'Business not found.'}, status=status.HTTP_404_NOT_FOUND)
+        text = str(request.data.get('text') or '').strip()
+        if not text or len(text) > 2000:
+            return Response({'detail': 'Describe one transaction in 2,000 characters or less.'}, status=status.HTTP_400_BAD_REQUEST)
+        api_key = os.environ.get('OPENAI_API_KEY', '').strip()
+        if not api_key:
+            return Response({'detail': 'Text entry is not configured yet. Add OPENAI_API_KEY to the backend environment.'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+        contacts = list(Contact.objects.filter(business=business).values_list('name', 'kind'))
+        accounts = list(FinancialAccount.objects.filter(business=business, is_active=True).values_list('name', 'kind'))
+        prompt = {
+            'business_currency': business.currency,
+            'known_contacts': [{'name': name, 'kind': kind} for name, kind in contacts],
+            'known_accounts': [{'name': name, 'kind': kind} for name, kind in accounts],
+            'description': text,
+        }
+        schema = {
+            'type': 'object', 'additionalProperties': False,
+            'properties': {
+                'kind': {'type': 'string', 'enum': ['income', 'expense', 'transfer', 'unknown']},
+                'description': {'type': 'string'},
+                'total_amount': {'type': ['number', 'null']},
+                'paid_amount': {'type': ['number', 'null']},
+                'contact_name': {'type': ['string', 'null']},
+                'account_name': {'type': ['string', 'null']},
+                'transfer_account_name': {'type': ['string', 'null']},
+                'due_date': {'type': ['string', 'null']},
+                'payment_method': {'type': ['string', 'null']},
+                'missing_details': {'type': 'array', 'items': {'type': 'string'}},
+                'note': {'type': 'string'},
+            },
+            'required': ['kind', 'description', 'total_amount', 'paid_amount', 'contact_name', 'account_name', 'transfer_account_name', 'due_date', 'payment_method', 'missing_details', 'note'],
+        }
+        body = json.dumps({
+            'model': os.environ.get('OPENAI_TRANSACTION_MODEL', 'gpt-5-mini'),
+            'input': [
+                {'role': 'system', 'content': 'You extract one small-business transaction into a reviewable draft. Never invent amounts, names, accounts, or dates. Distinguish a customer repayment from new income, a supplier payment from a new expense, and an internal transfer from both. For a sale or bill, total_amount is the full value and paid_amount is the amount paid now; if only one amount is given, use it for both. Use ISO YYYY-MM-DD only for dates explicitly stated or clearly relative to today.'},
+                {'role': 'user', 'content': json.dumps(prompt)},
+            ],
+            'text': {'format': {'type': 'json_schema', 'name': 'transaction_draft', 'strict': True, 'schema': schema}},
+        }).encode('utf-8')
+        req = urllib.request.Request('https://api.openai.com/v1/responses', data=body, method='POST', headers={'Authorization': f'Bearer {api_key}', 'Content-Type': 'application/json'})
+        try:
+            with urllib.request.urlopen(req, timeout=30) as response:
+                payload = json.loads(response.read().decode('utf-8'))
+        except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError, json.JSONDecodeError):
+            return Response({'detail': 'We could not understand that transaction. Check the wording and try again.'}, status=status.HTTP_502_BAD_GATEWAY)
+        output_text = payload.get('output_text', '')
+        try:
+            draft = json.loads(output_text)
+        except (TypeError, json.JSONDecodeError):
+            return Response({'detail': 'The transaction draft was incomplete. Please try again.'}, status=status.HTTP_502_BAD_GATEWAY)
+        return Response({'data': draft})
 
 
 class TransactionDetailView(APIView):

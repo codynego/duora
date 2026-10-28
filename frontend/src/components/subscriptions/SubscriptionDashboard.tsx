@@ -1,12 +1,13 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import DorahLogo from '@/components/DorahLogo';
 import { type FormEvent, useEffect, useState } from 'react';
 import { ArrowDownLeft, ArrowRight, ArrowUpRight, BarChart3, BellRing, Check, ChevronDown, CircleAlert, CircleDollarSign, LayoutDashboard, MessageCircle, MoreHorizontal, Plus, ReceiptText, Settings, ShieldCheck, Sparkles, UserRound, UsersRound, WalletCards, X } from 'lucide-react';
 import { useCurrentUser } from '@/lib/current-user';
 import { getFinancialOnboardingProfile, type FinancialOnboardingProfile } from '@/lib/financial-onboarding';
-import { createFinanceContact, createFinanceObligation, createFinanceTransaction, getFinanceWorkspace, type FinanceOverview, type FinanceWorkspace, getBusinesses, getFinanceOverview } from '@/lib/finance-api';
+import { createFinanceContact, createFinanceObligation, createFinanceTransaction, getFinanceWorkspace, parseFinanceTransaction, type FinanceOverview, type FinanceWorkspace, type TransactionDraft, getBusinesses, getFinanceOverview } from '@/lib/finance-api';
 import DashboardSectionContent, { TransactionDetailsModal, type DashboardSection } from './DashboardSectionContent';
 import FinanceQuickCreate from './FinanceQuickCreate';
 
@@ -33,16 +34,16 @@ const initialTransactions: PreviewTransaction[] = [
   { date: 'Oct 24', dateKey: '2026-10-24', title: 'Walk-in sales', detail: 'Sales received', amount: 245_000, direction: 'in' },
 ];
 
-function Brand() {
-  return <Link href="/" className="inline-flex items-center gap-2 font-[Aptos_Display,Arial,sans-serif] text-xl font-black tracking-[-.06em]"><span className="flex h-9 w-9 items-end justify-center gap-0.5 rounded-[10px] bg-[#3157F5] p-2 -rotate-3"><i className="h-2 w-1 rounded-t bg-white" /><i className="h-5 w-1 rounded-t bg-white" /><i className="h-3.5 w-1 rounded-t bg-white" /></span>Dorah</Link>;
-}
-
 function SampleTag() {
   return <span className="inline-flex items-center gap-1 rounded-full border border-[#3157F5]/15 bg-[#EEF1FF] px-2 py-1 text-[9px] font-black uppercase tracking-[.08em] text-[#3157F5]">Sample data</span>;
 }
 
+function Brand() {
+  return <DorahLogo />;
+}
+
 function DashboardLoading() {
-  return <main className="min-h-screen bg-[#F5F7FB] p-5 text-[#111B33] sm:p-8"><Brand /><div className="mx-auto mt-16 grid max-w-6xl gap-5"><div className="h-3 w-36 animate-pulse rounded-full bg-[#DDE4F5]" /><div className="h-16 w-full max-w-2xl animate-pulse rounded-xl bg-[#E7EBF5]" /><div className="grid gap-4 sm:grid-cols-3"><div className="h-32 animate-pulse rounded-xl bg-white" /><div className="h-32 animate-pulse rounded-xl bg-white" /><div className="h-32 animate-pulse rounded-xl bg-white" /></div><p className="text-xs font-bold text-[#758096]">Loading your saved business records…</p></div></main>;
+  return <main className="min-h-screen bg-[#F5F7FB] p-5 text-[#111B33] sm:p-8"><DorahLogo /><div className="mx-auto mt-16 grid max-w-6xl gap-5"><div className="h-3 w-36 animate-pulse rounded-full bg-[#DDE4F5]" /><div className="h-16 w-full max-w-2xl animate-pulse rounded-xl bg-[#E7EBF5]" /><div className="grid gap-4 sm:grid-cols-3"><div className="h-32 animate-pulse rounded-xl bg-white" /><div className="h-32 animate-pulse rounded-xl bg-white" /><div className="h-32 animate-pulse rounded-xl bg-white" /></div><p className="text-xs font-bold text-[#758096]">Loading your saved business records…</p></div></main>;
 }
 
 function FinanceAssistantCard({ financeOverview, workspace, formatAmount }: { financeOverview: FinanceOverview | null; workspace: FinanceWorkspace | null; formatAmount: (amount: number) => string }) {
@@ -55,6 +56,7 @@ function FinanceAssistantCard({ financeOverview, workspace, formatAmount }: { fi
 }
 
 export default function SubscriptionDashboard() {
+  const router = useRouter();
   const { user, ready, setUser } = useCurrentUser();
   const pathname = usePathname();
   const activeNav = [...workspaceItems, ...preferenceItems].find((item) => item.href === pathname)?.label ?? 'Overview';
@@ -78,6 +80,11 @@ export default function SubscriptionDashboard() {
   const [newContactEmail, setNewContactEmail] = useState('');
   const [selectedOverviewTransaction, setSelectedOverviewTransaction] = useState<PreviewTransaction | null>(null);
   const [selectedChecklistIndex, setSelectedChecklistIndex] = useState(0);
+  const [entryMode, setEntryMode] = useState<'manual' | 'describe'>('manual');
+  const [describeText, setDescribeText] = useState('');
+  const [transactionDraft, setTransactionDraft] = useState<TransactionDraft | null>(null);
+  const [parsingTransaction, setParsingTransaction] = useState(false);
+  const [transactionFormRevision, setTransactionFormRevision] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -101,6 +108,14 @@ export default function SubscriptionDashboard() {
     void loadWorkspace();
     return () => { cancelled = true; };
   }, []);
+
+  useEffect(() => {
+    if (!recordOpen) {
+      setEntryMode('manual');
+      setDescribeText('');
+      setTransactionDraft(null);
+    }
+  }, [recordOpen]);
 
   const currency = financeOverview?.business.currency ?? onboardingProfile?.currency ?? 'NGN';
   const dashboardTransactions = financeOverview?.transactions.length
@@ -168,6 +183,30 @@ export default function SubscriptionDashboard() {
     setFinanceWorkspace(workspace);
   }
 
+  async function parseTransactionDescription() {
+    if (!businessId || !describeText.trim()) return;
+    setParsingTransaction(true);
+    setRecordNotice('');
+    try {
+      const draft = await parseFinanceTransaction(businessId, describeText.trim());
+      setTransactionDraft(draft);
+    } catch (error) {
+      setRecordNotice(error instanceof Error ? error.message : 'Could not understand that transaction.');
+    } finally {
+      setParsingTransaction(false);
+    }
+  }
+
+  function useTransactionDraft() {
+    if (!transactionDraft) return;
+    if (transactionDraft.kind === 'income' || transactionDraft.kind === 'expense' || transactionDraft.kind === 'transfer') setTransactionKind(transactionDraft.kind);
+    const matchedContact = transactionDraft.contact_name ? financeWorkspace?.contacts.find((contact) => contact.name.toLowerCase() === transactionDraft.contact_name?.toLowerCase()) : undefined;
+    setContactSearch(transactionDraft.contact_name ?? '');
+    setSelectedContactId(matchedContact?.id ?? '');
+    setTransactionFormRevision((revision) => revision + 1);
+    setEntryMode('manual');
+  }
+
   async function addPreviewTransaction(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
@@ -178,6 +217,7 @@ export default function SubscriptionDashboard() {
     const numericAmount = Number(amount || paidNow);
     const numericTotalAmount = Number(totalAmount);
     const numericPaidNow = Number(paidNow);
+    const dueDate = String(form.get('due_date') ?? transactionDraft?.due_date ?? '').trim() || null;
     const now = new Date();
     const occurredOn = now.toLocaleDateString('en-CA');
     const occurredAtInput = now.toTimeString().slice(0, 5);
@@ -235,6 +275,7 @@ export default function SubscriptionDashboard() {
           kind: kind === 'income' ? 'receivable' : 'payable',
           description: name,
           amount: String(numericTotalAmount),
+          due_date: dueDate,
           affects_performance: true,
         });
         createdObligationId = createdObligation.id;
@@ -266,6 +307,7 @@ export default function SubscriptionDashboard() {
       setNewContactName('');
       setNewContactPhone('');
       setNewContactEmail('');
+      router.push('/dashboard/transactions');
     } catch (error) {
       setRecordNotice(error instanceof Error ? error.message : 'Could not save this transaction.');
     } finally {
@@ -338,13 +380,13 @@ export default function SubscriptionDashboard() {
 
     {selectedOverviewTransaction && <TransactionDetailsModal businessId={businessId} transaction={selectedOverviewTransaction} accounts={financeWorkspace?.accounts ?? []} formatAmount={formatAmount} onClose={() => setSelectedOverviewTransaction(null)} onRefresh={reloadFinanceData} />}
 
-    {recordOpen && <div className="fixed inset-0 z-[100] flex justify-end overflow-y-auto bg-[#0A1125]/60 backdrop-blur-sm" onMouseDown={(event) => { if (event.target === event.currentTarget && !savingTransaction) { setRecordOpen(false); setSelectedObligationId(''); setSelectedContactId(''); setTransactionKind('income'); } }}><section role="dialog" aria-modal="true" aria-labelledby="record-transaction-title" className="min-h-full w-full max-w-lg overflow-y-auto overscroll-contain border-l border-[#111B33]/15 bg-white shadow-2xl sm:rounded-l-2xl"><header className="flex items-start justify-between border-b border-[#111B33]/10 p-5"><div><p className="text-[10px] font-black uppercase tracking-[.14em] text-[#3157F5]">{businessId ? 'Business record' : 'Preview entry'}</p><h2 id="record-transaction-title" className="mt-2 text-2xl font-black tracking-[-.05em]">Record a sale or expense</h2></div><button type="button" onClick={() => { setRecordOpen(false); setSelectedObligationId(''); setSelectedContactId(''); setTransactionKind('income'); }} aria-label="Close" className="grid h-9 w-9 place-items-center rounded-lg bg-[#F2F4F9]"><X className="h-4 w-4" /></button></header><form onSubmit={addPreviewTransaction} className="grid gap-4 p-4 sm:p-5">
+    {recordOpen && <div className="fixed inset-0 z-[100] flex justify-end overflow-y-auto bg-[#0A1125]/60 backdrop-blur-sm" onMouseDown={(event) => { if (event.target === event.currentTarget && !savingTransaction) { setRecordOpen(false); setSelectedObligationId(''); setSelectedContactId(''); setTransactionKind('income'); } }}><section role="dialog" aria-modal="true" aria-labelledby="record-transaction-title" className="min-h-full w-full max-w-lg overflow-y-auto overscroll-contain border-l border-[#111B33]/15 bg-white shadow-2xl sm:rounded-l-2xl"><header className="flex items-start justify-between border-b border-[#111B33]/10 p-5"><div><p className="text-[10px] font-black uppercase tracking-[.14em] text-[#3157F5]">{businessId ? 'Business record' : 'Preview entry'}</p><h2 id="record-transaction-title" className="mt-2 text-2xl font-black tracking-[-.05em]">Record a sale or expense</h2></div><button type="button" onClick={() => { setRecordOpen(false); setSelectedObligationId(''); setSelectedContactId(''); setTransactionKind('income'); }} aria-label="Close" className="grid h-9 w-9 place-items-center rounded-lg bg-[#F2F4F9]"><X className="h-4 w-4" /></button></header><div className="flex gap-2 border-b border-[#111B33]/10 p-4 sm:px-5"><button type="button" onClick={() => setEntryMode('manual')} className={`flex-1 rounded-lg px-3 py-2.5 text-xs font-black ${entryMode === 'manual' ? 'bg-[#3157F5] text-white' : 'bg-[#F2F4F9] text-[#64708A]'}`}>Enter manually</button><button type="button" onClick={() => setEntryMode('describe')} className={`flex-1 rounded-lg px-3 py-2.5 text-xs font-black ${entryMode === 'describe' ? 'bg-[#3157F5] text-white' : 'bg-[#F2F4F9] text-[#64708A]'}`}>Describe transaction</button></div>{entryMode === 'describe' && <div className="grid gap-3 p-4 sm:p-5"><label className="grid gap-1.5 text-xs font-bold text-[#536078]">What happened?<textarea value={describeText} onChange={(event) => setDescribeText(event.target.value)} rows={5} maxLength={2000} placeholder="I sold 10 bags of rice to Emeka for ₦180,000. He paid ₦100,000 cash and will pay the balance next week." className="resize-none rounded-lg border border-[#111B33]/15 p-3 text-sm font-normal outline-none focus:border-[#3157F5] focus:ring-4 focus:ring-[#3157F5]/10" /></label>{transactionDraft && <div className="rounded-xl border border-[#3157F5]/20 bg-[#F7F8FF] p-4"><p className="text-[10px] font-black uppercase tracking-[.12em] text-[#3157F5]">Review extracted transaction</p><strong className="mt-2 block text-base">{transactionDraft.description || 'Untitled transaction'}</strong><div className="mt-3 grid grid-cols-2 gap-3 text-xs"><span><b className="block text-[10px] text-[#758096]">Type</b>{transactionDraft.kind}</span><span><b className="block text-[10px] text-[#758096]">Customer / supplier</b>{transactionDraft.contact_name || 'Not identified'}</span><span><b className="block text-[10px] text-[#758096]">Total</b>{transactionDraft.total_amount == null ? 'Not identified' : formatAmount(transactionDraft.total_amount)}</span><span><b className="block text-[10px] text-[#758096]">Paid now</b>{transactionDraft.paid_amount == null ? 'Not identified' : formatAmount(transactionDraft.paid_amount)}</span></div>{transactionDraft.missing_details.length > 0 && <p className="mt-3 text-[10px] leading-4 text-[#8E3329]">Still confirm: {transactionDraft.missing_details.join(', ')}.</p>}<p className="mt-3 text-[10px] leading-4 text-[#64708A]">{transactionDraft.note}</p><button type="button" onClick={useTransactionDraft} className="mt-4 h-10 rounded-lg bg-[#3157F5] px-4 text-xs font-black text-white">Use this draft in the form</button></div>}<button type="button" disabled={parsingTransaction || !describeText.trim() || !businessId} onClick={() => void parseTransactionDescription()} className="h-10 rounded-lg bg-[#111B33] px-4 text-xs font-black text-white disabled:opacity-50">{parsingTransaction ? 'Understanding…' : 'Extract transaction details'}</button><p className="text-[10px] leading-4 text-[#758096]">Dorah will suggest fields. Review every detail before saving.</p></div>}{entryMode === 'manual' && <form key={transactionFormRevision} onSubmit={addPreviewTransaction} className="grid gap-4 p-4 sm:p-5">
       {selectedContactId && (financeWorkspace?.obligations.filter((item) => item.contact === selectedContactId && item.status !== 'settled').length ?? 0) > 0 && <label className="grid gap-1.5 text-xs font-bold text-[#536078]">Apply payment to an outstanding balance<select name="obligation" value={selectedObligationId} onChange={(event) => { const value = event.target.value; setSelectedObligationId(value); const selected = financeWorkspace?.obligations.find((item) => item.id === value); if (selected) setTransactionKind(selected.kind === 'receivable' ? 'income' : 'expense'); }} className="h-11 rounded-lg border border-[#111B33]/15 bg-white px-3 text-sm font-normal text-[#111B33]"><option value="">No outstanding balance</option>{financeWorkspace?.obligations.filter((item) => item.contact === selectedContactId && item.status !== 'settled').map((item) => <option key={item.id} value={item.id}>{item.contact_name} · {item.description} · {formatAmount(Number(item.balance))} remaining</option>)}</select><span className="text-[10px] font-normal text-[#758096]">Partial payments are allowed and update the remaining balance.</span></label>}
-{selectedContactId && !(financeWorkspace?.obligations ?? []).some((item) => item.contact === selectedContactId && item.status !== 'settled') && <p className="rounded-lg border border-[#111B33]/10 bg-[#F8F9FC] p-3 text-[10px] leading-4 text-[#64708A]">This contact has no recorded outstanding balances. You can still record money received.</p>}      <label className="grid gap-1.5 text-xs font-bold text-[#536078]">Description<input name="name" required maxLength={120} placeholder={selectedObligationId ? 'e.g. Part payment' : 'e.g. Customer payment'} className="h-11 rounded-lg border border-[#111B33]/15 px-3 text-sm font-normal text-[#111B33] outline-none focus:border-[#3157F5] focus:ring-4 focus:ring-[#3157F5]/10" /></label>
+      {selectedContactId && !(financeWorkspace?.obligations ?? []).some((item) => item.contact === selectedContactId && item.status !== 'settled') && <p className="rounded-lg border border-[#111B33]/10 bg-[#F8F9FC] p-3 text-[10px] leading-4 text-[#64708A]">This contact has no recorded outstanding balances. You can still record money received.</p>}      <label className="grid gap-1.5 text-xs font-bold text-[#536078]">Description<input name="name" required maxLength={120} defaultValue={transactionDraft?.description ?? ''} placeholder={selectedObligationId ? 'e.g. Part payment' : 'e.g. Customer payment'} className="h-11 rounded-lg border border-[#111B33]/15 px-3 text-sm font-normal text-[#111B33] outline-none focus:border-[#3157F5] focus:ring-4 focus:ring-[#3157F5]/10" /></label>
       <p className="rounded-lg border border-[#111B33]/10 bg-[#F8F9FC] px-3 py-2 text-[10px] leading-4 text-[#64708A]">Date and time are recorded automatically when you save this movement.</p>
-      <div className="grid grid-cols-2 gap-3"><label className="grid gap-1.5 text-xs font-bold text-[#536078]">Type{selectedObligationId ? <span className="flex h-11 items-center rounded-lg bg-[#F5F7FB] px-3 text-sm font-normal text-[#758096]">{transactionKind === 'income' ? 'Customer payment received' : 'Supplier bill payment'}</span> : <div className="grid grid-cols-3 gap-1 rounded-lg bg-[#F2F4F9] p-1"><button type="button" onClick={() => setTransactionKind('income')} className={`min-h-10 rounded-md px-2 text-[10px] font-black transition ${transactionKind === 'income' ? 'bg-white text-[#3157F5] shadow-sm' : 'text-[#64708A]'}`}>Money received</button><button type="button" onClick={() => setTransactionKind('expense')} className={`min-h-10 rounded-md px-2 text-[10px] font-black transition ${transactionKind === 'expense' ? 'bg-white text-[#3157F5] shadow-sm' : 'text-[#64708A]'}`}>Money paid</button><button type="button" onClick={() => setTransactionKind('transfer')} className={`min-h-10 rounded-md px-2 text-[10px] font-black transition ${transactionKind === 'transfer' ? 'bg-white text-[#3157F5] shadow-sm' : 'text-[#64708A]'}`}>Transfer</button></div>}</label>{!selectedObligationId && transactionKind !== 'transfer' && <label className="grid gap-1.5 text-xs font-bold text-[#536078]">Total amount<input name="total_amount" type="number" min="0.01" step="0.01" required placeholder="0.00" className="h-11 rounded-lg border border-[#111B33]/15 px-3 text-sm font-normal text-[#111B33] outline-none focus:border-[#3157F5] focus:ring-4 focus:ring-[#3157F5]/10" /></label>}<label className="grid gap-1.5 text-xs font-bold text-[#536078]">{!selectedObligationId && transactionKind !== 'transfer' ? "Paid now" : "Amount"}<input name="amount" type="number" min={selectedObligationId ? '0.01' : '0'} step="0.01" required placeholder="0.00" className="h-11 rounded-lg border border-[#111B33]/15 px-3 text-sm font-normal text-[#111B33] outline-none focus:border-[#3157F5] focus:ring-4 focus:ring-[#3157F5]/10" /></label></div>
+      <div className="grid grid-cols-2 gap-3"><label className="grid gap-1.5 text-xs font-bold text-[#536078]">Type{selectedObligationId ? <span className="flex h-11 items-center rounded-lg bg-[#F5F7FB] px-3 text-sm font-normal text-[#758096]">{transactionKind === 'income' ? 'Customer payment received' : 'Supplier bill payment'}</span> : <div className="grid grid-cols-3 gap-1 rounded-lg bg-[#F2F4F9] p-1"><button type="button" onClick={() => setTransactionKind('income')} className={`min-h-10 rounded-md px-2 text-[10px] font-black transition ${transactionKind === 'income' ? 'bg-white text-[#3157F5] shadow-sm' : 'text-[#64708A]'}`}>Money received</button><button type="button" onClick={() => setTransactionKind('expense')} className={`min-h-10 rounded-md px-2 text-[10px] font-black transition ${transactionKind === 'expense' ? 'bg-white text-[#3157F5] shadow-sm' : 'text-[#64708A]'}`}>Money paid</button><button type="button" onClick={() => setTransactionKind('transfer')} className={`min-h-10 rounded-md px-2 text-[10px] font-black transition ${transactionKind === 'transfer' ? 'bg-white text-[#3157F5] shadow-sm' : 'text-[#64708A]'}`}>Transfer</button></div>}</label>{!selectedObligationId && transactionKind !== 'transfer' && <label className="grid gap-1.5 text-xs font-bold text-[#536078]">Total amount<input name="total_amount" type="number" min="0.01" step="0.01" defaultValue={transactionDraft?.total_amount ?? ''} required placeholder="0.00" className="h-11 rounded-lg border border-[#111B33]/15 px-3 text-sm font-normal text-[#111B33] outline-none focus:border-[#3157F5] focus:ring-4 focus:ring-[#3157F5]/10" /></label>}<label className="grid gap-1.5 text-xs font-bold text-[#536078]">{!selectedObligationId && transactionKind !== 'transfer' ? "Paid now" : "Amount"}<input name="amount" type="number" min={selectedObligationId ? '0.01' : '0'} step="0.01" defaultValue={transactionDraft?.paid_amount ?? ''} required placeholder="0.00" className="h-11 rounded-lg border border-[#111B33]/15 px-3 text-sm font-normal text-[#111B33] outline-none focus:border-[#3157F5] focus:ring-4 focus:ring-[#3157F5]/10" /></label></div>
       {financeWorkspace?.accounts.length ? <><label className="grid gap-1.5 text-xs font-bold text-[#536078]">{transactionKind === 'transfer' ? 'Money leaves this account' : 'Account'}<select name="account" required={transactionKind === 'transfer'} defaultValue="" className="h-11 rounded-lg border border-[#111B33]/15 bg-white px-3 text-sm font-normal text-[#111B33]"><option value="">{transactionKind === 'transfer' ? 'Choose source account' : 'No account selected'}</option>{financeWorkspace.accounts.map((account) => <option key={account.id} value={account.id}>{account.name}</option>)}</select></label>{transactionKind === 'transfer' && <label className="grid gap-1.5 text-xs font-bold text-[#536078]">Money goes to<select name="transfer_account" required defaultValue="" className="h-11 rounded-lg border border-[#111B33]/15 bg-white px-3 text-sm font-normal text-[#111B33]"><option value="">Choose destination account</option>{financeWorkspace.accounts.map((account) => <option key={account.id} value={account.id}>{account.name}</option>)}</select></label>}</> : transactionKind === 'transfer' ? <p role="alert" className="text-xs text-[#A4362B]">Add two accounts before recording a transfer.</p> : null}
       {!selectedObligationId && transactionKind !== 'transfer' && <div className="grid gap-2"><label className="grid gap-1.5 text-xs font-bold text-[#536078]">Customer or supplier<input name="contact_search" value={contactSearch} onChange={(event) => { setContactSearch(event.target.value); setSelectedContactId(''); setSelectedObligationId(''); const value = event.target.value.trim().toLowerCase(); const expectedKind = transactionKind === 'income' ? 'customer' : 'supplier'; const found = financeWorkspace?.contacts.find((contact) => contact.kind === expectedKind && (contact.name.toLowerCase() === value || contact.phone?.toLowerCase() === value)); if (found) { setNewContactName(found.name); setNewContactPhone(found.phone || ''); setNewContactEmail(found.email || ''); } else if (/^[+\d][\d\s()\-]{5,}$/.test(event.target.value.trim())) { setNewContactName(''); setNewContactPhone(event.target.value.trim()); setNewContactEmail(''); } else { setNewContactName(event.target.value); setNewContactPhone(''); setNewContactEmail(''); } }} list="transaction-contacts" placeholder="Search by name or phone (optional)" className="h-11 rounded-lg border border-[#111B33]/15 px-3 text-sm font-normal text-[#111B33] outline-none focus:border-[#3157F5] focus:ring-4 focus:ring-[#3157F5]/10" /><datalist id="transaction-contacts">{(financeWorkspace?.contacts ?? []).filter((contact) => contact.kind === (transactionKind === 'income' ? 'customer' : 'supplier')).flatMap((contact) => [<option key={`${contact.id}-name`} value={contact.name}>{contact.phone || contact.kind}</option>, ...(contact.phone ? [<option key={`${contact.id}-phone`} value={contact.phone}>{contact.name}</option>] : [])])}</datalist>{contactSearch.trim() && !selectedContactId && <div className="grid max-h-40 gap-1 overflow-y-auto rounded-lg border border-[#111B33]/10 bg-white p-1 shadow-sm">{(financeWorkspace?.contacts ?? []).filter((contact) => { const query = contactSearch.trim().toLowerCase(); return contact.kind === (transactionKind === 'income' ? 'customer' : 'supplier') && (contact.name.toLowerCase().includes(query) || contact.phone?.toLowerCase().includes(query)); }).map((contact) => <button key={contact.id} type="button" onClick={() => { setSelectedContactId(contact.id); setContactSearch(contact.name); setNewContactName(contact.name); setNewContactPhone(contact.phone || ''); setNewContactEmail(contact.email || ''); }} className="flex items-center justify-between rounded-md px-3 py-2 text-left text-xs transition hover:bg-[#EEF1FF]"><span className="font-bold">{contact.name}</span><span className="text-[10px] text-[#758096]">{contact.phone || 'Existing contact'}</span></button>)}</div>}</label>{contactSearch.trim() && !((financeWorkspace?.contacts ?? []).some((contact) => { const value = contactSearch.trim().toLowerCase(); return contact.kind === (transactionKind === 'income' ? 'customer' : 'supplier') && (contact.name.toLowerCase() === value || contact.phone?.toLowerCase() === value); })) && <div className="grid gap-2 rounded-lg border border-[#3157F5]/15 bg-[#F7F8FF] p-3"><p className="text-[10px] font-black uppercase tracking-[.1em] text-[#3157F5]">New {transactionKind === 'income' ? 'customer' : 'supplier'}</p><p className="text-[10px] leading-4 text-[#64708A]">No matching record found. Add the details below and link it to this transaction.</p><input value={newContactName} onChange={(event) => setNewContactName(event.target.value)} placeholder="Name" required className="h-10 rounded-lg border border-[#111B33]/15 bg-white px-3 text-xs outline-none" /><div className="grid grid-cols-2 gap-2"><input value={newContactPhone} onChange={(event) => setNewContactPhone(event.target.value)} placeholder="Phone" className="h-10 rounded-lg border border-[#111B33]/15 bg-white px-3 text-xs outline-none" /><input value={newContactEmail} onChange={(event) => setNewContactEmail(event.target.value)} type="email" placeholder="Email" className="h-10 rounded-lg border border-[#111B33]/15 bg-white px-3 text-xs outline-none" /></div></div>}{contactSearch.trim() && (financeWorkspace?.contacts ?? []).some((contact) => { const value = contactSearch.trim().toLowerCase(); return contact.kind === (transactionKind === 'income' ? 'customer' : 'supplier') && (contact.name.toLowerCase() === value || contact.phone?.toLowerCase() === value); }) && <p className="text-[10px] font-bold text-[#557516]">Existing {transactionKind === 'income' ? 'customer' : 'supplier'} found. This transaction will be linked to that record.</p>}</div>}
-      <footer className="flex flex-col-reverse gap-2 pt-1 sm:flex-row sm:justify-end"><button type="button" disabled={savingTransaction} onClick={() => { setRecordOpen(false); setSelectedObligationId(''); setSelectedContactId(''); setTransactionKind('income'); setContactSearch(''); setNewContactName(''); setNewContactPhone(''); setNewContactEmail(''); }} className="h-10 rounded-lg border border-[#111B33]/15 px-4 text-xs font-black disabled:opacity-60">Cancel</button><button disabled={savingTransaction || !businessId || (transactionKind === 'transfer' && (financeWorkspace?.accounts.length ?? 0) < 2)} className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#3157F5] px-4 text-xs font-black text-white disabled:opacity-50">{savingTransaction ? 'Saving…' : 'Save record'} {!savingTransaction && <ArrowRight className="h-4 w-4" />}</button></footer></form></section></div>}
+      <footer className="flex flex-col-reverse gap-2 pt-1 sm:flex-row sm:justify-end"><button type="button" disabled={savingTransaction} onClick={() => { setRecordOpen(false); setSelectedObligationId(''); setSelectedContactId(''); setTransactionKind('income'); setContactSearch(''); setNewContactName(''); setNewContactPhone(''); setNewContactEmail(''); }} className="h-10 rounded-lg border border-[#111B33]/15 px-4 text-xs font-black disabled:opacity-60">Cancel</button><button disabled={savingTransaction || !businessId || (transactionKind === 'transfer' && (financeWorkspace?.accounts.length ?? 0) < 2)} className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#3157F5] px-4 text-xs font-black text-white disabled:opacity-50">{savingTransaction ? 'Saving…' : 'Save record'} {!savingTransaction && <ArrowRight className="h-4 w-4" />}</button></footer></form>}</section></div>}
   </div>;
 }

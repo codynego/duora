@@ -212,6 +212,27 @@ export async function createFinanceTransaction(businessId: string, input: {
   return response.data;
 }
 
+export type TransactionDraft = {
+  kind: 'income' | 'expense' | 'transfer' | 'unknown';
+  description: string;
+  total_amount: number | null;
+  paid_amount: number | null;
+  contact_name: string | null;
+  account_name: string | null;
+  transfer_account_name: string | null;
+  due_date: string | null;
+  payment_method: string | null;
+  missing_details: string[];
+  note: string;
+};
+
+export async function parseFinanceTransaction(businessId: string, text: string) {
+  const response = await financeRequest<{ data: TransactionDraft }>(`businesses/${businessId}/transactions/parse/`, {
+    method: 'POST', body: JSON.stringify({ text }),
+  });
+  return response.data;
+}
+
 export async function updateFinanceTransaction(businessId: string, transactionId: string, input: Partial<{
   description: string; amount: string; occurred_on: string; occurred_at: string | null;
   category: string; counterparty: string; account: string | null;
