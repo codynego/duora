@@ -206,8 +206,10 @@ class TransactionParseView(APIView):
             },
             'required': ['kind', 'description', 'total_amount', 'paid_amount', 'contact_name', 'account_name', 'transfer_account_name', 'due_date', 'payment_method', 'missing_details', 'note'],
         }
+        configured_model = os.environ.get('OPENAI_TRANSACTION_MODEL', '').strip()
+        model = configured_model if configured_model in {'gpt-4o-mini', 'gpt-4.1-mini'} else 'gpt-4o-mini'
         body = json.dumps({
-            'model': os.environ.get('OPENAI_TRANSACTION_MODEL', 'gpt-4o-mini'),
+            'model': model,
             'input': [
                 {'role': 'system', 'content': 'You extract one small-business transaction into a reviewable draft. Never invent amounts, names, accounts, or dates. Distinguish a customer repayment from new income, a supplier payment from a new expense, and an internal transfer from both. For a sale or bill, total_amount is the full value and paid_amount is the amount paid now; if only one amount is given, use it for both. Use ISO YYYY-MM-DD only for dates explicitly stated or clearly relative to today.'},
                 {'role': 'user', 'content': json.dumps({**prompt, 'today': timezone.localdate().isoformat()})},
@@ -221,15 +223,23 @@ class TransactionParseView(APIView):
         except urllib.error.HTTPError as error:
             provider_body = error.read().decode('utf-8', errors='replace')[:2000]
             logger.error('OpenAI transaction parsing rejected the request: status=%s body=%s', error.code, provider_body)
+            try:
+                provider_payload = json.loads(provider_body)
+                provider_error = provider_payload.get('error') or {}
+                provider_message = str(provider_error.get('message') or '').strip()
+                provider_code = str(provider_error.get('code') or '').strip()
+            except json.JSONDecodeError:
+                provider_message = ''
+                provider_code = ''
             if error.code in (401, 403):
                 detail = 'Text entry is not authorized. Check OPENAI_API_KEY in the deployed backend environment.'
             elif error.code == 404:
-                detail = 'The configured text-entry model is unavailable. Set OPENAI_TRANSACTION_MODEL to gpt-4o-mini and redeploy the backend.'
+                detail = 'The text-entry model is unavailable. The backend is configured to use gpt-4o-mini.'
             elif error.code == 400:
-                detail = 'The text-entry request was rejected. Check OPENAI_TRANSACTION_MODEL and try again.'
+                detail = 'The text-entry request was rejected' + (f': {provider_message}' if provider_message else '. Check the deployed OpenAI configuration and try again.')
             else:
                 detail = 'Text entry could not create a draft right now. Please try again or enter the transaction manually.'
-            return Response({'detail': detail}, status=status.HTTP_503_SERVICE_UNAVAILABLE if error.code in (401, 403, 404) else status.HTTP_502_BAD_GATEWAY)
+            return Response({'detail': detail, 'provider_code': provider_code} if provider_code else {'detail': detail}, status=status.HTTP_503_SERVICE_UNAVAILABLE if error.code in (401, 403, 404) else status.HTTP_400_BAD_REQUEST)
         except (urllib.error.URLError, TimeoutError) as error:
             logger.error('OpenAI transaction parsing request failed: %s', error)
             return Response({'detail': 'Text entry is temporarily unavailable. Please try again or enter the transaction manually.'}, status=status.HTTP_502_BAD_GATEWAY)
