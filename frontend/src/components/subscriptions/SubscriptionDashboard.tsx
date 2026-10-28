@@ -132,7 +132,28 @@ export default function SubscriptionDashboard() {
     if (!recordOpen) return;
     const inputs = Array.from(document.querySelectorAll<HTMLInputElement>('input[type="number"]'));
     const handlers = inputs.map((input) => {
-      const handler = () => { input.type = 'text'; input.value = formatMoneyInput(input.value); };
+      input.type = 'text';
+      input.inputMode = 'decimal';
+      const handler = () => {
+        const caret = input.selectionStart ?? input.value.length;
+        const digitsBeforeCaret = input.value.slice(0, caret).replace(/[^\d.]/g, '').length;
+        const formatted = formatMoneyInput(input.value);
+        input.value = formatted;
+        if (digitsBeforeCaret === 0) {
+          input.setSelectionRange(0, 0);
+          return;
+        }
+        let seen = 0;
+        let nextCaret = formatted.length;
+        for (let index = 0; index < formatted.length; index += 1) {
+          if (/[\d.]/.test(formatted[index])) seen += 1;
+          if (seen >= digitsBeforeCaret) {
+            nextCaret = index + 1;
+            break;
+          }
+        }
+        input.setSelectionRange(nextCaret, nextCaret);
+      };
       input.addEventListener('input', handler);
       return [input, handler] as const;
     });
