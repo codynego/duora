@@ -33,13 +33,13 @@ export const metadata: Metadata = {
     type: 'website',
     siteName: 'Dorah',
     locale: 'en_NG',
-    images: [{ url: '/opengraph-image', width: 1200, height: 630, alt: 'Dorah — Know where your business money stands.' }],
+    images: [{ url: '/dorah-social-preview.png', width: 1200, height: 630, alt: 'Dorah — Know where your business money stands.' }],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Dorah — Know where your business money stands',
     description: 'Your AI-powered financial controller for clearer business decisions.',
-    images: ['/opengraph-image'],
+    images: ['/dorah-social-preview.png'],
   },
 };
 

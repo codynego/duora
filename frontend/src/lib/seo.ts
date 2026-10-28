@@ -11,6 +11,8 @@ export function publicPageMetadata({ title, description, path }: {
   return {
     title,
     description,
+    keywords: ['Dorah', 'small business finance', 'financial controller', 'business cash flow', 'customer debts', 'supplier bills'],
+    robots: { index: true, follow: true, 'max-image-preview': 'large', 'max-snippet': -1, 'max-video-preview': -1 },
     alternates: { canonical },
     openGraph: {
       type: 'website',
@@ -19,13 +21,13 @@ export function publicPageMetadata({ title, description, path }: {
       locale: 'en_NG',
       title: `${title} · Dorah`,
       description,
-      images: [{ url: '/opengraph-image', width: 1200, height: 630, alt: `${title} — Dorah financial controller` }],
+      images: [{ url: '/dorah-social-preview.png', width: 1200, height: 630, alt: `${title} — Dorah financial controller` }],
     },
     twitter: {
       card: 'summary_large_image',
       title: `${title} · Dorah`,
       description,
-      images: ['/opengraph-image'],
+      images: ['/dorah-social-preview.png'],
     },
   };
 }
