@@ -233,10 +233,11 @@ export async function parseFinanceTransaction(businessId: string, text: string) 
   return response.data;
 }
 
-export type FinanceChatMessage = { role: 'user' | 'assistant'; content: string };
+export type FinanceChatChart = { type: 'bar'; title: string; labels: string[]; values: Array<string | number> };
+export type FinanceChatMessage = { role: 'user' | 'assistant'; content: string; chart?: FinanceChatChart | null };
 
 export async function askFinanceController(businessId: string, question: string, history: FinanceChatMessage[] = []) {
-  const response = await financeRequest<{ data: { answer: string; grounded: boolean } }>(`businesses/${businessId}/intelligence/chat/`, {
+  const response = await financeRequest<{ data: { answer: string; grounded: boolean; chart?: FinanceChatChart | null } }>(`businesses/${businessId}/intelligence/chat/`, {
     method: 'POST', body: JSON.stringify({ question, history: history.slice(-8) }),
   });
   return response.data;

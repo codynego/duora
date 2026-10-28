@@ -3,6 +3,7 @@ import logging
 import os
 import urllib.error
 import urllib.request
+from collections import defaultdict
 
 from django.db import transaction
 from django.db.models import Count, Sum
@@ -325,10 +326,47 @@ class IntelligenceChatView(APIView):
         if not api_key:
             return Response({'detail': 'Financial controller chat is not configured yet. Add OPENAI_API_KEY to the backend environment.'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
-        transactions = list(Transaction.objects.filter(business=business, is_voided=False).select_related('account', 'contact').order_by('-occurred_on', '-created_at')[:40])
+        transaction_queryset = Transaction.objects.filter(business=business, is_voided=False)
+        transactions = list(transaction_queryset.select_related('account', 'contact').order_by('-occurred_on', '-created_at')[:40])
         accounts = list(FinancialAccount.objects.filter(business=business, is_active=True))
         account_rows = FinancialAccountSerializer(accounts, many=True).data
         obligations = list(Obligation.objects.filter(business=business).select_related('contact').order_by('due_date', '-updated_at')[:40])
+        today = timezone.localdate()
+        recent_start = today - timedelta(days=90)
+        customer_balance_totals = defaultdict(lambda: {'name': '', 'balance': Decimal('0.00')})
+        for row in Obligation.objects.filter(business=business, kind=Obligation.Kind.RECEIVABLE, balance__gt=0).values('contact_id', 'contact__name', 'balance'):
+            contact_id = str(row['contact_id'])
+            customer_balance_totals[contact_id]['name'] = row['contact__name']
+            customer_balance_totals[contact_id]['balance'] += row['balance'] or Decimal('0.00')
+        customer_balances = sorted(customer_balance_totals.values(), key=lambda row: row['balance'], reverse=True)
+        recent_payments = list(transaction_queryset.filter(kind=Transaction.Kind.INCOME, occurred_on__gte=recent_start)
+                               .values('occurred_on', 'description', 'amount', 'contact__name', 'account__name')
+                               .order_by('-occurred_on', '-created_at')[:100])
+        sales_by_description = list(transaction_queryset.filter(kind=Transaction.Kind.INCOME)
+                                    .values('description').annotate(total=Sum('amount'), count=Count('id'))
+                                    .order_by('-total')[:20])
+        customer_days = defaultdict(lambda: {'customers': set(), 'transactions': 0, 'amount': Decimal('0.00')})
+        for row in transaction_queryset.filter(kind=Transaction.Kind.INCOME, contact__isnull=False).values('occurred_on', 'contact_id', 'amount'):
+            day_key = row['occurred_on'].isoformat()
+            customer_days[day_key]['customers'].add(str(row['contact_id']))
+            customer_days[day_key]['transactions'] += 1
+            customer_days[day_key]['amount'] += row['amount'] or Decimal('0.00')
+        customer_activity_by_day = [
+            {'date': day, 'customer_count': len(row['customers']), 'transaction_count': row['transactions'], 'income': row['amount']}
+            for day, row in sorted(customer_days.items(), key=lambda item: item[1]['customers'].__len__(), reverse=True)[:20]
+        ]
+        question_lower = question.lower()
+        query_focus = []
+        if any(term in question_lower for term in ('owe', 'debt', 'balance', 'receivable', 'customer payment')):
+            query_focus.append('customer_balances')
+        if any(term in question_lower for term in ('paid', 'payment', 'received', 'recent', 'last')):
+            query_focus.append('recent_payments')
+        if any(term in question_lower for term in ('sell', 'sold', 'selling', 'item', 'product', 'popular', 'best')):
+            query_focus.append('sales_by_description')
+        if any(term in question_lower for term in ('day', 'days', 'busy', 'busiest', 'most customers')):
+            query_focus.append('customer_activity_by_day')
+        if not query_focus:
+            query_focus = ['customer_balances', 'recent_payments', 'sales_by_description', 'customer_activity_by_day']
         insights_response = FinanceInsightsView().get(request, business_id)
         insights = insights_response.data.get('data', []) if insights_response.status_code == 200 else []
         context = {
@@ -343,6 +381,13 @@ class IntelligenceChatView(APIView):
             'findings': [{'title': item.get('title'), 'severity': item.get('severity'), 'detail': item.get('detail'),
                           'impact_amount': item.get('impact_amount'), 'suggestion': item.get('suggestion')}
                          for item in insights[:20]],
+            'computed_analysis': {
+                'query_focus': query_focus,
+                'customer_balances': customer_balances[:50],
+                'recent_income_payments_last_90_days': recent_payments,
+                'sales_by_description_all_time': sales_by_description,
+                'customer_activity_by_day_all_time': customer_activity_by_day,
+            },
         }
         history = request.data.get('history') if isinstance(request.data.get('history'), list) else []
         history = [{'role': item.get('role'), 'content': str(item.get('content', ''))[:2000]}
@@ -354,7 +399,7 @@ class IntelligenceChatView(APIView):
             'model': model,
             'max_output_tokens': 600,
             'input': [
-                {'role': 'system', 'content': 'You are Dorah, a careful financial controller for a small business. Answer only from the supplied saved-record context. Do not invent transactions, balances, dates, customers, or explanations. Show relevant amounts with the business currency and thousands separators. Distinguish recorded cash from receivables, payables, expected collections, repayments, and internal transfers. When the records are incomplete, say so plainly. Possible findings are review prompts, not confirmed errors. Never authorize, save, delete, or change records. Format answers for a small chat window: use a short opening sentence, put each item in a numbered list on its own line, leave a blank line before the total or conclusion, bold important labels and totals with **double asterisks**, and finish with a separate "Next step:" line. Do not use tables, JSON, or long unbroken paragraphs.'},
+                {'role': 'system', 'content': 'You are Dorah, a careful financial controller for a small business. Answer only from the supplied saved-record context. The computed_analysis section is calculated by the backend from the business records; treat it as authoritative for customer balances, recent payments, sales rankings, and customer activity by day. Use the query_focus list to prioritize the relevant analysis. Do not invent transactions, balances, dates, customers, or explanations, and do not calculate from a truncated recent transaction list when a computed result is provided. For customer questions, name the customer and show the recorded balance or matching payment. For product or item questions, explain that the ranking uses transaction descriptions unless a product catalogue exists. For day questions, distinguish number of recorded customers from number of transactions. If the records do not contain enough information, say exactly what is missing. Show relevant amounts with the business currency and thousands separators. Distinguish recorded cash from receivables, payables, expected collections, repayments, and internal transfers. Possible findings are review prompts, not confirmed errors. Never authorize, save, delete, or change records. Format answers for a small chat window: use a short opening sentence, put each item in a numbered list on its own line, leave a blank line before the total or conclusion, bold important labels and totals with **double asterisks**, and finish with a separate "Next step:" line. Do not use tables, JSON, or long unbroken paragraphs.'},
                 {'role': 'user', 'content': json.dumps({'today': timezone.localdate().isoformat(), 'question': question, 'recent_conversation': history, 'saved_financial_context': context}, default=str)},
             ],
         }).encode('utf-8')
@@ -382,7 +427,22 @@ class IntelligenceChatView(APIView):
         if not answer:
             logger.error('OpenAI intelligence chat returned no text: status=%s output_types=%s', payload.get('status'), [item.get('type') for item in payload.get('output', []) if isinstance(item, dict)])
             return Response({'detail': 'The controller returned an empty answer. Please try again.'}, status=status.HTTP_502_BAD_GATEWAY)
-        return Response({'data': {'answer': answer, 'grounded': True}})
+        chart = None
+        if 'sales_by_description' in query_focus and sales_by_description:
+            chart = {
+                'type': 'bar',
+                'title': 'Recorded income by description',
+                'labels': [row['description'] or 'Uncategorised' for row in sales_by_description[:6]],
+                'values': [str(row['total'] or Decimal('0.00')) for row in sales_by_description[:6]],
+            }
+        elif 'customer_activity_by_day' in query_focus and customer_activity_by_day:
+            chart = {
+                'type': 'bar',
+                'title': 'Recorded customers by day',
+                'labels': [row['date'] for row in customer_activity_by_day[:7]],
+                'values': [row['customer_count'] for row in customer_activity_by_day[:7]],
+            }
+        return Response({'data': {'answer': answer, 'grounded': True, 'chart': chart}})
 
 
 class TransactionDetailView(APIView):
