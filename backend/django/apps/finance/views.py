@@ -321,6 +321,16 @@ class IntelligenceChatView(APIView):
             return Response({'detail': 'The controller returned an incomplete answer. Please try again.'}, status=status.HTTP_502_BAD_GATEWAY)
         answer = str(payload.get('output_text') or '').strip()
         if not answer:
+            output_parts = []
+            for item in payload.get('output', []) if isinstance(payload.get('output'), list) else []:
+                if not isinstance(item, dict) or item.get('type') != 'message':
+                    continue
+                for content in item.get('content', []) if isinstance(item.get('content'), list) else []:
+                    if isinstance(content, dict) and content.get('type') in ('output_text', 'text') and content.get('text'):
+                        output_parts.append(str(content['text']))
+            answer = '\n'.join(output_parts).strip()
+        if not answer:
+            logger.error('OpenAI intelligence chat returned no text: status=%s output_types=%s', payload.get('status'), [item.get('type') for item in payload.get('output', []) if isinstance(item, dict)])
             return Response({'detail': 'The controller returned an empty answer. Please try again.'}, status=status.HTTP_502_BAD_GATEWAY)
         return Response({'data': {'answer': answer, 'grounded': True}})
 
