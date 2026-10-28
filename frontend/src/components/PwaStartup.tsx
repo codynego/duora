@@ -12,9 +12,8 @@ export default function PwaStartup() {
   useEffect(() => {
     const standalone = window.matchMedia('(display-mode: standalone)').matches
       || Boolean((navigator as Navigator & { standalone?: boolean }).standalone);
-    // The installed app should open the public homepage. Keep the homepage
-    // reachable from the dashboard instead of treating `/` as an alias for
-    // the authenticated workspace.
+    // The manifest opens the installed app at /dashboard. Keep authentication
+    // on the dashboard route while leaving the public homepage reachable.
     if (standalone && pathname.startsWith('/dashboard')) {
       void getCurrentUser().then((user) => {
         if (!user) {
@@ -29,8 +28,8 @@ export default function PwaStartup() {
 
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     setPhase('entering');
-    const leaveTimer = window.setTimeout(() => setPhase('leaving'), reducedMotion ? 80 : 1050);
-    const hideTimer = window.setTimeout(() => setPhase('hidden'), reducedMotion ? 160 : 1350);
+    const leaveTimer = window.setTimeout(() => setPhase('leaving'), reducedMotion ? 80 : 420);
+    const hideTimer = window.setTimeout(() => setPhase('hidden'), reducedMotion ? 160 : 620);
 
     return () => {
       window.clearTimeout(leaveTimer);

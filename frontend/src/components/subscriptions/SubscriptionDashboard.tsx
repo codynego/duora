@@ -351,7 +351,7 @@ export default function SubscriptionDashboard() {
     }
   }
 
-  if (!ready) return <main className="grid min-h-screen place-items-center bg-[#F5F7FB] text-sm font-bold text-[#64708A]">Opening your dashboard…</main>;
+  if (!ready) return <DashboardLoading />;
   if (!user) return <main className="min-h-screen bg-[#F5F7FB] p-5 text-[#111B33]"><Brand /><section className="mx-auto flex min-h-[80vh] max-w-4xl flex-col justify-center"><p className="text-[10px] font-black uppercase tracking-[.14em] text-[#3157F5]">Your business, in clearer view</p><h1 className="mt-4 font-[Aptos_Display,Arial,sans-serif] text-[clamp(3.2rem,8vw,6.5rem)] font-black leading-[.86] tracking-[-.08em]">Know where your<br />money stands.</h1><p className="mt-6 max-w-xl text-base leading-7 text-[#64708A]">Sign in to open your financial overview and keep important business activity in view.</p><div className="mt-8 flex flex-wrap gap-3"><Link href="/login?next=%2Fdashboard" className="inline-flex h-12 items-center gap-2 rounded-lg bg-[#3157F5] px-5 text-sm font-black text-white">Sign in <ArrowRight className="h-4 w-4" /></Link><Link href="/signup" className="inline-flex h-12 items-center rounded-lg border border-[#111B33]/15 bg-white px-5 text-sm font-black">Create account</Link></div></section></main>;
   if (workspaceLoading) return <DashboardLoading />;
 

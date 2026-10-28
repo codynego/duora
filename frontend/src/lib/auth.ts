@@ -3,6 +3,10 @@ let sessionValidUntil = 0;
 let credentialsConfigured = false;
 let refreshInFlight: Promise<boolean> | null = null;
 
+function notifyAuthChanged() {
+  if (typeof window !== 'undefined') window.dispatchEvent(new Event('dorah:auth-changed'));
+}
+
 // This module is imported before every authenticated call. Configure this at
 // import time rather than after React hydration, so the request immediately
 // following a successful login includes the new HttpOnly cookie as well.
@@ -69,10 +73,12 @@ export async function signUp(
     password,
   });
   sessionValidUntil = Date.now() + 14 * 60_000;
+  notifyAuthChanged();
 }
 export async function logIn(username: string, password: string) {
   await request("token/", { username, password });
   sessionValidUntil = Date.now() + 14 * 60_000;
+  notifyAuthChanged();
 }
 export async function requestPasswordReset(email: string) {
   return request("password-reset/", { email });
@@ -122,5 +128,6 @@ export async function logOut() {
     });
   } finally {
     sessionValidUntil = 0;
+    notifyAuthChanged();
   }
 }

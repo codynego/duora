@@ -12,14 +12,34 @@ export type CurrentUser = {
 };
 
 const api = process.env.NEXT_PUBLIC_DUORA_API_URL ?? 'http://127.0.0.1:8000';
+let cachedUser: CurrentUser | null = null;
+let cachedAt = 0;
+let currentUserRequest: Promise<CurrentUser | null> | null = null;
 
 export async function getCurrentUser(): Promise<CurrentUser | null> {
-  const token = await getAccessToken({ redirectOnFailure: false });
-  if (!token) return null;
-  const response = await fetch(`${api}/api/v1/auth/me/`, { headers: { Authorization: `Bearer ${token}` } });
-  if (!response.ok) return null;
-  const body = await response.json();
-  return body.data ?? null;
+  if (cachedUser && Date.now() - cachedAt < 5 * 60_000) return cachedUser;
+  if (currentUserRequest) return currentUserRequest;
+  currentUserRequest = (async () => {
+    const token = await getAccessToken({ redirectOnFailure: false });
+    if (!token) return null;
+    const response = await fetch(`${api}/api/v1/auth/me/`, { headers: { Authorization: `Bearer ${token}` } });
+    if (!response.ok) return null;
+    const body = await response.json();
+    const user = body.data ?? null;
+    if (user) {
+      cachedUser = user;
+      cachedAt = Date.now();
+    }
+    return user;
+  })().finally(() => {
+    currentUserRequest = null;
+  });
+  return currentUserRequest;
+}
+
+export function clearCurrentUserCache() {
+  cachedUser = null;
+  cachedAt = 0;
 }
 
 export async function updateCurrentUser(input: { username?: string; display_name?: string }) {
@@ -48,6 +68,15 @@ export function useCurrentUser() {
       setUser(value);
       setReady(true);
     }).catch(() => setReady(true));
+  }, []);
+
+  useEffect(() => {
+    const handleAuthChange = () => {
+      clearCurrentUserCache();
+      setUser(null);
+    };
+    window.addEventListener('dorah:auth-changed', handleAuthChange);
+    return () => window.removeEventListener('dorah:auth-changed', handleAuthChange);
   }, []);
 
   return { user, ready, setUser };
