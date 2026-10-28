@@ -863,3 +863,20 @@ main.min-h-screen.bg-\[\#fffdfc\] h2 { font-family: 'Manrope', 'Geist', ui-sans-
 /* Keep interval bars compact so short daily ranges read as adjacent days. */
 div[class~="min-w-[30px]"] { flex: 0 0 34px !important; }
 div[class~="overflow-x-auto"][class~="items-end"] { gap: .25rem !important; }
+
+@media (max-width: 640px) {
+  div:has(> div > input[aria-label="Search transactions"]) {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: .75rem;
+  }
+  div:has(> div > input[aria-label="Search transactions"]) > div:has(> input[aria-label="Search transactions"]) {
+    grid-column: 1 / -1;
+    min-width: 0;
+    width: 100%;
+  }
+  div:has(> div > input[aria-label="Search transactions"]) > select,
+  div:has(> div > input[aria-label="Search transactions"]) > button {
+    width: 100%;
+  }
+}
