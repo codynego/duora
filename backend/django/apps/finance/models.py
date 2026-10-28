@@ -34,6 +34,17 @@ class Business(models.Model):
         return self.name
 
 
+class AiUsage(models.Model):
+    business = models.ForeignKey(Business, on_delete=models.CASCADE, related_name='ai_usage')
+    feature = models.CharField(max_length=40, default='intelligence_chat')
+    period_start = models.DateField()
+    used = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=('business', 'feature', 'period_start'), name='finance_unique_ai_usage_period')]
+        indexes = [models.Index(fields=('business', 'feature', 'period_start'))]
+
+
 class Transaction(models.Model):
     class Kind(models.TextChoices):
         INCOME = 'income', 'Money in'

@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { type FormEvent, useState } from 'react';
 import { ArrowDownLeft, ArrowLeft, ArrowRight, ArrowUpRight, ChevronDown, FileText, LoaderCircle, Plus, UserRoundPlus, X } from 'lucide-react';
 import { createFinanceContact, createFinanceObligation, type FinanceContact } from '@/lib/finance-api';
@@ -12,6 +13,7 @@ export default function FinanceQuickCreate({ businessId, contacts, onSaved, mode
 }) {
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState('');
+  const [upgradePrompt, setUpgradePrompt] = useState(false);
   const [open, setOpen] = useState(false);
   const [activeForm, setActiveForm] = useState<'contact' | 'balance' | null>(mode === 'contact' ? 'contact' : 'balance');
   const [balanceKind, setBalanceKind] = useState<'receivable' | 'payable'>(mode === 'payable' ? 'payable' : 'receivable');
@@ -30,7 +32,11 @@ export default function FinanceQuickCreate({ businessId, contacts, onSaved, mode
         phone: String(form.get('phone') ?? '').trim(),
       });
       await onSaved(); formElement.reset(); if (!mode) setActiveForm('balance'); setNotice(mode === 'contact' ? 'Contact saved.' : 'Contact saved. You can now record an amount due.');
-    } catch (error) { setNotice(error instanceof Error ? error.message : 'Could not save the contact.'); }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Could not save the contact.';
+      setNotice(message);
+      setUpgradePrompt(message.toLowerCase().includes('plan limit') || message.toLowerCase().includes('upgrade your plan'));
+    }
     finally { setBusy(false); }
   }
 
@@ -92,7 +98,7 @@ export default function FinanceQuickCreate({ businessId, contacts, onSaved, mode
           <button disabled={busy || !businessId || !balanceContacts.length} aria-busy={busy} className="button-loading inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[#3157F5] px-4 text-xs font-black text-white transition hover:bg-[#2748D8] disabled:opacity-50">{busy && <LoaderCircle className="h-4 w-4 animate-spin" />}{busy ? 'Saving…' : 'Save balance'}</button>
         </form>}
       </>}
-      {notice && <p role="status" className="mt-4 rounded-lg border border-[#3157F5]/10 bg-white px-4 py-3 text-xs text-[#64708A]">{notice}</p>}
+      {notice && <div role="status" className={`mt-4 rounded-lg border px-4 py-3 text-xs ${upgradePrompt ? 'border-[#E8D89F] bg-[#FFF9E8] text-[#786B4C]' : 'border-[#3157F5]/10 bg-white text-[#64708A]'}`}><p>{notice}</p>{upgradePrompt && <Link href="/pricing" className="mt-2 inline-flex items-center rounded-lg bg-[#3157F5] px-3 py-2 text-[10px] font-black text-white">View upgrade plans <ArrowRight className="ml-1 h-3 w-3" /></Link>}</div>}
     </div>
       </section>
     </div>}

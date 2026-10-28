@@ -75,6 +75,7 @@ export default function SubscriptionDashboard() {
   const [recordOpen, setRecordOpen] = useState(false);
   const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
   const [recordNotice, setRecordNotice] = useState('');
+  const [upgradePrompt, setUpgradePrompt] = useState(false);
   const [onboardingProfile, setOnboardingProfile] = useState<FinancialOnboardingProfile | null>(null);
   const [financeOverview, setFinanceOverview] = useState<FinanceOverview | null>(null);
   const [financeWorkspace, setFinanceWorkspace] = useState<FinanceWorkspace | null>(null);
@@ -369,7 +370,9 @@ export default function SubscriptionDashboard() {
       setNewContactEmail('');
       router.push('/dashboard/transactions');
     } catch (error) {
-      setRecordNotice(error instanceof Error ? error.message : 'Could not save this transaction.');
+      const message = error instanceof Error ? error.message : 'Could not save this transaction.';
+      setRecordNotice(message);
+      setUpgradePrompt(message.toLowerCase().includes('plan limit') || message.toLowerCase().includes('upgrade your plan'));
     } finally {
       setSavingTransaction(false);
     }
@@ -432,7 +435,7 @@ export default function SubscriptionDashboard() {
 
 
       </> : <><DashboardSectionContent section={section} findingId={findingId} formatAmount={formatAmount} transactions={dashboardTransactions} hasLiveRecords={Boolean(financeOverview)} workspace={financeWorkspace} summary={financeOverview?.summary} businessId={businessId} business={financeOverview?.business ?? null} currentUser={user} onUserUpdated={setUser} onRefresh={reloadFinanceData} onRecord={() => { setRecordNotice(''); setRecordOpen(true); }} financeAction={businessId && (section === 'receivables' || section === 'payables' || section === 'customers-suppliers') ? <FinanceQuickCreate businessId={businessId} contacts={financeWorkspace?.contacts ?? []} mode={section === 'receivables' ? 'receivable' : section === 'payables' ? 'payable' : 'contact'} onSaved={reloadFinanceData} /> : undefined} /></>}
-      {recordNotice && <p role="status" className="mt-4 border border-[#A5CD4A] bg-[#F2FADA] px-4 py-3 text-xs font-bold text-[#46661A]">{recordNotice}</p>}
+      {recordNotice && <div role="status" className={`mt-4 border px-4 py-3 text-xs font-bold ${upgradePrompt ? 'border-[#E8D89F] bg-[#FFF9E8] text-[#786B4C]' : 'border-[#A5CD4A] bg-[#F2FADA] text-[#46661A]'}`}><p>{recordNotice}</p>{upgradePrompt && <Link href="/pricing" className="mt-2 inline-flex items-center rounded-lg bg-[#3157F5] px-3 py-2 text-[10px] font-black text-white">View upgrade plans <ArrowRight className="ml-1 h-3 w-3" /></Link>}</div>}
     </div></main>
 
     {mobileMoreOpen && <><button type="button" aria-label="Close more menu" onClick={() => setMobileMoreOpen(false)} className="fixed inset-0 z-40 bg-[#111B33]/25 backdrop-blur-[2px] transition-opacity lg:hidden" /><section role="dialog" aria-modal="true" aria-label="More dashboard pages" className="pwa-mobile-sheet fixed inset-x-3 bottom-[calc(5.35rem+env(safe-area-inset-bottom))] z-50 rounded-2xl border border-[#111B33]/10 bg-white p-4 shadow-[0_20px_60px_rgba(17,27,51,.2)] lg:hidden"><div className="mb-3 flex items-start justify-between"><div><p className="text-sm font-black">More in your workspace</p><p className="mt-1 text-[10px] text-[#758096]">Your records, accounts, and settings.</p></div><button type="button" onClick={() => setMobileMoreOpen(false)} aria-label="Close more pages" className="grid h-8 w-8 place-items-center rounded-lg text-[#758096] transition hover:bg-[#F5F7FB] hover:text-[#111B33]"><X className="h-4 w-4" /></button></div><div className="grid grid-cols-2 gap-2">{[...workspaceItems.slice(3), ...preferenceItems].map(({ label, href, icon: Icon }) => <Link key={label} href={href} onClick={() => setMobileMoreOpen(false)} aria-current={activeNav === label ? 'page' : undefined} className={`flex min-h-12 items-center gap-2 rounded-xl border px-3 text-[11px] font-bold transition active:scale-[.98] ${activeNav === label ? 'border-[#3157F5]/20 bg-[#EEF1FF] text-[#3157F5]' : 'border-[#111B33]/[.06] text-[#536078] hover:bg-[#F8F9FC]'}`}><Icon className="h-4 w-4 shrink-0" />{label}</Link>)}</div></section></>}

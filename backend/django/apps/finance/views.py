@@ -17,11 +17,56 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Business, Contact, FinancialAccount, Obligation, Transaction, TransactionAudit
+from .models import AiUsage, Business, Contact, FinancialAccount, Obligation, Transaction, TransactionAudit
 from .serializers import (BusinessSerializer, ContactSerializer, FinancialAccountSerializer,
                           ObligationSerializer, TransactionSerializer)
 
 logger = logging.getLogger(__name__)
+
+
+PLAN_LIMITS = {
+    Business.Plan.FREE: {'transactions_month': 100, 'customers': 20, 'suppliers': 10},
+    Business.Plan.CONTROL: {'transactions_month': None, 'customers': 20, 'suppliers': 10},
+    Business.Plan.INTELLIGENCE: {'transactions_month': None, 'customers': 20, 'suppliers': 10},
+    Business.Plan.BUSINESS: {'transactions_month': None, 'customers': None, 'suppliers': None},
+}
+
+AI_QUESTION_LIMITS = {
+    Business.Plan.FREE: 5,
+    Business.Plan.CONTROL: 50,
+    Business.Plan.INTELLIGENCE: 200,
+    Business.Plan.BUSINESS: None,
+}
+
+
+def plan_limit(business, key):
+    return PLAN_LIMITS.get(business.plan, PLAN_LIMITS[Business.Plan.FREE]).get(key)
+
+
+def plan_limit_response(business, resource, limit, used):
+    plan_name = business.get_plan_display()
+    upgrade_plan = Business.Plan.CONTROL if business.plan == Business.Plan.FREE else Business.Plan.BUSINESS
+    return Response({
+        'detail': f'{plan_name} plan limit reached: {limit} {resource}. Upgrade your plan to continue.',
+        'code': 'plan_limit_reached', 'resource': resource, 'limit': limit, 'used': used,
+        'plan': business.plan, 'upgrade_plan': upgrade_plan,
+    }, status=status.HTTP_403_FORBIDDEN)
+
+
+def consume_ai_question(business):
+    limit = AI_QUESTION_LIMITS.get(business.plan, AI_QUESTION_LIMITS[Business.Plan.FREE])
+    if limit is None:
+        return None
+    period_start = timezone.localdate().replace(day=1)
+    with transaction.atomic():
+        usage, _ = AiUsage.objects.select_for_update().get_or_create(
+            business=business, feature='intelligence_chat', period_start=period_start,
+        )
+        if usage.used >= limit:
+            return plan_limit_response(business, 'AI questions per month', limit, usage.used)
+        usage.used += 1
+        usage.save(update_fields=('used',))
+    return None
 
 
 def openai_response_text(payload):
@@ -206,8 +251,10 @@ class TransactionListView(APIView):
         if not business:
             return Response({'detail': 'Business not found.'}, status=status.HTTP_404_NOT_FOUND)
         today = timezone.localdate()
-        if business.plan == Business.Plan.FREE and business.transactions.filter(created_at__year=today.year, created_at__month=today.month).count() >= 100:
-            return Response({'detail': 'You have reached the Free plan limit of 100 transactions this month.'}, status=status.HTTP_403_FORBIDDEN)
+        transaction_limit = plan_limit(business, 'transactions_month')
+        transactions_this_month = business.transactions.filter(created_at__year=today.year, created_at__month=today.month).count()
+        if transaction_limit is not None and transactions_this_month >= transaction_limit:
+            return plan_limit_response(business, 'new transactions per month', transaction_limit, transactions_this_month)
         serializer = TransactionSerializer(data=request.data, context={'business': business})
         serializer.is_valid(raise_exception=True)
         obligation = serializer.validated_data.get('obligation')
@@ -530,6 +577,9 @@ class IntelligenceChatView(APIView):
         if not answer:
             logger.error('OpenAI intelligence chat returned no text: status=%s output_types=%s', payload.get('status'), [item.get('type') for item in payload.get('output', []) if isinstance(item, dict)])
             return Response({'detail': 'The controller returned an empty answer. Please try again.'}, status=status.HTTP_502_BAD_GATEWAY)
+        usage_limit_response = consume_ai_question(business)
+        if usage_limit_response:
+            return usage_limit_response
         if 'sales_by_description' in query_focus and sales_by_description:
             sales_lines = [
                 f'{index}. **{row["description"] or "Uncategorised"}**: {business.currency} {Decimal(str(row["total"] or 0)):,.2f}'
@@ -653,6 +703,12 @@ class ContactListView(APIView):
         business = owned_business(request, business_id)
         if not business:
             return Response({'detail': 'Business not found.'}, status=status.HTTP_404_NOT_FOUND)
+        contact_kind = str(request.data.get('kind') or '')
+        contact_limit = plan_limit(business, 'customers' if contact_kind == Contact.Kind.CUSTOMER else 'suppliers' if contact_kind == Contact.Kind.SUPPLIER else '')
+        if contact_limit is not None and contact_kind in Contact.Kind.values:
+            contacts_used = Contact.objects.filter(business=business, kind=contact_kind).count()
+            if contacts_used >= contact_limit:
+                return plan_limit_response(business, f'{contact_kind} records', contact_limit, contacts_used)
         serializer = ContactSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         contact = serializer.save(business=business)
