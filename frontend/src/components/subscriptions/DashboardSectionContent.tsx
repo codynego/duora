@@ -55,16 +55,22 @@ function DataTable({ headers, rows, onRowClick }: { headers: string[]; rows: (st
 }
 
 function DateFilterBar({ fromDate, toDate, setFromDate, setToDate, label = 'Reporting period' }: { fromDate: string; toDate: string; setFromDate: (value: string) => void; setToDate: (value: string) => void; label?: string }) {
-  return <div className="grid gap-4 rounded-xl border border-[#111B33]/10 bg-white p-4 shadow-[0_4px_14px_rgba(17,27,51,.03)] sm:flex sm:items-end sm:justify-between"><div><p className="text-[10px] font-black uppercase tracking-[.12em] text-[#3157F5]">{label}</p><p className="mt-1 text-xs text-[#758096]">Compare activity across a specific period.</p></div><div className="flex flex-wrap items-end gap-2"><label className="grid min-w-[132px] flex-1 gap-1 text-[10px] font-black text-[#536078] sm:flex-none"><span>From</span><input aria-label="From date" type="date" value={fromDate} max={toDate || undefined} onChange={(event) => setFromDate(event.target.value)} className="h-10 w-full rounded-lg border border-[#111B33]/15 bg-[#FAFBFD] px-3 text-xs font-normal text-[#111B33] outline-none transition focus:border-[#3157F5] focus:bg-white focus:ring-4 focus:ring-[#3157F5]/10" /></label><label className="grid min-w-[132px] flex-1 gap-1 text-[10px] font-black text-[#536078] sm:flex-none"><span>To</span><input aria-label="To date" type="date" value={toDate} min={fromDate || undefined} onChange={(event) => setToDate(event.target.value)} className="h-10 w-full rounded-lg border border-[#111B33]/15 bg-[#FAFBFD] px-3 text-xs font-normal text-[#111B33] outline-none transition focus:border-[#3157F5] focus:bg-white focus:ring-4 focus:ring-[#3157F5]/10" /></label>{(fromDate || toDate) && <button type="button" onClick={() => { setFromDate(''); setToDate(''); }} className="h-10 px-2 text-xs font-black text-[#3157F5] transition hover:text-[#2748D8]">Clear</button>}</div></div>;
+  const [preset, setPreset] = useState<DatePreset>(fromDate || toDate ? 'custom' : 'all');
+  return <PresetDateFilter preset={preset} setPreset={(value) => { setPreset(value); const dates = presetDates(value); if (value !== 'custom') { setFromDate(dates.from); setToDate(dates.to); } }} label={label} customFrom={fromDate} customTo={toDate} setCustomFrom={setFromDate} setCustomTo={setToDate} />;
 }
 
-type DatePreset = 'today' | 'yesterday' | '7days' | '30days' | 'all';
+type DatePreset = 'today' | 'yesterday' | '7days' | '30days' | 'all' | 'custom';
 
 function localDateString(date: Date) {
   return date.toLocaleDateString('en-CA');
 }
 
-function presetDates(preset: DatePreset) {
+function presetDates(preset: DatePreset, customFrom = '', customTo = '') {
+  if (preset.startsWith('custom:')) {
+    const [, from, to] = preset.split(':');
+    return { from: from || '', to: to || '' };
+  }
+  if (preset === 'custom') return { from: customFrom, to: customTo };
   if (preset === 'all') return { from: '', to: '' };
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -79,9 +85,16 @@ function presetDates(preset: DatePreset) {
   return { from: localDateString(from), to: localDateString(today) };
 }
 
-function PresetDateFilter({ preset, setPreset, label }: { preset: DatePreset; setPreset: (value: DatePreset) => void; label: string }) {
-  const options: Array<[DatePreset, string]> = [['today', 'Today'], ['yesterday', 'Yesterday'], ['7days', 'Last 7 days'], ['30days', 'Last 30 days'], ['all', 'All time']];
-  return <div className="flex flex-wrap items-center gap-2 rounded-xl border border-[#111B33]/10 bg-white p-3 shadow-[0_4px_14px_rgba(17,27,51,.03)]"><span className="mr-1 text-[10px] font-black uppercase tracking-[.12em] text-[#3157F5]">{label}</span>{options.map(([value, text]) => <button key={value} type="button" onClick={() => setPreset(value)} aria-pressed={preset === value} className={`h-9 rounded-lg px-3 text-xs font-black transition ${preset === value ? 'bg-[#3157F5] text-white' : 'border border-[#111B33]/10 text-[#64708A] hover:border-[#3157F5]/30 hover:text-[#3157F5]'}`}>{text}</button>)}</div>;
+function PresetDateFilter({ preset, setPreset, label, customFrom = '', customTo = '', setCustomFrom, setCustomTo }: { preset: DatePreset; setPreset: (value: DatePreset) => void; label: string; customFrom?: string; customTo?: string; setCustomFrom?: (value: string) => void; setCustomTo?: (value: string) => void }) {
+  const options: Array<[DatePreset, string]> = [['today', 'Today'], ['yesterday', 'Yesterday'], ['7days', 'Last 7 days'], ['30days', 'Last 30 days'], ['all', 'All time'], ['custom', 'Custom']];
+  const isEncodedCustom = preset.startsWith('custom:');
+  const isCustom = preset === 'custom' || isEncodedCustom;
+  const [, encodedFrom = '', encodedTo = ''] = isEncodedCustom ? preset.split(':') : [];
+  const from = customFrom || encodedFrom;
+  const to = customTo || encodedTo;
+  const updateFrom = setCustomFrom ?? ((value: string) => setPreset(`custom:${value}:${to}` as DatePreset));
+  const updateTo = setCustomTo ?? ((value: string) => setPreset(`custom:${from}:${value}` as DatePreset));
+  return <div className="flex flex-wrap items-center gap-2 rounded-xl border border-[#111B33]/10 bg-white p-3 shadow-[0_4px_14px_rgba(17,27,51,.03)]"><span className="mr-1 text-[10px] font-black uppercase tracking-[.12em] text-[#3157F5]">{label}</span>{options.map(([value, text]) => <button key={value} type="button" onClick={() => setPreset(value)} aria-pressed={preset === value || (value === 'custom' && isEncodedCustom)} className={`h-9 rounded-lg px-3 text-xs font-black transition ${preset === value || (value === 'custom' && isEncodedCustom) ? 'bg-[#3157F5] text-white' : 'border border-[#111B33]/10 text-[#64708A] hover:border-[#3157F5]/30 hover:text-[#3157F5]'}`}>{text}</button>)}{isCustom && <div className="flex flex-wrap items-end gap-2 basis-full pt-1"><label className="grid gap-1 text-[10px] font-bold text-[#64708A]">From<input aria-label={`${label} from date`} type="date" value={from} max={to || undefined} onChange={(event) => updateFrom(event.target.value)} className="h-9 rounded-lg border border-[#111B33]/10 bg-white px-2 text-xs font-normal text-[#111B33]" /></label><label className="grid gap-1 text-[10px] font-bold text-[#64708A]">To<input aria-label={`${label} to date`} type="date" value={to} min={from || undefined} onChange={(event) => updateTo(event.target.value)} className="h-9 rounded-lg border border-[#111B33]/10 bg-white px-2 text-xs font-normal text-[#111B33]" /></label></div>}</div>;
 }
 
 function Pagination({ page, setPage, total, pageSize = 10 }: { page: number; setPage: (page: number) => void; total: number; pageSize?: number }) {
@@ -199,6 +212,11 @@ export default function DashboardSectionContent({ section, formatAmount, transac
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
   const [transactionPreset, setTransactionPreset] = useState<DatePreset>('today');
+  const [transactionCustomFrom, setTransactionCustomFrom] = useState('');
+  const [transactionCustomTo, setTransactionCustomTo] = useState('');
+  const [cashPreset, setCashPreset] = useState<DatePreset>('all');
+  const [cashCustomFrom, setCashCustomFrom] = useState('');
+  const [cashCustomTo, setCashCustomTo] = useState('');
   const [balancePreset, setBalancePreset] = useState<DatePreset>('all');
   const [transactionPage, setTransactionPage] = useState(1);
   const [balancePage, setBalancePage] = useState(1);
@@ -212,7 +230,8 @@ export default function DashboardSectionContent({ section, formatAmount, transac
   const [selectedTransaction, setSelectedTransaction] = useState<PreviewTransaction | null>(null);
   const [selectedContact, setSelectedContact] = useState<FinanceContact | null>(null);
   const [selectedObligation, setSelectedObligation] = useState<FinanceObligation | null>(null);
-  const transactionDates = presetDates(transactionPreset);
+  const transactionDates = presetDates(transactionPreset, transactionCustomFrom, transactionCustomTo);
+  const cashDates = presetDates(cashPreset, cashCustomFrom, cashCustomTo);
   const balanceDates = presetDates(balancePreset);
   const filteredTransactions = useMemo(() => transactions.filter((item) =>
     `${item.title} ${item.detail}`.toLowerCase().includes(query.toLowerCase())
@@ -226,7 +245,7 @@ export default function DashboardSectionContent({ section, formatAmount, transac
   const filteredReceivables = receivables.filter((item) => `${item.contact_name} ${item.description}`.toLowerCase().includes(obligationQuery.toLowerCase()) && (obligationStatus === 'all' || item.status === obligationStatus) && (!balanceDates.from || (item.due_date ?? '') >= balanceDates.from) && (!balanceDates.to || (item.due_date ?? '') <= balanceDates.to));
   const filteredPayables = payables.filter((item) => `${item.contact_name} ${item.description}`.toLowerCase().includes(obligationQuery.toLowerCase()) && (obligationStatus === 'all' || item.status === obligationStatus) && (!balanceDates.from || (item.due_date ?? '') >= balanceDates.from) && (!balanceDates.to || (item.due_date ?? '') <= balanceDates.to));
   const paginatedReceivables = filteredReceivables.slice((balancePage - 1) * 10, balancePage * 10);
-  const filteredAccountTransactions = transactions.filter((item) => (!fromDate || (item.dateKey ?? '') >= fromDate) && (!toDate || (item.dateKey ?? '') <= toDate));
+  const filteredAccountTransactions = transactions.filter((item) => (!cashDates.from || (item.dateKey ?? '') >= cashDates.from) && (!cashDates.to || (item.dateKey ?? '') <= cashDates.to));
   const filteredAccountIncome = filteredAccountTransactions.filter((item) => item.direction === 'in').reduce((sum, item) => sum + item.amount, 0);
   const filteredAccountExpenses = filteredAccountTransactions.filter((item) => item.direction === 'out').reduce((sum, item) => sum + item.amount, 0);
   const filteredAccountNet = filteredAccountIncome - filteredAccountExpenses;
@@ -235,7 +254,7 @@ export default function DashboardSectionContent({ section, formatAmount, transac
   const totalReceivables = Number(summary?.receivables_outstanding ?? receivables.reduce((total, item) => total + Number(item.balance), 0));
   const totalPayables = Number(summary?.payables_outstanding ?? payables.reduce((total, item) => total + Number(item.balance), 0));
 
-  useEffect(() => { setTransactionPage(1); }, [query, kind, transactionPreset]);
+  useEffect(() => { setTransactionPage(1); }, [query, kind, transactionPreset, transactionCustomFrom, transactionCustomTo]);
   useEffect(() => { setBalancePage(1); }, [obligationQuery, obligationStatus, balancePreset]);
 
   async function addAccount(event: FormEvent<HTMLFormElement>) {
