@@ -97,6 +97,7 @@ class BusinessOverviewView(APIView):
         }.items():
             obligation_totals[name] = queryset.aggregate(total=Sum('balance'))['total'] or Decimal('0.00')
         accounts = list(FinancialAccount.objects.filter(business=business, is_active=True))
+        account_rows = FinancialAccountSerializer(accounts, many=True).data
         if accounts:
             account_totals = FinancialAccountSerializer(accounts, many=True).data
             unassigned_totals = transactions.filter(account__isnull=True).values('kind').annotate(total=Sum('amount'))
@@ -272,7 +273,7 @@ class IntelligenceChatView(APIView):
         insights = insights_response.data.get('data', []) if insights_response.status_code == 200 else []
         context = {
             'business': {'name': business.name, 'currency': business.currency, 'opening_balance': business.opening_balance},
-            'accounts': [{'name': account.name, 'kind': account.kind, 'balance': account.balance} for account in accounts],
+            'accounts': [{'name': row['name'], 'kind': row['kind'], 'balance': row['balance']} for row in account_rows],
             'transactions': [{'date': row.occurred_on, 'kind': row.kind, 'description': row.description, 'amount': row.amount,
                               'account': row.account.name if row.account else None,
                               'contact': row.contact.name if row.contact else None} for row in transactions],
