@@ -1,9 +1,28 @@
 import Link from 'next/link';
 import { ArrowRight, Check } from 'lucide-react';
+import { breadcrumbSchema, SITE_URL } from '@/lib/seo';
 
 type GuideSection = { title: string; body: string; points?: string[] };
 
-export default function PublicGuidePage({ kicker, title, description, sections, related, cta = 'Get started free', ctaHref = '/signup', numberSections = false }: {
+const PAGE_PATHS: Record<string, string> = {
+  'Why Dorah exists': '/about',
+  'AI transparency': '/ai-transparency',
+  'Plans and usage': '/billing-and-limits',
+  'Cash and accounts': '/cash-account-tracking',
+  'Customer balances': '/customer-debt-tracking',
+  'Your account and data': '/data-and-account-management',
+  'Dorah features': '/features',
+  'Your financial controller': '/financial-controller',
+  'Financial Intelligence': '/financial-intelligence',
+  'How Dorah works': '/how-it-works',
+  'Product tour': '/product-tour',
+  'Security and data': '/security',
+  Solutions: '/solutions',
+  'Text to transaction': '/text-to-transaction',
+};
+
+export default function PublicGuidePage({ path, kicker, title, description, sections, related, cta = 'Get started free', ctaHref = '/signup', numberSections = false }: {
+  path?: string;
   kicker: string;
   title: string;
   description: string;
@@ -13,7 +32,12 @@ export default function PublicGuidePage({ kicker, title, description, sections, 
   ctaHref?: string;
   numberSections?: boolean;
 }) {
-  return <main className="bg-[#F5F7FB] px-5 pb-16 pt-12 text-[#111B33] sm:px-8 sm:pb-24 sm:pt-16">
+  const pagePath = path ?? PAGE_PATHS[kicker] ?? '/';
+  const schema = { '@context': 'https://schema.org', '@graph': [
+    { '@type': 'WebPage', '@id': `${SITE_URL}${pagePath}#webpage`, url: `${SITE_URL}${pagePath}`, name: title, description, inLanguage: 'en-NG', isPartOf: { '@id': `${SITE_URL}/#website` }, about: { '@id': `${SITE_URL}/#organization` } },
+    breadcrumbSchema([{ name: 'Home', path: '/' }, { name: kicker, path: pagePath }]),
+  ] };
+  return <><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema).replace(/</g, '\\u003c') }} /><main className="bg-[#F5F7FB] px-5 pb-16 pt-12 text-[#111B33] sm:px-8 sm:pb-24 sm:pt-16">
     <div className="mx-auto max-w-6xl">
       <nav aria-label="Breadcrumb" className="text-[10px] font-bold text-[#758096]"><Link href="/" className="transition hover:text-[#3157F5]">Home</Link><span aria-hidden="true" className="mx-2">/</span><span className="text-[#3157F5]">{kicker}</span></nav>
       <header className="mt-8 grid gap-6 border-b border-[#111B33]/10 pb-10 lg:grid-cols-[1.1fr_.9fr] lg:items-end lg:pb-14">
@@ -32,5 +56,5 @@ export default function PublicGuidePage({ kicker, title, description, sections, 
       </section>
       <nav aria-label="Related pages" className="mt-7 flex flex-wrap gap-x-5 gap-y-2 text-xs font-bold text-[#64708A]">{related.map(({ label, href }) => <Link key={href} href={href} className="transition hover:text-[#3157F5]">{label} <span aria-hidden="true">→</span></Link>)}</nav>
     </div>
-  </main>;
+  </main></>;
 }

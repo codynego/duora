@@ -12,7 +12,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params;
   const article = getResourceArticle(slug);
   if (!article) return {};
-  return publicPageMetadata({ title: article.title, description: article.description, path: `/resources/${article.slug}` });
+  return publicPageMetadata({ title: article.title, description: article.description, path: `/resources/${article.slug}`, type: 'article', keywords: [article.eyebrow, article.title, 'small business finance Nigeria'] });
 }
 
 export default async function ResourceArticleRoute({ params }: { params: Promise<{ slug: string }> }) {

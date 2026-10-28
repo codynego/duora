@@ -5,18 +5,17 @@ import {
   CircleAlert,
   FileSpreadsheet,
   MessageCircle,
-  Quote,
   ShieldCheck,
   WalletCards,
 } from 'lucide-react';
 import styles from './DorahMarketplaceHomepage.module.css';
 import BusinessEntryLink from './BusinessEntryLink';
 
-const testimonials = [
-  { quote: 'I wanted one place to see what came in, what I had spent, and what customers still owed me. Dorah makes that picture much easier to follow.', name: 'Shina Kapture Studio', business: 'Creative studio · Benin City' },
-  { quote: 'The useful part is being able to record a partial payment and still know exactly what is left. That is the kind of detail I used to lose in my notebook.', name: 'Amina Bello', business: 'Owner, Amina’s Provision Store' },
-  { quote: 'I can review supplier bills before committing cash and see which records need attention first. It gives me a calmer way to run the week.', name: 'Femi Adeyemi', business: 'Director, Northstar Foods' },
-  { quote: 'Dorah helps me separate everyday business spending from money customers are still expected to pay. That makes planning the next order less stressful.', name: 'Chioma Okafor', business: 'Founder, Bloomline Events' },
+const ownerMoments = [
+  { question: 'A customer paid part of an invoice. What is still outstanding?', answer: 'Record what was received now, keep the remaining balance against that customer, and avoid counting the later repayment as a second sale.', label: 'CUSTOMER CREDIT' },
+  { question: 'Can I afford the supplier payments coming up?', answer: 'Compare recorded account balances with supplier bills and due dates, then open the underlying records before deciding what to pay.', label: 'CASH PLANNING' },
+  { question: 'Which products or services sold most this month?', answer: 'Ask Financial Intelligence to group the relevant recorded sales, calculate the totals, and show a comparison when a chart makes the pattern clearer.', label: 'SALES ANALYSIS' },
+  { question: 'Why does this total look wrong?', answer: 'Move from the summary to the matching transaction list, date range, accounts, and possible duplicate entries so you can find the cause.', label: 'REVIEW THE EVIDENCE' },
 ];
 
 export default function DorahMarketplaceHomepage() {
@@ -27,7 +26,7 @@ export default function DorahMarketplaceHomepage() {
             <div className={styles.heroCopy}>
               <p className={styles.kicker}><span /> Financial oversight for small business</p>
               <h1>Know where your business <em>money stands.</em></h1>
-              <p className={styles.heroIntro}>Track what comes in, what goes out, what you’re owed, and what needs your attention—with an AI-powered financial controller by your side.</p>
+              <p className={styles.heroIntro}>Record what happened, see what your business has and owes, and ask clear questions of your financial data—with the evidence still in view.</p>
               <div className={styles.heroActions}>
                 <BusinessEntryLink className={`${styles.button} ${styles.buttonCobalt}`} />
                 <a href="#how-it-works" className={styles.heroTextLink}>See how it works <ArrowRight /></a>
@@ -90,13 +89,13 @@ export default function DorahMarketplaceHomepage() {
 
         <section className={`${styles.section} ${styles.testimonialSection}`}>
           <div className={styles.container}>
-            <header className={styles.sectionHeading}><div><p className={styles.kicker}><span /> From the owner’s side</p><h2>Built for the decisions behind the numbers.</h2></div><p>Dorah is designed for the everyday moments when a business owner needs a clearer answer, not another complicated report.</p></header>
-            <div className={styles.testimonialViewport} tabIndex={0} aria-label="Customer testimonials">
+            <header className={styles.sectionHeading}><div><p className={styles.kicker}><span /> Everyday business moments</p><h2>Start with the question you actually need answered.</h2></div><p>Dorah is designed for the moments when an owner needs to understand a balance, payment, change, or next action—not another wall of reports.</p></header>
+            <div className={styles.testimonialViewport} tabIndex={0} aria-label="Illustrative Dorah workflows">
               <div className={styles.testimonialGrid}>
-                {[...testimonials, ...testimonials].map((testimonial, index) => <article key={`${testimonial.name}-${index}`} className={styles.testimonialCard} aria-hidden={index >= testimonials.length}><Quote className={styles.testimonialQuoteIcon} /><blockquote>“{testimonial.quote}”</blockquote><footer><strong>{testimonial.name}</strong><span>{testimonial.business}</span></footer></article>)}
+                {[...ownerMoments, ...ownerMoments].map((moment, index) => <article key={`${moment.label}-${index}`} className={styles.testimonialCard} aria-hidden={index >= ownerMoments.length}><MessageCircle className={styles.testimonialQuoteIcon} /><blockquote>“{moment.question}”</blockquote><p>{moment.answer}</p><footer><strong>{moment.label}</strong><span>Illustrative workflow</span></footer></article>)}
               </div>
             </div>
-            <p className={styles.testimonialNote}>Early feedback from small-business owners building better financial habits.</p>
+            <p className={styles.testimonialNote}>Examples show how the workflow is intended to help; they are not live customer records or testimonials.</p>
           </div>
         </section>
 

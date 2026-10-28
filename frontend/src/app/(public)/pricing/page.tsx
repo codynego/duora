@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { ArrowRight, Check, CircleHelp, FileSpreadsheet, MessageCircle, ShieldCheck, WalletCards } from 'lucide-react';
 import styles from '@/components/dorah-market/DorahMarketplaceHomepage.module.css';
 import { publicPageMetadata } from '@/lib/seo';
+import { SITE_URL } from '@/lib/seo';
 
 export const metadata: Metadata = publicPageMetadata({ title: 'Pricing', description: 'Compare Dorah Free, Control, and Intelligence plans for small-business financial oversight. Review monthly and annual prices and choose a plan.', path: '/pricing' });
 
@@ -33,8 +34,20 @@ const intelligenceFeatures = [
 ];
 
 export default function PricingPage() {
+  const pricingSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'OfferCatalog',
+    '@id': `${SITE_URL}/pricing#plans`,
+    name: 'Dorah plans',
+    url: `${SITE_URL}/pricing`,
+    itemListElement: [
+      { '@type': 'Offer', name: 'Free', price: '0', priceCurrency: 'USD', url: `${SITE_URL}/pricing`, description: '100 transactions and 5 AI questions each month.' },
+      { '@type': 'Offer', name: 'Control', price: '3.99', priceCurrency: 'USD', url: `${SITE_URL}/pricing`, description: 'Unlimited transaction recording and 50 AI questions each month.' },
+      { '@type': 'Offer', name: 'Intelligence', price: '7.99', priceCurrency: 'USD', url: `${SITE_URL}/pricing`, description: 'Advanced financial monitoring and 200 AI questions each month.' },
+    ],
+  };
   return (
-      <main>
+      <><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(pricingSchema).replace(/</g, '\\u003c') }} /><main>
         <section className={styles.pricingHero}><div className={styles.container}><p className={styles.kicker}><span /> Straightforward plans</p><h1>Start free.<br /><em>Grow with clarity.</em></h1><p>Get a useful view of your business finances at no cost. Choose Control for more room to record and report, or Intelligence for deeper monitoring and team permissions.</p><div className={styles.pricingCurrency}><WalletCards /> Prices shown in USD. If you pay in naira, your provider’s exchange rate may vary.</div></div></section>
 
         <section className={styles.pricingSection}><div className={styles.container}>
@@ -90,6 +103,6 @@ export default function PricingPage() {
         <section id="pricing-faq" className={styles.pricingFaq}><div className={styles.container}><header className={styles.sectionHeading}><div><p className={styles.kicker}><span /> Good to know</p><h2>Questions about pricing?</h2></div></header><div className={styles.faqGrid}><article><CircleHelp /><h3>Can I start without organized records?</h3><p>Yes. Begin with opening balances and new activity, or import supported records. Your financial picture builds as your records do.</p></article><article><MessageCircle /><h3>What happens when I reach a Free limit?</h3><p>You can continue reviewing your existing records. Control gives you more room for new transactions, imports, reports, and AI questions.</p></article><article><FileSpreadsheet /><h3>Are prices converted to naira?</h3><p>Prices here are in USD. A rough conversion of $1 to ₦1,350 is only an estimate; your payment provider’s rate and charges can differ.</p></article></div></div></section>
 
         <section className={styles.finalCta}><div className={`${styles.container} ${styles.finalInner}`}><div><p className={`${styles.kicker} ${styles.kickerLight}`}><span /> Begin with the records you have</p><h2>Get clearer about where you stand.</h2></div><div><p>Start free and bring your business money into view.</p><Link href="/signup" className={`${styles.button} ${styles.buttonLime}`}>Get started free <ArrowRight /></Link></div></div></section>
-      </main>
+      </main></>
   );
 }

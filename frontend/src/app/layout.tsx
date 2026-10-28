@@ -19,7 +19,10 @@ export const metadata: Metadata = {
   creator: 'Dorah',
   publisher: 'Dorah',
   category: 'finance',
-  alternates: { canonical: '/' },
+  verification: {
+    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION,
+    other: process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION ? { 'msvalidate.01': process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION } : undefined,
+  },
   icons: { icon: '/icon.svg', apple: '/icon-192.svg' },
   appleWebApp: {
     capable: true,
@@ -71,7 +74,12 @@ export default function RootLayout({
                   '@id': `${siteUrl}/#organization`,
                   name: 'Dorah',
                   url: siteUrl,
-                  logo: `${siteUrl}/icon-512.svg`,
+                  logo: {
+                    '@type': 'ImageObject',
+                    url: `${siteUrl}/icon-512.png`,
+                    width: 512,
+                    height: 512,
+                  },
                   email: 'support@dorah.me',
                   description: 'Dorah helps small businesses understand recorded cash, customer balances, supplier bills, and financial activity.',
                 },
@@ -83,6 +91,11 @@ export default function RootLayout({
                   description: 'A financial controller for small businesses to track money, customer debts, bills, and discrepancies.',
                   inLanguage: 'en-NG',
                   publisher: { '@id': `${siteUrl}/#organization` },
+                  potentialAction: {
+                    '@type': 'RegisterAction',
+                    target: `${siteUrl}/signup`,
+                    name: 'Create a Dorah account',
+                  },
                 },
               ],
             }),

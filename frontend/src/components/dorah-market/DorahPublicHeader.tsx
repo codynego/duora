@@ -5,6 +5,7 @@ import { ArrowRight, Menu, X } from 'lucide-react';
 import { useState } from 'react';
 import styles from './DorahMarketplaceHomepage.module.css';
 import { usePublicAuth } from './PublicAuthContext';
+import DorahLogo from '@/components/DorahLogo';
 
 const links = [
   { label: 'Features', href: '/features' },
@@ -13,10 +14,6 @@ const links = [
   { label: 'Contact', href: '/contact' },
   { label: 'Help', href: '/help' },
 ];
-
-function Brand() {
-  return <Link href="/" className={styles.brand} aria-label="Dorah home"><span className={styles.brandMark} aria-hidden="true"><span /><span /><span /></span><span>Dorah</span></Link>;
-}
 
 export default function DorahPublicHeader() {
   const { user, ready } = usePublicAuth();
@@ -27,7 +24,7 @@ export default function DorahPublicHeader() {
   return <header className={styles.navShell}>
     <div className={styles.container}>
       <nav className={styles.nav} aria-label="Primary navigation">
-        <Brand />
+        <DorahLogo className={styles.brand} />
         <div className={styles.navLinks}>{links.map(({ label, href }) => <Link key={href} href={href}>{label}</Link>)}</div>
         <div className={styles.navActions}>{user ? <Link href={entryHref} className={`${styles.button} ${styles.buttonSmall}`}>{entryLabel}</Link> : <><Link href="/login" className={styles.textLink}>Sign in</Link><Link href={entryHref} className={`${styles.button} ${styles.buttonSmall}`}>{entryLabel}</Link></>}</div>
         <div className={styles.mobileMenu}>

@@ -1,13 +1,21 @@
+import { breadcrumbSchema, SITE_URL } from '@/lib/seo';
+
 type PublicInfoPageProps = {
+  path?: string;
   kicker: string;
   title: string;
   description: string;
   sections: Array<{ title: string; body: string }>;
 };
 
-export default function PublicInfoPage({ kicker, title, description, sections }: PublicInfoPageProps) {
+export default function PublicInfoPage({ path, kicker, title, description, sections }: PublicInfoPageProps) {
+  const pagePath = path ?? ({ 'Talk to Dorah': '/contact', 'Privacy at Dorah': '/privacy', 'Using Dorah': '/terms' }[kicker] ?? '/');
+  const schema = { '@context': 'https://schema.org', '@graph': [
+    { '@type': 'WebPage', '@id': `${SITE_URL}${pagePath}#webpage`, url: `${SITE_URL}${pagePath}`, name: title, description, inLanguage: 'en-NG', isPartOf: { '@id': `${SITE_URL}/#website` }, about: { '@id': `${SITE_URL}/#organization` } },
+    breadcrumbSchema([{ name: 'Home', path: '/' }, { name: kicker, path: pagePath }]),
+  ] };
   return (
-    <main className="px-5 pb-20 pt-16 sm:px-8 sm:pb-28 sm:pt-24">
+    <><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema).replace(/</g, '\\u003c') }} /><main className="px-5 pb-20 pt-16 sm:px-8 sm:pb-28 sm:pt-24">
         <header className="mx-auto max-w-4xl">
           <p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[.14em] text-[#3157F5]"><span className="h-0.5 w-6 bg-current" />{kicker}</p>
           <h1 className="mt-6 max-w-3xl font-[Aptos_Display,Arial,sans-serif] text-5xl font-black leading-[.94] tracking-[-.07em] sm:text-7xl">{title}<span className="text-[#3157F5]">.</span></h1>
@@ -21,6 +29,6 @@ export default function PublicInfoPage({ kicker, title, description, sections }:
             </section>
           ))}
         </div>
-    </main>
+    </main></>
   );
 }

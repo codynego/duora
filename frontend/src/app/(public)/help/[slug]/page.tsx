@@ -13,7 +13,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params;
   const guide = getGuide(slug);
   if (!guide) return {};
-  return publicPageMetadata({ title: guide.title, description: guide.summary, path: `/help/${guide.slug}` });
+  return publicPageMetadata({ title: guide.title, description: guide.summary, path: `/help/${guide.slug}`, keywords: [guide.eyebrow, guide.title, 'how to use Dorah'] });
 }
 
 export default async function HelpGuidePage({ params }: { params: Promise<{ slug: string }> }) {

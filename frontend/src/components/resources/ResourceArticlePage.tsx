@@ -1,11 +1,17 @@
 import Link from 'next/link';
 import { ArrowRight, Check, Clock3 } from 'lucide-react';
-import { SITE_URL } from '@/lib/seo';
+import { breadcrumbSchema, SEO_LAST_UPDATED, SITE_URL } from '@/lib/seo';
 import type { ResourceArticle } from './resource-articles';
 
 export default function ResourceArticlePage({ article }: { article: ResourceArticle }) {
   const related = ['/resources/how-to-track-business-expenses', '/resources/how-to-track-customer-debts', '/resources/cash-flow-management-for-small-business'].filter((href) => !href.endsWith(article.slug));
-  const structuredData = { '@context': 'https://schema.org', '@graph': [{ '@type': 'Article', headline: article.title, description: article.description, author: { '@type': 'Organization', name: 'Dorah' }, publisher: { '@type': 'Organization', name: 'Dorah' }, mainEntityOfPage: `${SITE_URL}/resources/${article.slug}` }, { '@type': 'FAQPage', mainEntity: article.faqs.map((faq) => ({ '@type': 'Question', name: faq.question, acceptedAnswer: { '@type': 'Answer', text: faq.answer } })) }] };
+  const articleUrl = `${SITE_URL}/resources/${article.slug}`;
+  const structuredData = { '@context': 'https://schema.org', '@graph': [
+    { '@type': 'Article', '@id': `${articleUrl}#article`, headline: article.title, description: article.description, image: `${SITE_URL}/dorah-social-preview.png`, datePublished: SEO_LAST_UPDATED, dateModified: SEO_LAST_UPDATED, inLanguage: 'en-NG', author: { '@id': `${SITE_URL}/#organization` }, publisher: { '@id': `${SITE_URL}/#organization` }, mainEntityOfPage: { '@id': `${articleUrl}#webpage` } },
+    { '@type': 'WebPage', '@id': `${articleUrl}#webpage`, url: articleUrl, name: article.title, description: article.description, inLanguage: 'en-NG', isPartOf: { '@id': `${SITE_URL}/#website` }, breadcrumb: { '@id': `${articleUrl}#breadcrumb` } },
+    breadcrumbSchema([{ name: 'Home', path: '/' }, { name: 'Resources', path: '/resources' }, { name: article.title, path: `/resources/${article.slug}` }]),
+    { '@type': 'FAQPage', '@id': `${articleUrl}#faq`, mainEntity: article.faqs.map((faq) => ({ '@type': 'Question', name: faq.question, acceptedAnswer: { '@type': 'Answer', text: faq.answer } })) },
+  ] };
   return <><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, '\\u003c') }} /><main className="bg-[#F5F7FB] px-5 pb-20 pt-12 text-[#111B33] sm:px-8 sm:pt-16">
     <article className="mx-auto max-w-4xl">
       <nav aria-label="Breadcrumb" className="text-[10px] font-bold text-[#758096]"><Link href="/" className="hover:text-[#3157F5]">Home</Link><span aria-hidden="true" className="mx-2">/</span><Link href="/resources" className="hover:text-[#3157F5]">Resources</Link><span aria-hidden="true" className="mx-2">/</span><span className="text-[#3157F5]">{article.eyebrow}</span></nav>
