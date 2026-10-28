@@ -19,6 +19,14 @@ const demoTransactions: PreviewTransaction[] = [
   { date: 'Oct 24', title: 'Walk-in sales', detail: 'Sales received', amount: 245_000, direction: 'in' },
 ];
 
+function formatMoneyInputValue(value: string) {
+  const cleaned = value.replace(/[^\d.]/g, '');
+  const [whole = '', ...decimals] = cleaned.split('.');
+  const fraction = decimals.join('').slice(0, 2);
+  const grouped = whole.replace(/^0+(?=\d)/, '').replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return fraction.length ? `${grouped || '0'}.${fraction}` : grouped;
+}
+
 function SampleTag() {
   return <span className="inline-flex items-center rounded-full border border-[#3157F5]/15 bg-[#EEF1FF] px-2 py-1 text-[9px] font-black uppercase tracking-[.08em] text-[#3157F5]">Sample preview</span>;
 }
@@ -122,7 +130,7 @@ export function TransactionDetailsModal({ businessId, transaction, accounts, for
     const form = new FormData(event.currentTarget);
     setBusy(true); setMessage('');
     try {
-      await updateFinanceTransaction(businessId, transaction.transactionId, { description: String(form.get('description') ?? '').trim(), amount: String(form.get('amount') ?? '').trim(), occurred_on: String(form.get('occurred_on') ?? ''), occurred_at: String(form.get('occurred_at') ?? '') ? `${String(form.get('occurred_on') ?? '')}T${String(form.get('occurred_at') ?? '')}:00` : null, account: String(form.get('account') ?? '') || null });
+      await updateFinanceTransaction(businessId, transaction.transactionId, { description: String(form.get('description') ?? '').trim(), amount: String(form.get('amount') ?? '').trim().replace(/,/g, ''), occurred_on: String(form.get('occurred_on') ?? ''), occurred_at: String(form.get('occurred_at') ?? '') ? `${String(form.get('occurred_on') ?? '')}T${String(form.get('occurred_at') ?? '')}:00` : null, account: String(form.get('account') ?? '') || null });
       await onRefresh(); onClose();
     } catch (error) { setMessage(error instanceof Error ? error.message : 'Could not update this transaction.'); }
     finally { setBusy(false); }
@@ -186,7 +194,7 @@ function ObligationDetailsDrawer({ businessId, obligation, formatAmount, onClose
     const form = new FormData(event.currentTarget);
     setBusy(true); setMessage('');
     try {
-      await updateFinanceObligation(businessId, obligation.id, { description: String(form.get('description') ?? '').trim(), amount: String(form.get('amount') ?? '').trim(), due_date: String(form.get('due_date') ?? '') || null, reference: String(form.get('reference') ?? '').trim() });
+      await updateFinanceObligation(businessId, obligation.id, { description: String(form.get('description') ?? '').trim(), amount: String(form.get('amount') ?? '').trim().replace(/,/g, ''), due_date: String(form.get('due_date') ?? '') || null, reference: String(form.get('reference') ?? '').trim() });
       await onRefresh(); onClose();
     } catch (error) { setMessage(error instanceof Error ? error.message : 'Could not update this balance.'); }
     finally { setBusy(false); }
@@ -237,6 +245,18 @@ export default function DashboardSectionContent({ section, formatAmount, transac
   const [selectedTransaction, setSelectedTransaction] = useState<PreviewTransaction | null>(null);
   const [selectedContact, setSelectedContact] = useState<FinanceContact | null>(null);
   const [selectedObligation, setSelectedObligation] = useState<FinanceObligation | null>(null);
+  useEffect(() => {
+    const inputs = Array.from(document.querySelectorAll<HTMLInputElement>('input[type="number"]'));
+    const handlers = inputs.map((input) => {
+      const handler = () => {
+        input.type = 'text';
+        input.value = formatMoneyInputValue(input.value);
+      };
+      input.addEventListener('input', handler);
+      return [input, handler] as const;
+    });
+    return () => handlers.forEach(([input, handler]) => input.removeEventListener('input', handler));
+  }, [section, accountFormOpen, selectedTransaction, selectedObligation]);
   const transactionDates = presetDates(transactionPreset, transactionCustomFrom, transactionCustomTo);
   const cashDates = presetDates(cashPreset, cashCustomFrom, cashCustomTo);
   const balanceDates = presetDates(balancePreset);
@@ -270,7 +290,7 @@ export default function DashboardSectionContent({ section, formatAmount, transac
     const form = new FormData(event.currentTarget);
     setMutationBusy(true); setMutationMessage('');
     try {
-      const openingBalance = String(form.get('opening_balance') ?? '').trim();
+      const openingBalance = String(form.get('opening_balance') ?? '').trim().replace(/,/g, '');
       await createFinanceAccount(businessId, { name: String(form.get('name') ?? '').trim(), kind: String(form.get('kind')) as 'cash' | 'bank' | 'other', opening_balance: openingBalance || undefined });
       await onRefresh(); setAccountFormOpen(false); setMutationMessage('Account saved.');
     } catch (error) { setMutationMessage(error instanceof Error ? error.message : 'Could not save the account.'); }

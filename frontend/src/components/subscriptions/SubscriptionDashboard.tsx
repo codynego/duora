@@ -11,6 +11,14 @@ import { createFinanceContact, createFinanceObligation, createFinanceTransaction
 import DashboardSectionContent, { TransactionDetailsModal, type DashboardSection } from './DashboardSectionContent';
 import FinanceQuickCreate from './FinanceQuickCreate';
 
+function formatMoneyInput(value: string) {
+  const cleaned = value.replace(/[^\d.]/g, '');
+  const [whole = '', ...decimals] = cleaned.split('.');
+  const fraction = decimals.join('').slice(0, 2);
+  const grouped = whole.replace(/^0+(?=\d)/, '').replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return fraction.length ? `${grouped || '0'}.${fraction}` : grouped;
+}
+
 const workspaceItems = [
   { label: 'Overview', href: '/dashboard', icon: LayoutDashboard },
   { label: 'Intelligence', href: '/dashboard/intelligence', icon: Sparkles },
@@ -117,6 +125,17 @@ export default function SubscriptionDashboard() {
     }
   }, [recordOpen]);
 
+  useEffect(() => {
+    if (!recordOpen) return;
+    const inputs = Array.from(document.querySelectorAll<HTMLInputElement>('input[type="number"]'));
+    const handlers = inputs.map((input) => {
+      const handler = () => { input.type = 'text'; input.value = formatMoneyInput(input.value); };
+      input.addEventListener('input', handler);
+      return [input, handler] as const;
+    });
+    return () => handlers.forEach(([input, handler]) => input.removeEventListener('input', handler));
+  }, [recordOpen, entryMode, transactionDraft]);
+
   const currency = financeOverview?.business.currency ?? onboardingProfile?.currency ?? 'NGN';
   const dashboardTransactions = financeOverview?.transactions.length
     ? financeOverview.transactions.map((transaction) => ({
@@ -211,9 +230,9 @@ export default function SubscriptionDashboard() {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
     const name = String(form.get('name') ?? '').trim();
-    const amount = String(form.get('amount') ?? '').trim();
-    const totalAmount = String(form.get('total_amount') ?? amount).trim();
-    const paidNow = String(form.get('paid_now') ?? amount).trim();
+    const amount = String(form.get('amount') ?? '').trim().replace(/,/g, '');
+    const totalAmount = String(form.get('total_amount') ?? amount).trim().replace(/,/g, '');
+    const paidNow = String(form.get('paid_now') ?? amount).trim().replace(/,/g, '');
     const numericAmount = Number(amount || paidNow);
     const numericTotalAmount = Number(totalAmount);
     const numericPaidNow = Number(paidNow);
