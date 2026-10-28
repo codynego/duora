@@ -69,6 +69,7 @@ export default function SubscriptionDashboard() {
   const pathname = usePathname();
   const activeNav = [...workspaceItems, ...preferenceItems].find((item) => item.href === pathname)?.label ?? 'Overview';
   const routeSection = pathname.split('/')[2] as DashboardSection | undefined;
+  const findingId = routeSection === 'intelligence' ? pathname.split('/')[3] : undefined;
   const section = routeSection || 'overview';
   const [recordOpen, setRecordOpen] = useState(false);
   const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
@@ -390,7 +391,7 @@ export default function SubscriptionDashboard() {
       </section>
 
 
-      </> : <><DashboardSectionContent section={section} formatAmount={formatAmount} transactions={dashboardTransactions} hasLiveRecords={Boolean(financeOverview)} workspace={financeWorkspace} summary={financeOverview?.summary} businessId={businessId} business={financeOverview?.business ?? null} currentUser={user} onUserUpdated={setUser} onRefresh={reloadFinanceData} onRecord={() => { setRecordNotice(''); setRecordOpen(true); }} financeAction={businessId && (section === 'receivables' || section === 'payables' || section === 'customers-suppliers') ? <FinanceQuickCreate businessId={businessId} contacts={financeWorkspace?.contacts ?? []} mode={section === 'receivables' ? 'receivable' : section === 'payables' ? 'payable' : 'contact'} onSaved={reloadFinanceData} /> : undefined} /></>}
+      </> : <><DashboardSectionContent section={section} findingId={findingId} formatAmount={formatAmount} transactions={dashboardTransactions} hasLiveRecords={Boolean(financeOverview)} workspace={financeWorkspace} summary={financeOverview?.summary} businessId={businessId} business={financeOverview?.business ?? null} currentUser={user} onUserUpdated={setUser} onRefresh={reloadFinanceData} onRecord={() => { setRecordNotice(''); setRecordOpen(true); }} financeAction={businessId && (section === 'receivables' || section === 'payables' || section === 'customers-suppliers') ? <FinanceQuickCreate businessId={businessId} contacts={financeWorkspace?.contacts ?? []} mode={section === 'receivables' ? 'receivable' : section === 'payables' ? 'payable' : 'contact'} onSaved={reloadFinanceData} /> : undefined} /></>}
       {recordNotice && <p role="status" className="mt-4 border border-[#A5CD4A] bg-[#F2FADA] px-4 py-3 text-xs font-bold text-[#46661A]">{recordNotice}</p>}
     </div></main>
 

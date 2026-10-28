@@ -22,9 +22,10 @@ export default function IntelligenceSection({ findings, openFindings, potentialI
   const [findingFilter, setFindingFilter] = useState<FindingFilter>('attention');
   const [period, setPeriod] = useState('30');
   const allFindings = hasLiveRecords ? findings : sampleFindings;
+  const findingsWithDetailLinks = allFindings.map((finding) => ({ ...finding, action_url: `/dashboard/intelligence/${finding.id}`, action_label: 'Open finding' }));
   const counts = hasLiveRecords ? { attention: findings.filter((item) => statusForFilter(item) === 'attention').length, review: findings.filter((item) => statusForFilter(item) === 'review').length, resolved: findings.filter((item) => statusForFilter(item) === 'resolved').length } : { attention: 4, review: 2, resolved: 8 };
   const impact = hasLiveRecords ? Number(potentialImpact) : 185000;
-  const filteredFindings = useMemo(() => allFindings.filter((item) => statusForFilter(item) === findingFilter), [allFindings, findingFilter]);
+  const filteredFindings = useMemo(() => findingsWithDetailLinks.filter((item) => statusForFilter(item) === findingFilter), [findingsWithDetailLinks, findingFilter]);
   const analyzedLabel = hasLiveRecords ? 'Analysed from saved records' : 'Illustrative analysis · Oct 28, 2026';
 
   return <div className="grid gap-5">
