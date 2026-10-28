@@ -22,6 +22,65 @@ from .serializers import (BusinessSerializer, ContactSerializer, FinancialAccoun
 logger = logging.getLogger(__name__)
 
 
+def openai_response_text(payload):
+    """Extract text from the Responses API without assuming one response shape."""
+    if not isinstance(payload, dict):
+        return ''
+    output_text = payload.get('output_text')
+    if isinstance(output_text, str) and output_text.strip():
+        return output_text.strip()
+
+    parts = []
+
+    def collect(value):
+        if isinstance(value, dict):
+            value_type = value.get('type')
+            if value_type in ('output_text', 'text') and isinstance(value.get('text'), str):
+                parts.append(value['text'])
+            for key in ('output', 'content', 'parts'):
+                nested = value.get(key)
+                if isinstance(nested, list):
+                    for item in nested:
+                        collect(item)
+        elif isinstance(value, list):
+            for item in value:
+                collect(item)
+
+    collect(payload.get('output'))
+    if parts:
+        return '\n'.join(part for part in parts if part).strip()
+
+    # Keep this fallback tolerant of compatible proxy/provider response shapes.
+    choices = payload.get('choices')
+    if isinstance(choices, list):
+        for choice in choices:
+            if not isinstance(choice, dict):
+                continue
+            message = choice.get('message')
+            if isinstance(message, dict) and isinstance(message.get('content'), str):
+                return message['content'].strip()
+    return ''
+
+
+def parse_openai_json(text):
+    """Parse JSON returned directly or inside a markdown code fence."""
+    if not isinstance(text, str):
+        return None
+    candidate = text.strip()
+    if candidate.startswith('```'):
+        lines = candidate.splitlines()
+        if lines and lines[0].strip().startswith('```'):
+            lines = lines[1:]
+        if lines and lines[-1].strip() == '```':
+            lines = lines[:-1]
+        candidate = '\n'.join(lines).strip()
+    try:
+        parsed = json.loads(candidate)
+    except (TypeError, json.JSONDecodeError):
+        return None
+    return parsed if isinstance(parsed, dict) else None
+
+
 def owned_business(request, business_id):
     return Business.objects.filter(owner=request.user, id=business_id).first()
 
@@ -231,10 +290,10 @@ class TransactionParseView(APIView):
         except json.JSONDecodeError:
             logger.error('OpenAI transaction parsing returned invalid JSON.')
             return Response({'detail': 'The transaction draft was incomplete. Please try again or enter it manually.'}, status=status.HTTP_502_BAD_GATEWAY)
-        output_text = payload.get('output_text', '')
-        try:
-            draft = json.loads(output_text)
-        except (TypeError, json.JSONDecodeError):
+        output_text = openai_response_text(payload)
+        draft = parse_openai_json(output_text)
+        if not draft:
+            logger.error('OpenAI transaction parsing returned no usable JSON: response_keys=%s output_types=%s', list(payload.keys()), [item.get('type') for item in payload.get('output', []) if isinstance(item, dict)])
             return Response({'detail': 'The transaction draft was incomplete. Please try again.'}, status=status.HTTP_502_BAD_GATEWAY)
         draft = {
             'kind': draft.get('kind', 'unknown'),
@@ -319,16 +378,7 @@ class IntelligenceChatView(APIView):
         except json.JSONDecodeError:
             logger.exception('OpenAI intelligence chat returned invalid JSON')
             return Response({'detail': 'The controller returned an incomplete answer. Please try again.'}, status=status.HTTP_502_BAD_GATEWAY)
-        answer = str(payload.get('output_text') or '').strip()
-        if not answer:
-            output_parts = []
-            for item in payload.get('output', []) if isinstance(payload.get('output'), list) else []:
-                if not isinstance(item, dict) or item.get('type') != 'message':
-                    continue
-                for content in item.get('content', []) if isinstance(item.get('content'), list) else []:
-                    if isinstance(content, dict) and content.get('type') in ('output_text', 'text') and content.get('text'):
-                        output_parts.append(str(content['text']))
-            answer = '\n'.join(output_parts).strip()
+        answer = openai_response_text(payload)
         if not answer:
             logger.error('OpenAI intelligence chat returned no text: status=%s output_types=%s', payload.get('status'), [item.get('type') for item in payload.get('output', []) if isinstance(item, dict)])
             return Response({'detail': 'The controller returned an empty answer. Please try again.'}, status=status.HTTP_502_BAD_GATEWAY)
