@@ -268,6 +268,7 @@ class IntelligenceChatView(APIView):
 
         transactions = list(Transaction.objects.filter(business=business, is_voided=False).select_related('account', 'contact').order_by('-occurred_on', '-created_at')[:100])
         accounts = list(FinancialAccount.objects.filter(business=business, is_active=True))
+        account_rows = FinancialAccountSerializer(accounts, many=True).data
         obligations = list(Obligation.objects.filter(business=business).select_related('contact').order_by('due_date', '-updated_at')[:100])
         insights_response = FinanceInsightsView().get(request, business_id)
         insights = insights_response.data.get('data', []) if insights_response.status_code == 200 else []
