@@ -48,13 +48,13 @@ export default function PricingPage() {
   };
   return (
       <><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(pricingSchema).replace(/</g, '\\u003c') }} /><main>
-        <section className={styles.pricingHero}><div className={styles.container}><p className={styles.kicker}><span /> Straightforward plans</p><h1>Start free.<br /><em>Grow with clarity.</em></h1><p>Get a useful view of your business finances at no cost. Choose Control for more room to record and report, or Intelligence for deeper monitoring and team permissions.</p><div className={styles.pricingCurrency}><WalletCards /> Prices shown in USD. If you pay in naira, your provider’s exchange rate may vary.</div></div></section>
+        <section className={styles.pricingHero}><div className={styles.container}><p className={styles.kicker}><span /> Straightforward plans</p><h1>Start with what you have.<br /><em>Grow when you need more room.</em></h1><p>Dorah is free to begin. When the business needs more records, more questions answered, or a deeper view of what is changing, move up when it makes sense for you.</p><div className={styles.pricingCurrency}><WalletCards /> Prices shown in USD. If you pay in naira, your provider’s exchange rate may vary.</div></div></section>
 
         <section className={styles.pricingSection}><div className={styles.container}>
           <div className={styles.planGrid}>
             <article className={styles.planCard}>
               <div className={styles.planHeading}><div><p>For getting started</p><h2>Free</h2></div><span className={styles.planBadge}>$0 always</span></div>
-              <p className={styles.planDescription}>Build a clearer picture of your business money using the records you have.</p>
+              <p className={styles.planDescription}>A simple place to start recording what happened and seeing where the business stands.</p>
               <div className={styles.planPrice}><strong>$0</strong><span>/ month</span></div>
               <Link href="/signup" className={`${styles.button} ${styles.planButton}`}>Get started free <ArrowRight /></Link>
               <p className={styles.includedLabel}>Free includes</p>
@@ -63,7 +63,7 @@ export default function PricingPage() {
 
             <article className={`${styles.planCard} ${styles.controlPlan}`}>
               <div className={styles.planHeading}><div><p>For growing records</p><h2>Control</h2></div><span className={styles.planBadge}>Most room</span></div>
-              <p className={styles.planDescription}>Keep recording and importing without transaction or import caps, with 50 controller questions each month.</p>
+              <p className={styles.planDescription}>For a business that is recording regularly and needs more room to keep the picture complete.</p>
               <div className={styles.planPrice}><strong>$3.99</strong><span>/ month</span></div>
               <div className={styles.annualPrice}>Or $39.99 / year <span>Save about 16%</span></div>
               <Link href="/signup" className={`${styles.button} ${styles.controlButton}`}>Choose Control <ArrowRight /></Link>
@@ -73,7 +73,7 @@ export default function PricingPage() {
 
             <article className={styles.planCard}>
               <div className={styles.planHeading}><div><p>For deeper oversight</p><h2>Intelligence</h2></div><span className={styles.planBadge}>Advanced insights</span></div>
-              <p className={styles.planDescription}>Understand what changed, why it matters, and what may deserve a closer look.</p>
+              <p className={styles.planDescription}>For owners who want Dorah to help them spot changes, ask better questions, and review what matters.</p>
               <div className={styles.planPrice}><strong>$7.99</strong><span>/ month</span></div>
               <div className={styles.annualPrice}>Or $79.99 / year <span>Save about 17%</span></div>
               <Link href="/signup" className={`${styles.button} ${styles.controlButton}`}>Choose Intelligence <ArrowRight /></Link>
@@ -81,7 +81,7 @@ export default function PricingPage() {
               <ul className={styles.planFeatures}>{intelligenceFeatures.slice(1).map((feature) => <li key={feature}><Check />{feature}</li>)}</ul>
             </article>
           </div>
-          <p className={styles.launchNote}><ShieldCheck /> Start with the plan that fits your records today. You can move to deeper financial monitoring and team tools as your business grows.</p>
+          <p className={styles.launchNote}><ShieldCheck /> Choose the plan that fits the way you run the business today. You can move up when you need more room, not before.</p>
         </div></section>
 
         <section className={styles.compareSection}><div className={styles.container}><header className={styles.sectionHeading}><div><p className={styles.kicker}><span /> Compare plans</p><h2>Room to build better habits.</h2></div><p>Choose the plan that fits how much financial activity you want to keep in view.</p></header><div className={styles.compareTable} role="table" aria-label="Free, Control, and Intelligence plan comparison"><div className={`${styles.compareRow} ${styles.compareHead}`} role="row"><span role="columnheader">Included</span><strong role="columnheader">Free</strong><strong role="columnheader">Control</strong><strong role="columnheader">Intelligence</strong></div>

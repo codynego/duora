@@ -2,14 +2,14 @@ import type { Metadata } from 'next';
 import PublicGuidePage from '@/components/PublicGuidePage';
 import { publicPageMetadata } from '@/lib/seo';
 
-export const metadata: Metadata = publicPageMetadata({ title: 'Cash and Account Tracking', description: 'See money received and paid through each business account for a chosen date range, and review current recorded balances across all time.', path: '/cash-account-tracking' });
+export const metadata: Metadata = publicPageMetadata({ title: 'Cash and Account Tracking', description: 'See what each cash, bank, POS, or business account received and paid in a chosen period, and understand its current recorded balance.', path: '/cash-account-tracking' });
 
 export default function CashAccountTrackingPage() {
-  return <PublicGuidePage kicker="Cash and accounts" title="See where money moved—not only the business-wide total" description="Cash on hand, bank, POS, and other accounts can tell different stories. Dorah keeps their activity separate while preserving one business view." sections={[
-    { title: 'Create the accounts you use', body: 'Add the practical places where business money sits or moves. Use clear names so a transaction can be assigned without guesswork.' },
-    { title: 'Choose the period', body: 'Use Today, Yesterday, Last 7 days, Last 30 days, All time, or a custom range. Each account shows what it received and paid during that selected period.' },
-    { title: 'Understand all time', body: 'When All time is selected, the account view represents the current recorded balance: opening balance plus all saved movements affecting that account.' },
-    { title: 'Record transfers correctly', body: 'Moving ₦100,000 from bank to cash reduces one account and increases the other. It should not inflate business income or expenses.' },
-    { title: 'Investigate differences', body: 'If physical cash or a bank statement differs from Dorah, check the date range, opening balance, missing entries, duplicated entries, and the account chosen on each transaction.' },
-  ]} related={[{ label: 'Learn customer debt tracking', href: '/customer-debt-tracking' }, { label: 'Take the product tour', href: '/product-tour' }, { label: 'Get how-to help', href: '/help' }]} />;
+  return <PublicGuidePage kicker="Cash and accounts" title="Your business money does not all live in one place" description="Dorah helps you see what moved through cash, bank, POS, and other accounts—without losing the wider view of the business." sections={[
+    { title: 'Name the places money actually sits', body: 'Start with the accounts your business really uses: cash on hand, a business bank account, POS, or another practical place. Clear names make it easier to know where a transaction belongs.' },
+    { title: 'Look at the period you care about', body: 'Choose Today when you are closing the day, Yesterday when you are checking what happened, or a longer and custom range when you are trying to understand a pattern. Each account shows what came in and what went out in that time.' },
+    { title: 'Use all time for the balance you have now', body: 'All time answers a different question. It shows the current recorded position of the account: its opening balance plus every saved movement that affects it.' },
+    { title: 'Move money without changing the story', body: 'If you move ₦100,000 from bank to cash, the business has not made ₦100,000 and it has not spent ₦100,000. A transfer simply changes where the same money is held.' },
+    { title: 'Investigate a difference before you worry', body: 'If the cash in the drawer or the bank statement does not match Dorah, check the date range, opening balance, missing record, duplicate record, and the account used on each transaction. The answer is usually in one of those places.' },
+  ]} related={[{ label: 'Track customer balances', href: '/customer-debt-tracking' }, { label: 'Take the product tour', href: '/product-tour' }, { label: 'Read the how-to guides', href: '/help' }]} />;
 }
