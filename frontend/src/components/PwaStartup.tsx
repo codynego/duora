@@ -12,11 +12,12 @@ export default function PwaStartup() {
   useEffect(() => {
     const standalone = window.matchMedia('(display-mode: standalone)').matches
       || Boolean((navigator as Navigator & { standalone?: boolean }).standalone);
-    if (standalone && (pathname === '/' || pathname.startsWith('/dashboard'))) {
+    // The installed app should open the public homepage. Keep the homepage
+    // reachable from the dashboard instead of treating `/` as an alias for
+    // the authenticated workspace.
+    if (standalone && pathname.startsWith('/dashboard')) {
       void getCurrentUser().then((user) => {
-        if (pathname === '/') {
-          router.replace(user ? '/dashboard' : '/login?next=%2Fdashboard');
-        } else if (!user) {
+        if (!user) {
           router.replace(`/login?next=${encodeURIComponent(pathname)}`);
         }
       });
