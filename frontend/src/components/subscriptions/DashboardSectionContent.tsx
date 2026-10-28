@@ -250,12 +250,16 @@ export default function DashboardSectionContent({ section, findingId, formatAmou
   useEffect(() => {
     const inputs = Array.from(document.querySelectorAll<HTMLInputElement>('input[type="number"]'));
     const handlers = inputs.map((input) => {
+      // Number inputs do not expose a reliable selection range in all
+      // browsers. Convert them before the user types so comma formatting can
+      // preserve the actual caret position.
+      input.type = 'text';
+      input.inputMode = 'decimal';
       const handler = () => {
         const caret = input.selectionStart ?? input.value.length;
         const valueBeforeCaret = input.value.slice(0, caret);
         const formatted = formatMoneyInputValue(input.value);
         const formattedCaret = formatMoneyInputValue(valueBeforeCaret).length;
-        input.type = 'text';
         input.value = formatted;
         input.setSelectionRange(formattedCaret, formattedCaret);
       };
