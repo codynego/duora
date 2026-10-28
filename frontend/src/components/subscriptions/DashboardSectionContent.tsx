@@ -295,7 +295,8 @@ export default function DashboardSectionContent({ section, findingId, formatAmou
   const [selectedContact, setSelectedContact] = useState<FinanceContact | null>(null);
   const [selectedObligation, setSelectedObligation] = useState<FinanceObligation | null>(null);
   useEffect(() => {
-    const inputs = Array.from(document.querySelectorAll<HTMLInputElement>('input[type="number"]'));
+    const inputs = Array.from(document.querySelectorAll<HTMLInputElement>('input[type="number"]'))
+      .filter((input) => !input.closest('section[aria-labelledby="record-transaction-title"]'));
     const handlers = inputs.map((input) => {
       // Number inputs do not expose a reliable selection range in all
       // browsers. Convert them before the user types so comma formatting can
