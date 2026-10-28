@@ -859,3 +859,7 @@ main.min-h-screen.bg-\[\#fffdfc\] h2 { font-family: 'Manrope', 'Geist', ui-sans-
 @media (prefers-reduced-motion: reduce) {
   .homi-site *, .homi-site *::before, .homi-site *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
 }
+
+/* Keep interval bars compact so short daily ranges read as adjacent days. */
+div[class~="min-w-[30px]"] { flex: 0 0 34px !important; }
+div[class~="overflow-x-auto"][class~="items-end"] { gap: .25rem !important; }
