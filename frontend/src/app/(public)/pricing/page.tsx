@@ -28,7 +28,7 @@ const intelligenceFeatures = [
   'Everything in Control',
   'Advanced financial monitoring',
   'AI-powered explanations and recommendations',
-  'Higher AI usage allowance',
+  '200 AI questions each month',
   'Team permissions',
 ];
 
@@ -50,7 +50,7 @@ export default function PricingPage() {
 
             <article className={`${styles.planCard} ${styles.controlPlan}`}>
               <div className={styles.planHeading}><div><p>For growing records</p><h2>Control</h2></div><span className={styles.planBadge}>Most room</span></div>
-              <p className={styles.planDescription}>Keep recording, importing, and reviewing without running into monthly caps.</p>
+              <p className={styles.planDescription}>Keep recording and importing without transaction or import caps, with 50 controller questions each month.</p>
               <div className={styles.planPrice}><strong>$3.99</strong><span>/ month</span></div>
               <div className={styles.annualPrice}>Or $39.99 / year <span>Save about 16%</span></div>
               <Link href="/signup" className={`${styles.button} ${styles.controlButton}`}>Choose Control <ArrowRight /></Link>
@@ -75,10 +75,10 @@ export default function PricingPage() {
             {[
               ['Businesses', '1', '1', '1'],
               ['New transactions', '100 / month', 'Unlimited', 'Unlimited'],
-              ['Customer records', '20', 'Included in Free', 'Included in Free'],
-              ['Supplier records', '10', 'Included in Free', 'Included in Free'],
+              ['Customer records', '20', '20', '20'],
+              ['Supplier records', '10', '10', '10'],
               ['Spreadsheet imports', '1 / month', 'Unlimited', 'Unlimited'],
-              ['AI questions', '5 / month', '50 / month', 'Higher allowance'],
+              ['AI questions', '5 / month', '50 / month', '200 / month'],
               ['Financial reports', 'Basic', 'Full reports', 'Full reports'],
               ['Reconciliation tools', '—', 'Included', 'Included'],
               ['Discrepancy checks', 'Basic', 'Included', 'Advanced monitoring'],
