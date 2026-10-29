@@ -32,7 +32,12 @@ def send_email(*, to, subject, text, body_html):
         'https://api.resend.com/emails',
         data=payload,
         method='POST',
-        headers={'Authorization': f'Bearer {api_key}', 'Content-Type': 'application/json'},
+        headers={
+            'Authorization': f'Bearer {api_key}',
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'User-Agent': 'Dorah/1.0 (email delivery)',
+        },
     )
     try:
         with urllib.request.urlopen(request, timeout=15) as response:
