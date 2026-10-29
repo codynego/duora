@@ -12,5 +12,5 @@ export default function FinancialIntelligencePage() {
     { title: 'Be clear about the time you mean', body: 'Today, yesterday, a named date, last month, or a custom range can produce very different answers. Dorah resolves the time period first, then uses records from that same window.' },
     { title: 'Use a chart when a picture is clearer', body: 'A chart can make a trend across products, dates, customers, or categories easier to see. For a single direct question, Dorah should simply give you the answer and the records behind it.' },
     { title: 'Keep the limits in view', body: 'The answer is only as complete as the records you saved. Dorah should say when information is missing, avoid turning a possibility into a fact, and never pretend to replace professional financial advice.' },
-  ]} related={[{ label: 'See how AI is used', href: '/ai-transparency' }, { label: 'Meet your financial controller', href: '/financial-controller' }, { label: 'Compare AI limits', href: '/billing-and-limits' }]} cta="Open Financial Intelligence" ctaHref="/dashboard/intelligence" />;
+  ]} related={[{ label: 'See how AI is used', href: '/ai-transparency' }, { label: 'Meet your financial controller', href: '/financial-controller' }, { label: 'Read the how-to guides', href: '/help' }]} cta="Open Financial Intelligence" ctaHref="/dashboard/intelligence" />;
 }

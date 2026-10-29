@@ -7,7 +7,6 @@ type GuideSection = { title: string; body: string; points?: string[] };
 const PAGE_PATHS: Record<string, string> = {
   'Why Dorah exists': '/about',
   'AI transparency': '/ai-transparency',
-  'Plans and usage': '/billing-and-limits',
   'Cash and accounts': '/cash-account-tracking',
   'Customer balances': '/customer-debt-tracking',
   'Your account and data': '/data-and-account-management',
@@ -15,10 +14,8 @@ const PAGE_PATHS: Record<string, string> = {
   'Your financial controller': '/financial-controller',
   'Financial Intelligence': '/financial-intelligence',
   'How Dorah works': '/how-it-works',
-  'Product tour': '/product-tour',
   'Security and data': '/security',
   Solutions: '/solutions',
-  'Text to transaction': '/text-to-transaction',
 };
 
 export default function PublicGuidePage({ path, kicker, title, description, sections, related, cta = 'Get started free', ctaHref = '/signup', numberSections = false }: {

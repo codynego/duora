@@ -11,5 +11,5 @@ export default function CashAccountTrackingPage() {
     { title: 'Use all time for the balance you have now', body: 'All time answers a different question. It shows the current recorded position of the account: its opening balance plus every saved movement that affects it.' },
     { title: 'Move money without changing the story', body: 'If you move ₦100,000 from bank to cash, the business has not made ₦100,000 and it has not spent ₦100,000. A transfer simply changes where the same money is held.' },
     { title: 'Investigate a difference before you worry', body: 'If the cash in the drawer or the bank statement does not match Dorah, check the date range, opening balance, missing record, duplicate record, and the account used on each transaction. The answer is usually in one of those places.' },
-  ]} related={[{ label: 'Track customer balances', href: '/customer-debt-tracking' }, { label: 'Take the product tour', href: '/product-tour' }, { label: 'Read the how-to guides', href: '/help' }]} />;
+  ]} related={[{ label: 'Track customer balances', href: '/customer-debt-tracking' }, { label: 'Explore the features', href: '/features' }, { label: 'Read the how-to guides', href: '/help' }]} />;
 }

@@ -12,5 +12,5 @@ export default function AiTransparencyPage() {
     { title: 'Why answers can still be wrong', body: 'Missing transactions, vague descriptions, incorrect dates, unmatched contacts, model interpretation, or incomplete business context can affect an answer. Open the evidence when the decision matters.' },
     { title: 'How Dorah reduces error', body: 'Generated transaction drafts require confirmation. Financial questions can be routed to deterministic analysis and relevant records, while totals and permissions remain enforced by application logic.' },
     { title: 'How to use it responsibly', body: 'Avoid entering secrets, ask specific questions, include the relevant date when possible, review cited records, and correct the source data rather than only correcting the wording of an answer.' },
-  ]} related={[{ label: 'Explore Financial Intelligence', href: '/financial-intelligence' }, { label: 'Learn text-to-transaction', href: '/text-to-transaction' }, { label: 'Read security and data', href: '/security' }]} cta="See the product workflow" ctaHref="/product-tour" />;
+  ]} related={[{ label: 'Explore Financial Intelligence', href: '/financial-intelligence' }, { label: 'Read security and data', href: '/security' }, { label: 'See the features', href: '/features' }]} cta="Open Financial Intelligence" ctaHref="/dashboard/intelligence" />;
 }

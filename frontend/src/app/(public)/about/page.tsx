@@ -78,7 +78,7 @@ export default function AboutPage() {
       <section className="bg-[#3157F5] px-5 py-16 text-white sm:px-8 sm:py-20">
         <div className="mx-auto flex max-w-6xl flex-col justify-between gap-8 sm:flex-row sm:items-end">
           <div><p className="text-[10px] font-black uppercase tracking-[.16em] text-[#C9F45D]">See what we are building</p><h2 className="mt-4 max-w-3xl font-[Aptos_Display,Arial,sans-serif] text-4xl font-black leading-[.98] tracking-[-.06em] sm:text-5xl">Start with the records you have.</h2></div>
-          <div className="flex flex-wrap gap-3"><Link href="/product-tour" className="inline-flex h-12 items-center gap-2 rounded-lg border border-white/25 px-5 text-xs font-black transition hover:bg-white/10">Take the product tour <ArrowRight className="h-4 w-4" /></Link><Link href="/signup" className="inline-flex h-12 items-center gap-2 rounded-lg bg-[#C9F45D] px-5 text-xs font-black text-[#111B33] transition hover:bg-[#D7FA7D]">Get started free <ArrowRight className="h-4 w-4" /></Link></div>
+          <div className="flex flex-wrap gap-3"><Link href="/features" className="inline-flex h-12 items-center gap-2 rounded-lg border border-white/25 px-5 text-xs font-black transition hover:bg-white/10">Explore the features <ArrowRight className="h-4 w-4" /></Link><Link href="/signup" className="inline-flex h-12 items-center gap-2 rounded-lg bg-[#C9F45D] px-5 text-xs font-black text-[#111B33] transition hover:bg-[#D7FA7D]">Get started free <ArrowRight className="h-4 w-4" /></Link></div>
         </div>
       </section>
     </main>
