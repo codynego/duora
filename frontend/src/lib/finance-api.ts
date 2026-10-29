@@ -11,6 +11,8 @@ export type FinanceBusiness = {
   currency: string;
   record_keeping: string;
   setup_choice: string;
+  whatsapp_number: string;
+  whatsapp_marketing_opt_in: boolean;
   plan: string;
   opening_balance: string;
 };
@@ -115,7 +117,7 @@ export async function getBusinesses() {
 }
 
 export async function updateFinanceBusiness(businessId: string, input: Partial<Pick<FinanceBusiness,
-  'name' | 'business_type' | 'industry' | 'country' | 'currency' | 'record_keeping' | 'setup_choice' | 'opening_balance'>>) {
+  'name' | 'business_type' | 'industry' | 'country' | 'currency' | 'record_keeping' | 'setup_choice' | 'whatsapp_number' | 'whatsapp_marketing_opt_in' | 'opening_balance'>>) {
   const response = await financeRequest<{ data: FinanceBusiness }>(`businesses/${businessId}/`, {
     method: 'PATCH', body: JSON.stringify(input),
   });
@@ -130,6 +132,8 @@ export async function createBusiness(input: {
   currency: string;
   record_keeping: string;
   setup_choice: string;
+  whatsapp_number?: string;
+  whatsapp_marketing_opt_in?: boolean;
 }) {
   const response = await financeRequest<{ data: FinanceBusiness }>('businesses/', {
     method: 'POST', body: JSON.stringify(input),

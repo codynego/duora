@@ -9,7 +9,7 @@ from .models import Business, Contact, FinancialAccount, Obligation, Transaction
 class BusinessSerializer(serializers.ModelSerializer):
     class Meta:
         model = Business
-        fields = ('id', 'name', 'business_type', 'industry', 'country', 'currency', 'record_keeping', 'setup_choice', 'plan', 'opening_balance', 'created_at')
+        fields = ('id', 'name', 'business_type', 'industry', 'country', 'currency', 'record_keeping', 'setup_choice', 'whatsapp_number', 'whatsapp_marketing_opt_in', 'plan', 'opening_balance', 'created_at')
         read_only_fields = ('id', 'plan', 'created_at')
         extra_kwargs = {'opening_balance': {'required': False}}
 

@@ -12,6 +12,7 @@ export default function PwaStartup() {
   useEffect(() => {
     const standalone = window.matchMedia('(display-mode: standalone)').matches
       || Boolean((navigator as Navigator & { standalone?: boolean }).standalone);
+    if (!standalone) return;
     // The manifest opens the installed app at /dashboard. Keep authentication
     // on the dashboard route while leaving the public homepage reachable.
     if (standalone && pathname.startsWith('/dashboard')) {
@@ -22,7 +23,7 @@ export default function PwaStartup() {
       });
     }
 
-    const storageKey = 'duorah-startup-seen';
+    const storageKey = 'dorah-pwa-startup-seen';
     if (window.sessionStorage.getItem(storageKey)) return;
     window.sessionStorage.setItem(storageKey, 'true');
 

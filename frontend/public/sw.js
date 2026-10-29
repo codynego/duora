@@ -1,5 +1,9 @@
-const CACHE_NAME = 'dorah-shell-v3';
+const CACHE_NAME = 'dorah-shell-v4';
 const OFFLINE_URL = '/offline';
+
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'SKIP_WAITING') self.skipWaiting();
+});
 
 self.addEventListener('install', (event) => {
   event.waitUntil(

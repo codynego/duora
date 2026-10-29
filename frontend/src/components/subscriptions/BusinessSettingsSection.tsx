@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { type FormEvent, useState } from 'react';
-import { ArrowRight, BriefcaseBusiness, CircleDollarSign } from 'lucide-react';
+import { ArrowRight, BriefcaseBusiness, CircleDollarSign, MessageCircle } from 'lucide-react';
 import { updateFinanceBusiness, type FinanceBusiness } from '@/lib/finance-api';
 
 const countries = [
@@ -38,10 +38,12 @@ export default function BusinessSettingsSection({ business, currencyLocked, onSa
         country: String(form.get('country') ?? ''),
         currency: currencyLocked ? undefined : String(form.get('currency') ?? ''),
         record_keeping: String(form.get('record_keeping') ?? ''),
+        whatsapp_number: String(form.get('whatsapp_number') ?? '').trim(),
+        whatsapp_marketing_opt_in: Boolean(String(form.get('whatsapp_number') ?? '').trim() && form.get('whatsapp_marketing_opt_in')),
       });
       try {
         const stored = JSON.parse(window.localStorage.getItem('dorah:financial-controller:onboarding') || '{}');
-        window.localStorage.setItem('dorah:financial-controller:onboarding', JSON.stringify({ ...stored, country: String(form.get('country') ?? '') }));
+        window.localStorage.setItem('dorah:financial-controller:onboarding', JSON.stringify({ ...stored, country: String(form.get('country') ?? ''), whatsappNumber: String(form.get('whatsapp_number') ?? '').trim(), whatsappMarketingOptIn: Boolean(String(form.get('whatsapp_number') ?? '').trim() && form.get('whatsapp_marketing_opt_in')) }));
       } catch { /* The saved business country remains the source of truth. */ }
       await onSaved();
       setNotice('Business settings saved.');
@@ -61,6 +63,7 @@ export default function BusinessSettingsSection({ business, currencyLocked, onSa
           <label className="grid gap-1.5 text-xs font-bold text-[#536078]">Country<select name="country" key={business.id + business.country} defaultValue={business.country} required className="h-11 rounded-lg border border-[#111B33]/15 bg-white px-3 text-sm text-[#111B33] outline-none focus:border-[#3157F5] focus:ring-4 focus:ring-[#3157F5]/10">{countries.map((country) => <option key={country.code} value={country.code}>{country.name}</option>)}</select></label>
           <label className="grid gap-1.5 text-xs font-bold text-[#536078]">Primary business currency<select name="currency" key={business.id + business.currency} defaultValue={business.currency} required disabled={currencyLocked} className="h-11 rounded-lg border border-[#111B33]/15 bg-white px-3 text-sm text-[#111B33] outline-none focus:border-[#3157F5] focus:ring-4 focus:ring-[#3157F5]/10 disabled:cursor-not-allowed disabled:bg-[#F5F7FB] disabled:text-[#758096]">{currencies.map(([code, label]) => <option key={code} value={code}>{code} — {label}</option>)}</select><span className="text-[10px] font-normal leading-4 text-[#758096]">{currencyLocked ? 'Currency is locked after you add accounts, transactions, or outstanding balances.' : 'This currency is used for your main financial overview and reports.'}</span></label>
           <label className="grid gap-1.5 text-xs font-bold text-[#536078] sm:col-span-2">How you keep records<select name="record_keeping" key={business.id + business.record_keeping} defaultValue={business.record_keeping || ''} className="h-11 rounded-lg border border-[#111B33]/15 bg-white px-3 text-sm text-[#111B33] outline-none focus:border-[#3157F5] focus:ring-4 focus:ring-[#3157F5]/10"><option value="">Choose how you keep records</option><option value="paper">Notebook or paper</option><option value="digital">Excel or another digital tool</option><option value="unorganized">I don’t keep organized records</option></select></label>
+          <div className="rounded-xl border border-[#111B33]/10 bg-[#F8F9FC] p-4 sm:col-span-2"><div className="flex items-start gap-3"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-[#F0FFF5] text-[#176B39]"><MessageCircle className="h-4 w-4" /></span><div><strong className="block text-xs font-black">WhatsApp follow-up</strong><p className="mt-1 text-[10px] leading-4 text-[#64708A]">Keep your number up to date and control whether Dorah sends helpful reminders and product updates.</p></div></div><label className="mt-4 grid gap-1.5 text-xs font-bold text-[#536078]">WhatsApp number<input name="whatsapp_number" key={business.id + business.whatsapp_number} type="tel" inputMode="tel" autoComplete="tel" defaultValue={business.whatsapp_number} placeholder="e.g. +234 801 234 5678" className="h-11 rounded-lg border border-[#111B33]/15 bg-white px-3 text-sm text-[#111B33] outline-none focus:border-[#3157F5] focus:ring-4 focus:ring-[#3157F5]/10" /><span className="text-[10px] font-normal leading-4 text-[#758096]">Include your country code. Leave blank to remove the number.</span></label><label className="mt-3 flex items-start gap-2 text-xs leading-5 text-[#536078]"><input name="whatsapp_marketing_opt_in" type="checkbox" defaultChecked={business.whatsapp_marketing_opt_in} className="mt-1 h-4 w-4 accent-[#3157F5]" /> <span>I agree to receive helpful setup reminders, product tips, and occasional updates on WhatsApp.</span></label></div>
           {error && <p role="alert" className="rounded-lg bg-[#FFF0F0] p-3 text-xs text-[#A4362B] sm:col-span-2">{error}</p>}
           {notice && <p role="status" className="rounded-lg border border-[#A5CD4A] bg-[#F2FADA] p-3 text-xs text-[#496436] sm:col-span-2">{notice}</p>}
           <button disabled={saving} aria-busy={saving} className="button-loading h-11 w-fit rounded-lg bg-[#3157F5] px-5 text-xs font-black text-white disabled:opacity-50 sm:col-span-2">{saving ? 'Saving…' : 'Save business settings'}</button>

@@ -22,6 +22,8 @@ class Business(models.Model):
     currency = models.CharField(max_length=3, default='NGN')
     record_keeping = models.CharField(max_length=20, blank=True)
     setup_choice = models.CharField(max_length=20, default='skipped')
+    whatsapp_number = models.CharField(max_length=40, blank=True)
+    whatsapp_marketing_opt_in = models.BooleanField(default=False)
     plan = models.CharField(max_length=20, choices=Plan.choices, default=Plan.FREE)
     opening_balance = models.DecimalField(max_digits=14, decimal_places=2, default=0, validators=[MinValueValidator(0)])
     created_at = models.DateTimeField(auto_now_add=True)

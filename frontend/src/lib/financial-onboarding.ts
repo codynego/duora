@@ -11,6 +11,8 @@ export type FinancialOnboardingProfile = {
   currency: string;
   recordKeeping: RecordKeeping;
   setupChoice: SetupChoice;
+  whatsappNumber: string;
+  whatsappMarketingOptIn: boolean;
 };
 
 export function saveFinancialOnboardingProfile(profile: FinancialOnboardingProfile) {

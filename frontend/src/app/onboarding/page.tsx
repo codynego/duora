@@ -2,7 +2,7 @@
 
 import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, ArrowRight, BriefcaseBusiness, Check, FileSpreadsheet, LoaderCircle, NotebookPen, Sparkles, WalletCards } from 'lucide-react';
+import { ArrowLeft, ArrowRight, BriefcaseBusiness, Check, FileSpreadsheet, LoaderCircle, MessageCircle, NotebookPen, Sparkles, WalletCards } from 'lucide-react';
 import { saveFinancialOnboardingProfile, type FinancialOnboardingProfile, type RecordKeeping, type SetupChoice } from '@/lib/financial-onboarding';
 import { createBusiness, getBusinesses } from '@/lib/finance-api';
 
@@ -55,6 +55,8 @@ export default function OnboardingPage() {
   const [currencyChanged, setCurrencyChanged] = useState(false);
   const [recordKeeping, setRecordKeeping] = useState<RecordKeeping | ''>('');
   const [setupChoice, setSetupChoice] = useState<Exclude<SetupChoice, 'skipped'> | ''>('');
+  const [whatsappNumber, setWhatsappNumber] = useState('');
+  const [whatsappMarketingOptIn, setWhatsappMarketingOptIn] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -66,6 +68,7 @@ export default function OnboardingPage() {
     const profile: FinancialOnboardingProfile = {
       businessName: businessName.trim(), businessType, industry, country,
       currency, recordKeeping: recordKeeping as RecordKeeping, setupChoice: choice,
+      whatsappNumber: whatsappNumber.trim(), whatsappMarketingOptIn: Boolean(whatsappNumber.trim() && whatsappMarketingOptIn),
     };
     try {
       const businesses = await getBusinesses();
@@ -78,6 +81,8 @@ export default function OnboardingPage() {
           currency: profile.currency,
           record_keeping: profile.recordKeeping,
           setup_choice: profile.setupChoice,
+          whatsapp_number: profile.whatsappNumber,
+          whatsapp_marketing_opt_in: profile.whatsappMarketingOptIn,
         });
       }
       try { saveFinancialOnboardingProfile(profile); } catch { /* The business profile is already saved on the server. */ }
@@ -125,6 +130,7 @@ export default function OnboardingPage() {
           <h1 className="mt-3 font-[Aptos_Display,Arial,sans-serif] text-4xl font-black leading-[.94] tracking-[-.07em] sm:text-5xl">How would you like to begin?</h1>
           <p className="mt-3 text-sm leading-6 text-[#64708A]">Pick one if it’s useful. You can skip this and decide later.</p>
           {error && <p role="alert" className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-xs font-semibold text-red-700">{error}</p>}
+          <section className="mt-6 rounded-xl border border-[#111B33]/10 bg-white p-4"><div className="flex items-start gap-3"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-[#F0FFF5] text-[#176B39]"><MessageCircle className="h-4 w-4" /></span><div><strong className="block text-sm font-black">Stay in touch on WhatsApp</strong><p className="mt-1 text-xs leading-5 text-[#64708A]">Optional. Add a number if you’d like helpful setup reminders and product tips from Dorah.</p></div></div><label className="mt-4 grid gap-1.5 text-xs font-black text-[#536078]">WhatsApp number<input type="tel" inputMode="tel" autoComplete="tel" value={whatsappNumber} onChange={(event) => { setWhatsappNumber(event.target.value); if (!event.target.value.trim()) setWhatsappMarketingOptIn(false); }} placeholder="e.g. +234 801 234 5678" className="h-11 rounded-lg border border-[#111B33]/15 bg-white px-3 text-sm font-medium text-[#111B33] outline-none focus:border-[#3157F5] focus:ring-4 focus:ring-[#3157F5]/10" /><span className="text-[10px] font-normal leading-4 text-[#758096]">Include your country code so we can reach you correctly.</span></label><label className={`mt-3 flex items-start gap-2 text-xs leading-5 ${whatsappNumber.trim() ? 'cursor-pointer text-[#536078]' : 'cursor-not-allowed text-[#AAB2C1]'}`}><input type="checkbox" checked={whatsappMarketingOptIn} disabled={!whatsappNumber.trim()} onChange={(event) => setWhatsappMarketingOptIn(event.target.checked)} className="mt-1 h-4 w-4 accent-[#3157F5]" /> <span>I agree to receive helpful setup reminders, product tips, and occasional updates on WhatsApp. I can opt out later.</span></label></section>
           <form onSubmit={submit} className="mt-7 grid gap-3">{setupChoices.map(({ value, title, description, icon: Icon }) => <label key={value} className={`flex cursor-pointer items-center gap-3 rounded-xl border p-4 transition ${setupChoice === value ? 'border-[#3157F5] bg-[#EEF1FF]' : 'border-[#111B33]/12 bg-white hover:border-[#3157F5]/40'}`}><input type="radio" name="setupChoice" value={value} checked={setupChoice === value} onChange={() => setSetupChoice(value)} className="h-4 w-4 accent-[#3157F5]" /><span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-white text-[#3157F5]"><Icon className="h-4 w-4" /></span><span><strong className="block text-sm font-black">{title}</strong><small className="mt-1 block text-xs leading-5 text-[#64708A]">{description}</small></span></label>)}<div className="mt-3 flex flex-col-reverse gap-3 sm:flex-row"><button type="button" disabled={saving} aria-busy={saving} onClick={() => void finish('skipped')} className="inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-lg border border-[#111B33]/15 bg-white px-4 text-sm font-black disabled:opacity-60">{saving && <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" />}{saving ? 'Saving…' : 'Skip for now'}</button><button disabled={saving} aria-busy={saving} className="inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-lg bg-[#3157F5] px-5 text-sm font-black text-white shadow-[0_4px_0_rgba(49,87,245,.18)] disabled:opacity-60">{saving ? <><LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" />Saving…</> : <>Go to overview <ArrowRight className="h-4 w-4" /></>}</button></div></form>
           <p className="mt-4 flex items-center gap-2 text-[10px] leading-5 text-[#758096]"><Check className="h-3.5 w-3.5 shrink-0 text-[#557516]" />You can complete setup gradually from your dashboard.</p>
         </>}
