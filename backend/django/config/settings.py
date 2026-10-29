@@ -4,9 +4,18 @@ from pathlib import Path
 import dj_database_url
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'unsafe-development-key-replace-before-production')
-DEBUG = os.environ.get('DJANGO_DEBUG', 'true').lower() == 'true'
-ALLOWED_HOSTS = [host.strip() for host in os.environ.get('DJANGO_ALLOWED_HOSTS', '127.0.0.1,localhost,.vercel.app').split(',') if host.strip()]
+DEBUG = os.environ.get('DJANGO_DEBUG', 'false').lower() == 'true'
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', '').strip()
+if not SECRET_KEY:
+    if DEBUG:
+        SECRET_KEY = 'unsafe-development-key-replace-before-production'
+    else:
+        raise RuntimeError('DJANGO_SECRET_KEY must be configured when DEBUG is false.')
+
+allowed_hosts_value = os.environ.get('DJANGO_ALLOWED_HOSTS', '127.0.0.1,localhost' if DEBUG else '')
+ALLOWED_HOSTS = [host.strip() for host in allowed_hosts_value.split(',') if host.strip()]
+if not DEBUG and not ALLOWED_HOSTS:
+    raise RuntimeError('DJANGO_ALLOWED_HOSTS must contain the API host(s) in production.')
 
 if not DEBUG and (SECRET_KEY.startswith('unsafe-') or len(SECRET_KEY) < 32):
     raise RuntimeError('DJANGO_SECRET_KEY must be a strong secret in production.')
@@ -69,12 +78,14 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-configured_cors_origins = [origin.strip() for origin in os.environ.get('DUORA_CORS_ORIGINS', 'http://127.0.0.1:3000,http://localhost:3000').split(',') if origin.strip()]
-trusted_frontend_origins = ['https://dorah.me', 'https://www.dorah.me', 'https://duorah.vercel.app']
+configured_cors_origins = [origin.strip() for origin in os.environ.get('DUORA_CORS_ORIGINS', 'http://127.0.0.1:3000,http://localhost:3000' if DEBUG else '').split(',') if origin.strip()]
+trusted_frontend_origins = ['https://dorah.me', 'https://www.dorah.me', 'https://duorah.vercel.app'] if DEBUG else []
 CORS_ALLOWED_ORIGINS = list(dict.fromkeys(configured_cors_origins + trusted_frontend_origins))
+if not DEBUG and not CORS_ALLOWED_ORIGINS:
+    raise RuntimeError('DUORA_CORS_ORIGINS must contain the exact deployed frontend origin(s) in production.')
 CORS_ALLOW_CREDENTIALS = True
 CSRF_TRUSTED_ORIGINS = CORS_ALLOWED_ORIGINS
-SECURE_SSL_REDIRECT = os.environ.get('DJANGO_SECURE_SSL_REDIRECT', 'false').lower() == 'true'
+SECURE_SSL_REDIRECT = os.environ.get('DJANGO_SECURE_SSL_REDIRECT', 'false' if DEBUG else 'true').lower() == 'true'
 SESSION_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SECURE = not DEBUG
 SESSION_COOKIE_HTTPONLY = True
@@ -87,6 +98,7 @@ X_FRAME_OPTIONS = 'DENY'
 SECURE_HSTS_SECONDS = 31_536_000 if not DEBUG else 0
 SECURE_HSTS_INCLUDE_SUBDOMAINS = not DEBUG
 SECURE_HSTS_PRELOAD = not DEBUG
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https') if not DEBUG else None
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': ('apps.accounts.authentication.CookieJWTAuthentication',),
@@ -103,6 +115,11 @@ SIMPLE_JWT = {
     'BLACKLIST_AFTER_ROTATION': True,
     'UPDATE_LAST_LOGIN': True,
 }
+
+PASSWORD_RESET_TIMEOUT = 3_600
+RESEND_API_KEY = os.environ.get('RESEND_API_KEY', '').strip()
+RESEND_FROM_EMAIL = os.environ.get('RESEND_FROM_EMAIL', 'Dorah <noreply@dorah.me>').strip()
+DUORA_FRONTEND_URL = os.environ.get('DUORA_FRONTEND_URL', 'http://localhost:3000').rstrip('/')
 
 AUTH_ACCESS_COOKIE_NAME = os.environ.get('DUORA_ACCESS_COOKIE_NAME', 'duora_access')
 AUTH_REFRESH_COOKIE_NAME = os.environ.get('DUORA_REFRESH_COOKIE_NAME', 'duora_refresh')

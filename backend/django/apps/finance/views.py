@@ -17,6 +17,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.accounts.emailing import EmailDeliveryError, send_onboarding_email
 from .models import AiUsage, Business, Contact, FinancialAccount, Obligation, Transaction, TransactionAudit
 from .serializers import (BusinessSerializer, ContactSerializer, FinancialAccountSerializer,
                           ObligationSerializer, TransactionSerializer)
@@ -151,6 +152,10 @@ class BusinessListView(APIView):
             if Business.objects.filter(owner=request.user).exists():
                 return Response({'detail': 'Your Free workspace supports one business.'}, status=status.HTTP_409_CONFLICT)
             business = serializer.save(owner=request.user)
+        try:
+            send_onboarding_email(request.user, business)
+        except EmailDeliveryError:
+            logger.exception('Could not send onboarding email: user_id=%s business_id=%s', request.user.pk, business.pk)
         return Response({'data': BusinessSerializer(business).data}, status=status.HTTP_201_CREATED)
 
 

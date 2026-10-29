@@ -66,14 +66,6 @@ export async function signUp(
     password,
     password_confirm: passwordConfirm,
   });
-  // Re-authenticate explicitly so the session is fresh even if the browser
-  // was carrying a stale cookie from a previous account.
-  await request("token/", {
-    username: email.trim().toLowerCase(),
-    password,
-  });
-  sessionValidUntil = Date.now() + 14 * 60_000;
-  notifyAuthChanged();
 }
 export async function logIn(username: string, password: string) {
   await request("token/", { username, password });
@@ -82,6 +74,23 @@ export async function logIn(username: string, password: string) {
 }
 export async function requestPasswordReset(email: string) {
   return request("password-reset/", { email });
+}
+export async function verifyEmail(uid: string, token: string) {
+  const data = await request("verify-email/", { uid, token });
+  sessionValidUntil = Date.now() + 14 * 60_000;
+  notifyAuthChanged();
+  return data;
+}
+export async function resendVerification(email: string) {
+  return request("resend-verification/", { email: email.trim().toLowerCase() });
+}
+export async function confirmPasswordReset(uid: string, token: string, password: string, passwordConfirm: string) {
+  return request("password-reset/confirm/", {
+    uid,
+    token,
+    password,
+    password_confirm: passwordConfirm,
+  });
 }
 
 function redirectToLogin() {

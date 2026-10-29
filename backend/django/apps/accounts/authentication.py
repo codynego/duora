@@ -1,6 +1,7 @@
 from django.conf import settings
 from rest_framework import exceptions
 from rest_framework_simplejwt.authentication import JWTAuthentication
+from .security import is_trusted_origin
 
 
 class CookieJWTAuthentication(JWTAuthentication):
@@ -23,7 +24,7 @@ class CookieJWTAuthentication(JWTAuthentication):
         if not raw_token:
             return None
         if request.method not in ('GET', 'HEAD', 'OPTIONS'):
-            if request.headers.get('Origin') not in settings.CORS_ALLOWED_ORIGINS:
+            if not is_trusted_origin(request):
                 raise exceptions.PermissionDenied('Invalid request origin.')
         try:
             validated_token = self.get_validated_token(raw_token)

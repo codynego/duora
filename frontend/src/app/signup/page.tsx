@@ -71,7 +71,7 @@ export default function SignupPage() {
     setError("");
     try {
       await signUp(email, password, confirm);
-      router.replace("/onboarding");
+      router.replace(`/verify-email?email=${encodeURIComponent(email.trim().toLowerCase())}`);
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Unable to create your account.";
