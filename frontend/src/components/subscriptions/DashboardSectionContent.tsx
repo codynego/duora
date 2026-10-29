@@ -33,11 +33,11 @@ function SampleTag() {
 }
 
 function PageHeading({ eyebrow, title, description, sample = true }: { eyebrow: string; title: string; description: string; sample?: boolean }) {
-  return <header className="flex flex-wrap items-end justify-between gap-4"><div><p className="text-[10px] font-black uppercase tracking-[.14em] text-[#3157F5]">{eyebrow}</p><h1 className="mt-2 font-[Aptos_Display,Arial,sans-serif] text-4xl font-black leading-[.94] tracking-[-.07em] sm:text-5xl">{title}</h1><p className="mt-3 max-w-2xl text-sm leading-6 text-[#64708A]">{description}</p></div>{sample && <SampleTag />}</header>;
+  return <header className="flex min-w-0 flex-wrap items-end justify-between gap-4"><div className="min-w-0 max-w-full"><p className="text-[10px] font-black uppercase tracking-[.14em] text-[#3157F5]">{eyebrow}</p><h1 className="mt-2 break-words font-[Aptos_Display,Arial,sans-serif] text-4xl font-black leading-[.94] tracking-[-.07em] sm:text-5xl">{title}</h1><p className="mt-3 max-w-2xl break-words text-sm leading-6 text-[#64708A]">{description}</p></div>{sample && <SampleTag />}</header>;
 }
 
 function Metric({ label, value, note, prominent = false }: { label: string; value: string; note: string; prominent?: boolean }) {
-  return <article className={`rounded-xl border p-5 ${prominent ? 'border-[#3157F5] bg-[#3157F5] text-white' : 'border-[#111B33]/10 bg-white'}`}><p className={`text-xs font-bold ${prominent ? 'text-white/70' : 'text-[#758096]'}`}>{label}</p><strong className="mt-3 block text-2xl font-black tracking-[-.05em]">{value}</strong><p className={`mt-1 text-[10px] ${prominent ? 'text-white/60' : 'text-[#758096]'}`}>{note}</p></article>;
+  return <article className={`min-w-0 rounded-xl border p-5 ${prominent ? 'border-[#3157F5] bg-[#3157F5] text-white' : 'border-[#111B33]/10 bg-white'}`}><p className={`break-words text-xs font-bold ${prominent ? 'text-white/70' : 'text-[#758096]'}`}>{label}</p><strong className="mt-3 block break-words text-2xl font-black tracking-[-.05em]">{value}</strong><p className={`mt-1 break-words text-[10px] ${prominent ? 'text-white/60' : 'text-[#758096]'}`}>{note}</p></article>;
 }
 
 function isOverdue(dueDate: string) {
@@ -60,7 +60,7 @@ function timeInputValue(time?: string) {
 }
 
 function DataTable({ headers, rows, onRowClick }: { headers: string[]; rows: (string | number)[][]; onRowClick?: (index: number) => void }) {
-  return <div className="overflow-x-auto"><table className="w-full min-w-[620px] text-left text-xs"><thead><tr className="border-b border-[#111B33]/10 text-[9px] font-black uppercase tracking-[.1em] text-[#758096]">{headers.map((header) => <th key={header} className="px-4 py-3">{header}</th>)}</tr></thead><tbody className="divide-y divide-[#111B33]/[.08]">{rows.map((row, index) => <tr key={index} onClick={() => onRowClick?.(index)} className={`text-[#46516A] ${onRowClick ? 'cursor-pointer transition hover:bg-[#F8F9FC]' : ''}`}>{row.map((cell, cellIndex) => <td key={cellIndex} className={`px-4 py-3.5 ${cellIndex === row.length - 1 ? 'font-bold text-[#111B33]' : ''}`}>{cell}</td>)}</tr>)}</tbody></table></div>;
+  return <div className="min-w-0 max-w-full overflow-x-auto overscroll-x-contain"><table className="w-full min-w-[620px] text-left text-xs"><thead><tr className="border-b border-[#111B33]/10 text-[9px] font-black uppercase tracking-[.1em] text-[#758096]">{headers.map((header) => <th key={header} className="whitespace-nowrap px-4 py-3">{header}</th>)}</tr></thead><tbody className="divide-y divide-[#111B33]/[.08]">{rows.map((row, index) => <tr key={index} onClick={() => onRowClick?.(index)} className={`text-[#46516A] ${onRowClick ? 'cursor-pointer transition hover:bg-[#F8F9FC]' : ''}`}>{row.map((cell, cellIndex) => <td key={cellIndex} className={`max-w-[240px] break-words px-4 py-3.5 ${cellIndex === row.length - 1 ? 'font-bold text-[#111B33]' : ''}`}>{cell}</td>)}</tr>)}</tbody></table></div>;
 }
 
 function DateFilterBar({ fromDate, toDate, setFromDate, setToDate, label = 'Reporting period' }: { fromDate: string; toDate: string; setFromDate: (value: string) => void; setToDate: (value: string) => void; label?: string }) {

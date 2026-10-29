@@ -865,6 +865,32 @@ div[class~="min-w-[30px]"] { flex: 0 0 34px !important; }
 div[class~="overflow-x-auto"][class~="items-end"] { gap: .25rem !important; }
 
 @media (max-width: 640px) {
+  /* Dashboard data surfaces keep their wide table layout inside a local scroller. */
+  main#overview > div,
+  main#overview > div > div,
+  main#overview section,
+  main#overview article {
+    min-width: 0;
+  }
+
+  main#overview h1,
+  main#overview h2,
+  main#overview h3,
+  main#overview p,
+  main#overview strong,
+  main#overview span {
+    overflow-wrap: anywhere;
+  }
+
+  main#overview [class~="overflow-visible"] {
+    overflow: hidden;
+  }
+
+  main#overview [class~="min-w-[220px]"] {
+    min-width: 0;
+    width: 100%;
+  }
+
   div:has(> div > input[aria-label="Search transactions"]) {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
