@@ -12,33 +12,40 @@ export default function PwaStartup() {
   useEffect(() => {
     const standalone = window.matchMedia('(display-mode: standalone)').matches
       || Boolean((navigator as Navigator & { standalone?: boolean }).standalone);
-    if (!standalone) return;
-    // The manifest opens the installed app at /dashboard. Keep authentication
-    // on the dashboard route while leaving the public homepage reachable.
-    if (standalone && pathname.startsWith('/dashboard')) {
-      void getCurrentUser().then((user) => {
-        if (!user) {
-          router.replace(`/login?next=${encodeURIComponent(pathname)}`);
-        }
-      });
+    if (!standalone) {
+      if (pathname === '/launch') router.replace('/');
+      return;
     }
-
-    const storageKey = 'dorah-pwa-startup-seen';
-    if (window.sessionStorage.getItem(storageKey)) return;
-    window.sessionStorage.setItem(storageKey, 'true');
+    // `/launch` is the installed app's entry route. Only this route performs
+    // the launch redirect, so users can still visit the public homepage from
+    // inside the installed app whenever they choose.
+    if (pathname !== '/launch') return;
 
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     setPhase('entering');
-    const leaveTimer = window.setTimeout(() => setPhase('leaving'), reducedMotion ? 80 : 420);
-    const hideTimer = window.setTimeout(() => setPhase('hidden'), reducedMotion ? 160 : 620);
+    let cancelled = false;
+    const minimumDuration = reducedMotion ? 160 : 900;
+    const startedAt = Date.now();
+    const redirect = (user: Awaited<ReturnType<typeof getCurrentUser>>) => {
+      if (cancelled) return;
+      const remaining = Math.max(0, minimumDuration - (Date.now() - startedAt));
+      window.setTimeout(() => {
+        if (cancelled) return;
+        setPhase('leaving');
+        window.setTimeout(() => {
+          if (cancelled) return;
+          router.replace(user ? '/dashboard' : '/login?next=%2Fdashboard');
+        }, reducedMotion ? 80 : 300);
+      }, remaining);
+    };
+    void getCurrentUser().then(redirect).catch(() => redirect(null));
 
     return () => {
-      window.clearTimeout(leaveTimer);
-      window.clearTimeout(hideTimer);
+      cancelled = true;
     };
   }, [pathname, router]);
 
-  if (phase === 'hidden' || pathname === '/') return null;
+  if (phase === 'hidden' || pathname !== '/launch') return null;
 
   return (
     <div className={`pwa-startup pwa-startup--${phase}`} role="status" aria-live="polite" aria-label="Opening Dorah">
