@@ -19,6 +19,15 @@ function formatMoneyInput(value: string) {
   return fraction.length ? `${grouped || '0'}.${fraction}` : grouped;
 }
 
+function friendlyTransactionError(message: string) {
+  const normalized = message.toLowerCase();
+  if (normalized.includes('plan limit') || normalized.includes('upgrade your plan')) return 'You’ve reached the transaction limit for this plan. Review your plan to keep recording business activity.';
+  if (normalized.includes('session has expired')) return 'Your session has expired. Sign in again to save this record securely.';
+  if (normalized.includes('account')) return 'We could not use that account. Check the account details and try again.';
+  if (normalized.includes('contact')) return 'We could not link that customer or supplier. Check the details and try again.';
+  return 'We couldn’t save this record just yet. Check the details and try again.';
+}
+
 const workspaceItems = [
   { label: 'Overview', href: '/dashboard', icon: LayoutDashboard },
   { label: 'Intelligence', href: '/dashboard/intelligence', icon: Sparkles },
@@ -75,6 +84,7 @@ export default function SubscriptionDashboard() {
   const [recordOpen, setRecordOpen] = useState(false);
   const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
   const [recordNotice, setRecordNotice] = useState('');
+  const [recordError, setRecordError] = useState('');
   const [upgradePrompt, setUpgradePrompt] = useState(false);
   const [onboardingProfile, setOnboardingProfile] = useState<FinancialOnboardingProfile | null>(null);
   const [financeOverview, setFinanceOverview] = useState<FinanceOverview | null>(null);
@@ -124,6 +134,8 @@ export default function SubscriptionDashboard() {
 
   useEffect(() => {
     if (!recordOpen) {
+      setRecordError('');
+      setUpgradePrompt(false);
       setEntryMode('manual');
       setDescribeText('');
       setTransactionDraft(null);
@@ -234,11 +246,12 @@ export default function SubscriptionDashboard() {
     if (!businessId || !describeText.trim()) return;
     setParsingTransaction(true);
     setRecordNotice('');
+    setRecordError('');
     try {
       const draft = await parseFinanceTransaction(businessId, describeText.trim());
       setTransactionDraft(draft);
     } catch (error) {
-      setRecordNotice(error instanceof Error ? error.message : 'Could not understand that transaction.');
+      setRecordError('We couldn’t understand that description. Add what happened, the amount, and who it involved, then try again.');
     } finally {
       setParsingTransaction(false);
     }
@@ -270,6 +283,8 @@ export default function SubscriptionDashboard() {
 
   async function addPreviewTransaction(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setRecordError('');
+    setRecordNotice('');
     const form = new FormData(event.currentTarget);
     const name = String(form.get('name') ?? '').trim();
     const amount = String(form.get('amount') ?? '').trim().replace(/,/g, '');
@@ -293,20 +308,30 @@ export default function SubscriptionDashboard() {
     const normalizedContactInput = contactInput.toLowerCase();
     const existingContact = matchingContacts.find((contact) => contact.name.toLowerCase() === normalizedContactInput || Boolean(contact.phone && contact.phone.toLowerCase() === normalizedContactInput));
     const isNewSaleOrBill = !obligationId && kind !== 'transfer';
-    if (!name || !Number.isFinite(numericAmount) || (!isNewSaleOrBill && numericAmount <= 0)) return;
-    if (isNewSaleOrBill && (!Number.isFinite(numericTotalAmount) || numericTotalAmount <= 0 || !Number.isFinite(numericPaidNow) || numericPaidNow < 0 || numericPaidNow > numericTotalAmount)) {
-      setRecordNotice('Enter a valid total and an amount paid now that is not greater than the total.');
+    if (!name) {
+      setRecordError('Add a short description so you can recognise this record later.');
       return;
     }
-    if (kind === 'transfer' && (!accountId || !transferAccountId || accountId === transferAccountId)) return;
+    if (!Number.isFinite(numericAmount) || (!isNewSaleOrBill && numericAmount <= 0)) {
+      setRecordError('Enter an amount greater than zero before saving.');
+      return;
+    }
+    if (isNewSaleOrBill && (!Number.isFinite(numericTotalAmount) || numericTotalAmount <= 0 || !Number.isFinite(numericPaidNow) || numericPaidNow < 0 || numericPaidNow > numericTotalAmount)) {
+      setRecordError('Enter a valid total and make sure the amount paid now is not greater than the total.');
+      return;
+    }
+    if (kind === 'transfer' && (!accountId || !transferAccountId || accountId === transferAccountId)) {
+      setRecordError('Choose two different accounts so Dorah knows where the money is moving from and to.');
+      return;
+    }
     if (!businessId) {
-      setRecordNotice('Complete business setup before saving transactions to your account.');
+      setRecordError('Complete your business setup before saving transactions to your account.');
       return;
     }
     setSavingTransaction(true);
     try {
       if (contactInput && expectedContactKind && !selectedContactId && existingContact) {
-        setRecordNotice('Select the matching contact suggestion before saving.');
+        setRecordError('Choose the matching customer or supplier from the suggestions before saving.');
         setSavingTransaction(false);
         return;
       }
@@ -316,7 +341,7 @@ export default function SubscriptionDashboard() {
         const contactName = newContactName.trim() || (looksLikePhone ? '' : contactInput);
         const contactPhone = newContactPhone.trim() || (looksLikePhone ? contactInput : '');
         if (!contactName) {
-          setRecordNotice('Add the contact name before saving this transaction.');
+          setRecordError('Add a name for the customer or supplier before saving this transaction.');
           setSavingTransaction(false);
           return;
         }
@@ -327,7 +352,7 @@ export default function SubscriptionDashboard() {
       const outstandingAmount = isNewSaleOrBill ? numericTotalAmount - numericPaidNow : 0;
       if (isNewSaleOrBill && outstandingAmount > 0) {
         if (!contactId || !expectedContactKind) {
-          setRecordNotice(`Select or create the ${kind === 'income' ? 'customer' : 'supplier'} so Dorah can track the remaining balance.`);
+          setRecordError(`Select or create the ${kind === 'income' ? 'customer' : 'supplier'} so Dorah can track the remaining balance.`);
           setSavingTransaction(false);
           return;
         }
@@ -343,6 +368,7 @@ export default function SubscriptionDashboard() {
       }
       if (numericPaidNow <= 0) {
         await reloadFinanceData();
+        setRecordError('');
         setRecordNotice('Balance saved. Record the first payment whenever it arrives.');
         setRecordOpen(false);
         setSavingTransaction(false);
@@ -360,6 +386,7 @@ export default function SubscriptionDashboard() {
         obligation: createdObligationId,
       });
       await reloadFinanceData();
+      setRecordError('');
       setRecordNotice('Transaction saved to your business records.');
       setRecordOpen(false);
       setTransactionKind('income');
@@ -371,7 +398,8 @@ export default function SubscriptionDashboard() {
       router.push('/dashboard/transactions');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Could not save this transaction.';
-      setRecordNotice(message);
+      setRecordError(friendlyTransactionError(message));
+      setRecordNotice('');
       setUpgradePrompt(message.toLowerCase().includes('plan limit') || message.toLowerCase().includes('upgrade your plan'));
     } finally {
       setSavingTransaction(false);
@@ -435,7 +463,7 @@ export default function SubscriptionDashboard() {
 
 
       </> : <><DashboardSectionContent section={section} findingId={findingId} formatAmount={formatAmount} transactions={dashboardTransactions} hasLiveRecords={Boolean(financeOverview)} workspace={financeWorkspace} summary={financeOverview?.summary} businessId={businessId} business={financeOverview?.business ?? null} currentUser={user} onUserUpdated={setUser} onRefresh={reloadFinanceData} onRecord={() => { setRecordNotice(''); setRecordOpen(true); }} financeAction={businessId && (section === 'receivables' || section === 'payables' || section === 'customers-suppliers') ? <FinanceQuickCreate businessId={businessId} contacts={financeWorkspace?.contacts ?? []} mode={section === 'receivables' ? 'receivable' : section === 'payables' ? 'payable' : 'contact'} onSaved={reloadFinanceData} /> : undefined} /></>}
-      {recordNotice && <div role="status" className={`mt-4 border px-4 py-3 text-xs font-bold ${upgradePrompt ? 'border-[#E8D89F] bg-[#FFF9E8] text-[#786B4C]' : 'border-[#A5CD4A] bg-[#F2FADA] text-[#46661A]'}`}><p>{recordNotice}</p>{upgradePrompt && <Link href="/pricing" className="mt-2 inline-flex items-center rounded-lg bg-[#3157F5] px-3 py-2 text-[10px] font-black text-white">View upgrade plans <ArrowRight className="ml-1 h-3 w-3" /></Link>}</div>}
+      {(recordError || (recordNotice && !recordOpen)) && <div role={recordError ? 'alert' : 'status'} className={`border px-4 py-3 text-xs leading-5 ${recordOpen ? 'fixed right-4 top-4 z-[130] w-[min(440px,calc(100%-2rem))] rounded-xl shadow-[0_16px_40px_rgba(17,27,51,.18)]' : 'mt-4'} ${recordError ? (upgradePrompt ? 'border-[#E8D89F] bg-[#FFF9E8] font-bold text-[#786B4C]' : 'border-[#E8B4AD] bg-[#FFF4F2] font-bold text-[#8E3329]') : 'border-[#A5CD4A] bg-[#F2FADA] font-bold text-[#46661A]'}`}><div className="flex items-start gap-3"><CircleAlert className="mt-0.5 h-4 w-4 shrink-0" /><div><p>{recordError || recordNotice}</p>{upgradePrompt && <Link href="/pricing" className="mt-2 inline-flex items-center rounded-lg bg-[#3157F5] px-3 py-2 text-[10px] font-black text-white">Review plan options <ArrowRight className="ml-1 h-3 w-3" /></Link>}</div></div></div>}
     </div></main>
 
     {mobileMoreOpen && <><button type="button" aria-label="Close more menu" onClick={() => setMobileMoreOpen(false)} className="fixed inset-0 z-40 bg-[#111B33]/25 backdrop-blur-[2px] transition-opacity lg:hidden" /><section role="dialog" aria-modal="true" aria-label="More dashboard pages" className="pwa-mobile-sheet fixed inset-x-3 bottom-[calc(5.35rem+env(safe-area-inset-bottom))] z-50 rounded-2xl border border-[#111B33]/10 bg-white p-4 shadow-[0_20px_60px_rgba(17,27,51,.2)] lg:hidden"><div className="mb-3 flex items-start justify-between"><div><p className="text-sm font-black">More in your workspace</p><p className="mt-1 text-[10px] text-[#758096]">Your records, accounts, and settings.</p></div><button type="button" onClick={() => setMobileMoreOpen(false)} aria-label="Close more pages" className="grid h-8 w-8 place-items-center rounded-lg text-[#758096] transition hover:bg-[#F5F7FB] hover:text-[#111B33]"><X className="h-4 w-4" /></button></div><div className="grid grid-cols-2 gap-2">{[...workspaceItems.slice(3), ...preferenceItems].map(({ label, href, icon: Icon }) => <Link key={label} href={href} onClick={() => setMobileMoreOpen(false)} aria-current={activeNav === label ? 'page' : undefined} className={`flex min-h-12 items-center gap-2 rounded-xl border px-3 text-[11px] font-bold transition active:scale-[.98] ${activeNav === label ? 'border-[#3157F5]/20 bg-[#EEF1FF] text-[#3157F5]' : 'border-[#111B33]/[.06] text-[#536078] hover:bg-[#F8F9FC]'}`}><Icon className="h-4 w-4 shrink-0" />{label}</Link>)}</div></section></>}
