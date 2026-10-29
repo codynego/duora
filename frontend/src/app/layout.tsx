@@ -23,7 +23,13 @@ export const metadata: Metadata = {
     google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION,
     other: process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION ? { 'msvalidate.01': process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION } : undefined,
   },
-  icons: { icon: '/icon.svg', apple: '/icon-192.svg' },
+  icons: {
+    icon: [
+      { url: '/icon-192.png', type: 'image/png', sizes: '192x192' },
+      { url: '/icon-512.png', type: 'image/png', sizes: '512x512' },
+    ],
+    apple: [{ url: '/icon-192.png', type: 'image/png', sizes: '192x192' }],
+  },
   appleWebApp: {
     capable: true,
     title: 'Dorah',
