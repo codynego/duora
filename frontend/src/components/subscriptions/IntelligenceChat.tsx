@@ -1,11 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { FormEvent, Fragment, useState } from 'react';
+import { FormEvent, Fragment, useEffect, useState } from 'react';
 import { ArrowRight, MessageCircle, Sparkles, X } from 'lucide-react';
 import { askFinanceController, type FinanceChatChart, type FinanceChatMessage } from '@/lib/finance-api';
 
-const prompts = ['Which customers owe me the most money?', 'What should I review today?', 'Are my upcoming bills covered?'];
+const prompts = ['Why are expenses increasing?', 'Am I profitable?', 'What needs attention?'];
 
 function formatFinanceText(value: string) {
   return value.replace(/(₦|NGN|USD|GHS|KES|ZAR)\s*([\d,]+(?:\.\d{1,2})?)/g, (_, currency: string, amount: string) => {
@@ -46,11 +46,15 @@ function RichFinanceMessage({ content, chart }: { content: string; chart?: Finan
   </div>;
 }
 
-export default function IntelligenceChat({ businessId, onClose }: { businessId: string; onClose: () => void }) {
-  const [question, setQuestion] = useState('');
+export default function IntelligenceChat({ businessId, onClose, initialQuestion = '' }: { businessId: string; onClose: () => void; initialQuestion?: string }) {
+  const [question, setQuestion] = useState(initialQuestion);
   const [messages, setMessages] = useState<FinanceChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    setQuestion(initialQuestion);
+  }, [initialQuestion]);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
