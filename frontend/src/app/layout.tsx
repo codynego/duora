@@ -60,6 +60,17 @@ export default function RootLayout({
   return (
     <html lang="en-NG">
       <body className="min-h-screen bg-white text-dark-950 antialiased">
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(() => {
+              try {
+                const standalone = window.matchMedia('(display-mode: standalone)').matches || Boolean(window.navigator.standalone);
+                const firstRootLaunch = window.location.pathname === '/' && !window.sessionStorage.getItem('dorah-pwa-launch-checked') && window.history.length <= 1;
+                if (standalone && firstRootLaunch) window.location.replace('/launch');
+              } catch (_) {}
+            })();`,
+          }}
+        />
         {children}
         <PwaStartup />
         <PwaRuntime />
