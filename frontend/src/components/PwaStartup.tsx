@@ -8,6 +8,7 @@ export default function PwaStartup() {
   const pathname = usePathname();
   const router = useRouter();
   const [phase, setPhase] = useState<'hidden' | 'entering' | 'leaving'>('hidden');
+  const [launching, setLaunching] = useState(false);
 
   useEffect(() => {
     const standalone = window.matchMedia('(display-mode: standalone)').matches
@@ -16,10 +17,16 @@ export default function PwaStartup() {
       if (pathname === '/launch') router.replace('/');
       return;
     }
-    // `/launch` is the installed app's entry route. Only this route performs
-    // the launch redirect, so users can still visit the public homepage from
-    // inside the installed app whenever they choose.
-    if (pathname !== '/launch') return;
+    const launchKey = 'dorah-pwa-launch-checked';
+    const legacyRootLaunch = pathname === '/'
+      && !window.sessionStorage.getItem(launchKey)
+      && window.history.length <= 1;
+    // `/launch` is the current installed app entry route. The root fallback
+    // supports PWAs installed before `/launch` existed. Once the app has
+    // launched, a deliberate visit to `/` remains a normal homepage visit.
+    if (pathname !== '/launch' && !legacyRootLaunch) return;
+    window.sessionStorage.setItem(launchKey, 'true');
+    setLaunching(true);
 
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     setPhase('entering');
@@ -42,10 +49,11 @@ export default function PwaStartup() {
 
     return () => {
       cancelled = true;
+      setLaunching(false);
     };
   }, [pathname, router]);
 
-  if (phase === 'hidden' || pathname !== '/launch') return null;
+  if (phase === 'hidden' || !launching) return null;
 
   return (
     <div className={`pwa-startup pwa-startup--${phase}`} role="status" aria-live="polite" aria-label="Opening Dorah">

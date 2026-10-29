@@ -1,4 +1,5 @@
 from django.urls import path
+from .admin_views import AdminOperationsView
 from .views import (LogoutView, MeView, PasswordResetConfirmView, PasswordResetRequestView,
                     RateLimitedTokenObtainPairView, RateLimitedTokenRefreshView, RegisterView,
                     ResendVerificationView, VerifyEmailView)
@@ -13,4 +14,5 @@ urlpatterns = [
     path('password-reset/confirm/', PasswordResetConfirmView.as_view()),
     path('verify-email/', VerifyEmailView.as_view()),
     path('resend-verification/', ResendVerificationView.as_view()),
+    path('admin/operations/', AdminOperationsView.as_view()),
 ]

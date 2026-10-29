@@ -46,3 +46,27 @@ class EmailAuthFlowTests(TestCase):
         user.refresh_from_db()
         self.assertTrue(user.is_active)
         self.assertIn('duora_access', response.cookies)
+
+
+class AdminOperationsTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.user = get_user_model().objects.create_user(
+            username='staff@example.com', email='staff@example.com', password='StrongPassword123!', is_staff=True,
+        )
+
+    def test_operations_endpoint_requires_staff(self):
+        regular_user = get_user_model().objects.create_user(
+            username='regular@example.com', email='regular@example.com', password='StrongPassword123!',
+        )
+        self.client.force_authenticate(user=regular_user)
+        response = self.client.get('/api/v1/auth/admin/operations/')
+        self.assertEqual(response.status_code, 403)
+
+    def test_staff_can_read_operations_snapshot(self):
+        self.client.force_authenticate(user=self.user)
+        response = self.client.get('/api/v1/auth/admin/operations/')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('overview', response.data)
+        self.assertIn('users', response.data)
+        self.assertIn('email', response.data)

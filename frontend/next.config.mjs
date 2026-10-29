@@ -29,7 +29,7 @@ const nextConfig = {
         ],
       },
       {
-        source: '/:path(dashboard|onboarding|login|signup|forgot-password|reset-password|verify-email|profile|offline|launch)/:rest*',
+        source: '/:path(admin|operation|dashboard|onboarding|login|signup|forgot-password|reset-password|verify-email|profile|offline|launch)/:rest*',
         headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow, noarchive' }],
       },
     ];
