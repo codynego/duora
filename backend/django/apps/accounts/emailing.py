@@ -39,7 +39,8 @@ def send_email(*, to, subject, text, body_html):
             if response.status < 200 or response.status >= 300:
                 raise EmailDeliveryError(f'Resend returned HTTP {response.status}.')
     except urllib.error.HTTPError as error:
-        logger.error('Resend rejected an email: status=%s recipient=%s', error.code, to)
+        response_body = error.read().decode('utf-8', errors='replace')[:1000]
+        logger.error('Resend rejected an email: status=%s recipient=%s response=%s', error.code, to, response_body)
         raise EmailDeliveryError('Resend rejected the email.') from error
     except (urllib.error.URLError, TimeoutError) as error:
         logger.error('Resend request failed: recipient=%s error=%s', to, error)
