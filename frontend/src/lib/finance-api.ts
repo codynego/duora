@@ -64,10 +64,16 @@ export type FinanceInsight = {
 
 export type FinancePerformanceMonth = { month: string; income: string; expenses: string; net: string };
 export type FinancePerformanceDay = { date: string; income: string; expenses: string; net: string };
+export type FinancialHealth = {
+  status: 'needs_review' | 'steady' | 'limited'; title: string; detail: string;
+  data_quality: { status: 'ready' | 'limited'; record_count: number; account_count: number; note: string };
+  performance: { status: 'ready' | 'limited'; period_start: string; period_end: string; comparison_start: string; comparison_end: string; income: string; expenses: string; net_recorded_movement: string; income_change_percent: number | null; expense_change_percent: number | null };
+  cash_flow: { status: 'needs_review' | 'ready' | 'limited'; recorded_cash: string; known_payables_next_7_days: string; cash_after_known_payables: string; overdue_receivables: string; note: string };
+};
 
 export type FinanceWorkspace = {
   accounts: FinanceAccount[]; contacts: FinanceContact[]; obligations: FinanceObligation[];
-  insights: FinanceInsight[]; intelligenceSummary: { open_findings: number; potential_impact: string };
+  insights: FinanceInsight[]; intelligenceSummary: { open_findings: number; potential_impact: string }; financialHealth?: FinancialHealth;
   performance: FinancePerformanceMonth[]; performanceDaily: FinancePerformanceDay[];
 };
 
@@ -150,12 +156,13 @@ export async function getFinanceWorkspace(businessId: string): Promise<FinanceWo
     financeRequest<{ data: FinanceAccount[] }>(`businesses/${businessId}/accounts/`),
     financeRequest<{ data: FinanceContact[] }>(`businesses/${businessId}/contacts/`),
     financeRequest<{ data: FinanceObligation[] }>(`businesses/${businessId}/obligations/`),
-    financeRequest<{ data: FinanceInsight[]; summary?: { open_findings: number; potential_impact: string } }>(`businesses/${businessId}/intelligence/`),
+    financeRequest<{ data: FinanceInsight[]; summary?: { open_findings: number; potential_impact: string }; health?: FinancialHealth }>(`businesses/${businessId}/intelligence/`),
     financeRequest<{ data: FinancePerformanceMonth[]; daily_data?: FinancePerformanceDay[] }>(`businesses/${businessId}/performance/`),
   ]);
   return { accounts: accounts.data, contacts: contacts.data, obligations: obligations.data,
     insights: insights.data,
     intelligenceSummary: insights.summary ?? { open_findings: insights.data.length, potential_impact: '0.00' },
+    financialHealth: insights.health,
     performance: performance.data, performanceDaily: performance.daily_data ?? [] };
 }
 

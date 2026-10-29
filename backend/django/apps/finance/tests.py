@@ -45,3 +45,14 @@ class FinanceOwnershipTests(TestCase):
         self.transaction.refresh_from_db()
         self.assertEqual(self.transaction.description, 'Private sale')
         self.assertFalse(self.transaction.is_voided)
+
+    def test_intelligence_includes_a_data_backed_health_assessment(self):
+        self.client.force_authenticate(user=self.owner)
+
+        response = self.client.get(f'/api/v1/finance/businesses/{self.business.id}/intelligence/')
+
+        self.assertEqual(response.status_code, 200)
+        health = response.data['health']
+        self.assertEqual(health['data_quality']['record_count'], 1)
+        self.assertEqual(str(health['performance']['income']), '0.00')
+        self.assertEqual(str(health['cash_flow']['recorded_cash']), '100.00')
