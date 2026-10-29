@@ -19,6 +19,7 @@ def _branded_email(*, eyebrow, title, intro, body, button_label, button_url):
     safe_intro = html.escape(intro)
     safe_button_label = html.escape(button_label)
     safe_button_url = html.escape(button_url, quote=True)
+    logo_url = html.escape(f'{settings.DUORA_FRONTEND_URL}/dorah-logo.png', quote=True)
     return f'''<!doctype html>
 <html lang="en">
   <body style="margin:0;background:#f5f7fb;color:#111b33;font-family:Arial,Helvetica,sans-serif;">
@@ -29,8 +30,7 @@ def _branded_email(*, eyebrow, title, intro, body, button_label, button_url):
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:600px;">
             <tr>
               <td style="padding:24px 28px;background:#111b33;border-radius:16px 16px 0 0;">
-                <span style="display:inline-block;width:30px;height:30px;line-height:30px;border-radius:9px;background:#c9f45d;color:#111b33;font-size:18px;font-weight:700;text-align:center;vertical-align:middle;">D</span>
-                <span style="margin-left:9px;color:#ffffff;font-size:20px;font-weight:700;vertical-align:middle;">Dorah</span>
+                <img src="{logo_url}" width="120" alt="Dorah" style="display:block;width:120px;height:auto;max-height:42px;object-fit:contain;object-position:left center;border:0;" />
               </td>
             </tr>
             <tr>
