@@ -1,10 +1,13 @@
 import type { Metadata, Viewport } from 'next';
+import { GoogleAnalytics } from '@next/third-parties/google';
+import { Analytics } from '@vercel/analytics/next';
 import './globals.css';
 import PwaRuntime from '@/components/PwaRuntime';
 import PwaStartup from '@/components/PwaStartup';
 import { SITE_URL } from '@/lib/seo';
 
 const siteUrl = SITE_URL;
+const googleAnalyticsId = process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID ?? 'G-8P4NQ01F5P';
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -119,6 +122,8 @@ export default function RootLayout({
           }}
         />
       </body>
+      {process.env.NODE_ENV === 'production' && <GoogleAnalytics gaId={googleAnalyticsId} />}
+      {process.env.NODE_ENV === 'production' && <Analytics />}
     </html>
   );
 }
