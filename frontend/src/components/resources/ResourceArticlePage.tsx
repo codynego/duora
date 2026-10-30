@@ -1,13 +1,25 @@
 import Link from 'next/link';
 import { ArrowRight, Check, Clock3 } from 'lucide-react';
 import { breadcrumbSchema, SEO_LAST_UPDATED, SITE_URL } from '@/lib/seo';
-import type { ResourceArticle } from './resource-articles';
+import { resourceArticles, type ResourceArticle } from './resource-articles';
+
+function formatArticleDate(value: string) {
+  return new Intl.DateTimeFormat('en-NG', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'Africa/Lagos',
+  }).format(new Date(`${value}T12:00:00+01:00`));
+}
 
 export default function ResourceArticlePage({ article }: { article: ResourceArticle }) {
-  const related = ['/resources/how-to-track-business-expenses', '/resources/how-to-track-customer-debts', '/resources/cash-flow-management-for-small-business'].filter((href) => !href.endsWith(article.slug));
   const articleUrl = `${SITE_URL}/resources/${article.slug}`;
+  const publishedAt = article.publishedAt ?? SEO_LAST_UPDATED;
+  const updatedAt = article.updatedAt ?? SEO_LAST_UPDATED;
+  const relatedSlugs = article.relatedSlugs ?? resourceArticles.filter((candidate) => candidate.slug !== article.slug).slice(0, 3).map((candidate) => candidate.slug);
+  const relatedArticles = relatedSlugs.map((slug) => resourceArticles.find((candidate) => candidate.slug === slug)).filter((candidate): candidate is ResourceArticle => Boolean(candidate));
   const structuredData = { '@context': 'https://schema.org', '@graph': [
-    { '@type': 'Article', '@id': `${articleUrl}#article`, headline: article.title, description: article.description, image: `${SITE_URL}/dorah-social-preview.png`, datePublished: SEO_LAST_UPDATED, dateModified: SEO_LAST_UPDATED, inLanguage: 'en-NG', author: { '@id': `${SITE_URL}/#organization` }, publisher: { '@id': `${SITE_URL}/#organization` }, mainEntityOfPage: { '@id': `${articleUrl}#webpage` } },
+    { '@type': 'Article', '@id': `${articleUrl}#article`, headline: article.title, description: article.description, image: `${SITE_URL}/dorah-social-preview.png`, datePublished: publishedAt, dateModified: updatedAt, inLanguage: 'en-NG', articleSection: article.eyebrow, author: { '@id': `${SITE_URL}/#organization` }, publisher: { '@id': `${SITE_URL}/#organization` }, mainEntityOfPage: { '@id': `${articleUrl}#webpage` } },
     { '@type': 'WebPage', '@id': `${articleUrl}#webpage`, url: articleUrl, name: article.title, description: article.description, inLanguage: 'en-NG', isPartOf: { '@id': `${SITE_URL}/#website` }, breadcrumb: { '@id': `${articleUrl}#breadcrumb` } },
     breadcrumbSchema([{ name: 'Home', path: '/' }, { name: 'Resources', path: '/resources' }, { name: article.title, path: `/resources/${article.slug}` }]),
     { '@type': 'FAQPage', '@id': `${articleUrl}#faq`, mainEntity: article.faqs.map((faq) => ({ '@type': 'Question', name: faq.question, acceptedAnswer: { '@type': 'Answer', text: faq.answer } })) },
@@ -15,12 +27,13 @@ export default function ResourceArticlePage({ article }: { article: ResourceArti
   return <><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, '\\u003c') }} /><main className="bg-[#F5F7FB] px-5 pb-20 pt-12 text-[#111B33] sm:px-8 sm:pt-16">
     <article className="mx-auto max-w-4xl">
       <nav aria-label="Breadcrumb" className="text-[10px] font-bold text-[#758096]"><Link href="/" className="hover:text-[#3157F5]">Home</Link><span aria-hidden="true" className="mx-2">/</span><Link href="/resources" className="hover:text-[#3157F5]">Resources</Link><span aria-hidden="true" className="mx-2">/</span><span className="text-[#3157F5]">{article.eyebrow}</span></nav>
-      <header className="mt-8 border-b border-[#111B33]/10 pb-10 sm:pb-12"><p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[.14em] text-[#3157F5]"><span className="h-0.5 w-6 bg-current" />{article.eyebrow}</p><h1 className="mt-5 max-w-4xl font-[Aptos_Display,Arial,sans-serif] text-5xl font-black leading-[.93] tracking-[-.075em] sm:text-6xl">{article.title}<span className="text-[#3157F5]">.</span></h1><p className="mt-6 max-w-3xl text-base leading-7 text-[#64708A] sm:text-lg sm:leading-8">{article.description}</p><div className="mt-5 inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[.12em] text-[#758096]"><Clock3 className="h-3.5 w-3.5 text-[#3157F5]" />{article.readTime} · Dorah guide</div></header>
+      <header className="mt-8 border-b border-[#111B33]/10 pb-10 sm:pb-12"><p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[.14em] text-[#3157F5]"><span className="h-0.5 w-6 bg-current" />{article.eyebrow}</p><h1 className="mt-5 max-w-4xl font-[Aptos_Display,Arial,sans-serif] text-5xl font-black leading-[.93] tracking-[-.075em] sm:text-6xl">{article.title}<span className="text-[#3157F5]">.</span></h1><p className="mt-6 max-w-3xl text-base leading-7 text-[#64708A] sm:text-lg sm:leading-8">{article.description}</p><div className="mt-5 inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[.12em] text-[#758096]"><Clock3 className="h-3.5 w-3.5 text-[#3157F5]" />{article.readTime} · Published <time dateTime={publishedAt}>{formatArticleDate(publishedAt)}</time></div></header>
       <div className="prose-like mt-10"><p className="text-lg leading-8 text-[#34415D]">{article.intro}</p>{article.sections.map((section) => <section key={section.heading} className="mt-10"><h2 className="text-2xl font-black tracking-[-.05em] sm:text-3xl">{section.heading}</h2>{section.paragraphs.map((paragraph) => <p key={paragraph} className="mt-4 text-sm leading-7 text-[#536078] sm:text-base">{paragraph}</p>)}{section.bullets && <ul className="mt-5 grid gap-3 rounded-2xl border border-[#111B33]/[.08] bg-white p-5 sm:p-6">{section.bullets.map((bullet) => <li key={bullet} className="flex gap-2 text-sm leading-6 text-[#536078]"><Check className="mt-1 h-4 w-4 shrink-0 text-[#557516]" />{bullet}</li>)}</ul>}</section>)}</div>
       <aside className="mt-12 rounded-2xl border border-[#3157F5]/15 bg-[#EAF0FF] p-5 text-sm leading-6 text-[#34415D] sm:p-6"><strong className="text-[#111B33]">Keep the habit simple.</strong> Start with the records you already have, review them regularly, and improve the detail over time. Dorah helps connect transactions, balances, obligations, and financial findings in one workspace.</aside>
       <section className="mt-12"><h2 className="text-2xl font-black tracking-[-.05em]">Common questions</h2><div className="mt-4 grid gap-3">{article.faqs.map((faq) => <details key={faq.question} className="rounded-xl border border-[#111B33]/[.08] bg-white p-4"><summary className="cursor-pointer text-sm font-black">{faq.question}</summary><p className="mt-3 text-sm leading-6 text-[#64708A]">{faq.answer}</p></details>)}</div></section>
       <section className="mt-12 grid gap-5 rounded-2xl bg-[#111B33] p-6 text-white sm:p-8 sm:grid-cols-[1fr_auto] sm:items-center"><div><p className="text-[10px] font-black uppercase tracking-[.14em] text-[#C9F45D]">Put the guide into practice</p><h2 className="mt-2 text-2xl font-black tracking-[-.05em]">See your business money in one clearer view.</h2><p className="mt-2 max-w-xl text-sm leading-6 text-white/60">Start with the records you have and review what needs attention as your business grows.</p></div><Link href="/signup" className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[#C9F45D] px-4 text-xs font-black text-[#111B33]">Create a free account <ArrowRight className="h-4 w-4" /></Link></section>
-      <nav aria-label="More resources" className="mt-8 flex flex-wrap gap-x-5 gap-y-2 text-xs font-bold text-[#64708A]">{related.map((href) => <Link key={href} href={href} className="hover:text-[#3157F5]">Read another guide <span aria-hidden="true">→</span></Link>)}<Link href="/resources" className="hover:text-[#3157F5]">All resources <span aria-hidden="true">→</span></Link></nav>
+      <nav aria-label="Related resources" className="mt-8 grid gap-3 sm:grid-cols-3">{relatedArticles.map((relatedArticle) => <Link key={relatedArticle.slug} href={`/resources/${relatedArticle.slug}`} className="rounded-xl border border-[#111B33]/[.08] bg-white p-4 text-sm font-black leading-5 text-[#34415D] transition hover:border-[#3157F5]/30 hover:text-[#3157F5]">{relatedArticle.title} <span aria-hidden="true">→</span></Link>)}</nav>
+      <Link href="/resources" className="mt-5 inline-flex text-xs font-bold text-[#64708A] hover:text-[#3157F5]">All resources <span aria-hidden="true" className="ml-1">→</span></Link>
     </article>
   </main></>;
 }

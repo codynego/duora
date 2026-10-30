@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 
 export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://dorah.me').replace(/\/$/, '');
-export const SEO_LAST_UPDATED = '2026-10-28';
+export const SEO_LAST_UPDATED = '2026-10-30';
 
 const CORE_KEYWORDS = [
   'Dorah',
