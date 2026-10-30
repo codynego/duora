@@ -47,6 +47,46 @@ class AiUsage(models.Model):
         indexes = [models.Index(fields=('business', 'feature', 'period_start'))]
 
 
+class FinancialFinding(models.Model):
+    class Status(models.TextChoices):
+        NEW = 'new', 'Needs attention'
+        PLANNING = 'planning', 'Under review'
+        RESOLVED = 'resolved', 'Resolved'
+
+    class Feedback(models.TextChoices):
+        NONE = '', 'No feedback'
+        USEFUL = 'useful', 'Useful'
+        NOT_RELEVANT = 'not_relevant', 'Not relevant'
+        HANDLED = 'handled', 'Already handled'
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    business = models.ForeignKey(Business, on_delete=models.CASCADE, related_name='financial_findings')
+    fingerprint = models.CharField(max_length=180)
+    finding_type = models.CharField(max_length=80)
+    severity = models.CharField(max_length=12)
+    status = models.CharField(max_length=12, choices=Status.choices, default=Status.NEW)
+    feedback = models.CharField(max_length=20, choices=Feedback.choices, blank=True, default='')
+    content_hash = models.CharField(max_length=64)
+    payload = models.JSONField(default=dict)
+    is_active = models.BooleanField(default=True)
+    first_seen_at = models.DateTimeField(auto_now_add=True)
+    last_seen_at = models.DateTimeField()
+    resolved_at = models.DateTimeField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=('business', 'fingerprint'), name='finance_unique_finding_fingerprint'),
+        ]
+        indexes = [
+            models.Index(fields=('business', 'is_active', 'status'), name='finance_fin_busines_8c3c7d_idx'),
+        ]
+        ordering = ('-last_seen_at',)
+
+    def __str__(self):
+        return f'{self.business}: {self.fingerprint}'
+
+
 class Transaction(models.Model):
     class Kind(models.TextChoices):
         INCOME = 'income', 'Money in'

@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Business, Contact, FinancialAccount, Obligation, Transaction, TransactionAudit
+from .models import Business, Contact, FinancialAccount, FinancialFinding, Obligation, Transaction, TransactionAudit
 
 
 @admin.register(Business)
@@ -63,6 +63,23 @@ class TransactionAuditAdmin(admin.ModelAdmin):
         return False
 
     def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(FinancialFinding)
+class FinancialFindingAdmin(admin.ModelAdmin):
+    list_display = ('finding_type', 'business', 'severity', 'status', 'feedback', 'is_active', 'last_seen_at')
+    list_filter = ('finding_type', 'severity', 'status', 'feedback', 'is_active')
+    search_fields = ('fingerprint', 'business__name')
+    readonly_fields = (
+        'id', 'business', 'fingerprint', 'finding_type', 'severity', 'content_hash', 'payload',
+        'is_active', 'first_seen_at', 'last_seen_at', 'resolved_at', 'updated_at',
+    )
+
+    def has_add_permission(self, request):
         return False
 
     def has_delete_permission(self, request, obj=None):

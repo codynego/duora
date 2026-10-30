@@ -4,6 +4,7 @@ from decimal import Decimal
 from django.db.models import Sum
 
 from .models import Business, Contact, FinancialAccount, Obligation, Transaction
+from .services.balances import financial_account_balance
 
 
 class BusinessSerializer(serializers.ModelSerializer):
@@ -105,12 +106,7 @@ class FinancialAccountSerializer(serializers.ModelSerializer):
         read_only_fields = ('id', 'balance', 'created_at', 'updated_at')
 
     def get_balance(self, obj):
-        zero = Decimal('0.00')
-        income = obj.transactions.filter(is_voided=False, kind=Transaction.Kind.INCOME).aggregate(total=Sum('amount'))['total'] or zero
-        expenses = obj.transactions.filter(is_voided=False, kind=Transaction.Kind.EXPENSE).aggregate(total=Sum('amount'))['total'] or zero
-        transfers_out = obj.transactions.filter(is_voided=False, kind=Transaction.Kind.TRANSFER).aggregate(total=Sum('amount'))['total'] or zero
-        transfers_in = obj.incoming_transfers.filter(is_voided=False, kind=Transaction.Kind.TRANSFER).aggregate(total=Sum('amount'))['total'] or zero
-        return obj.opening_balance + income - expenses - transfers_out + transfers_in
+        return financial_account_balance(obj)
 
     def validate_currency(self, value):
         value = value.upper()

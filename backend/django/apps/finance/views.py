@@ -18,9 +18,12 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.accounts.emailing import EmailDeliveryError, send_onboarding_email
-from .models import AiUsage, Business, Contact, FinancialAccount, Obligation, Transaction, TransactionAudit
+from .models import AiUsage, Business, Contact, FinancialAccount, FinancialFinding, Obligation, Transaction, TransactionAudit
 from .serializers import (BusinessSerializer, ContactSerializer, FinancialAccountSerializer,
                           ObligationSerializer, TransactionSerializer)
+from .services.balances import recorded_cash_position
+from .services.findings import evaluate_financial_intelligence, update_finding_lifecycle
+from .services.forecasting import ForecastInputError, build_cash_forecast
 
 logger = logging.getLogger(__name__)
 
@@ -192,8 +195,6 @@ class BusinessOverviewView(APIView):
         cash_activity = current_month.filter(kind__in=(Transaction.Kind.INCOME, Transaction.Kind.EXPENSE))
         totals = cash_activity.values('kind').annotate(total=Sum('amount'))
         total_by_kind = {row['kind']: row['total'] or 0 for row in totals}
-        all_totals = transactions.filter(kind__in=(Transaction.Kind.INCOME, Transaction.Kind.EXPENSE)).values('kind').annotate(total=Sum('amount'))
-        all_by_kind = {row['kind']: row['total'] or 0 for row in all_totals}
         open_obligations = Obligation.objects.filter(business=business, balance__gt=0)
         next_seven_days = today + timedelta(days=7)
         obligation_totals = {}
@@ -207,15 +208,7 @@ class BusinessOverviewView(APIView):
             'payables_due_today': open_obligations.filter(kind=Obligation.Kind.PAYABLE, due_date=today),
         }.items():
             obligation_totals[name] = queryset.aggregate(total=Sum('balance'))['total'] or Decimal('0.00')
-        accounts = list(FinancialAccount.objects.filter(business=business, is_active=True))
-        account_rows = FinancialAccountSerializer(accounts, many=True).data
-        if accounts:
-            account_totals = FinancialAccountSerializer(accounts, many=True).data
-            unassigned_totals = transactions.filter(account__isnull=True).values('kind').annotate(total=Sum('amount'))
-            unassigned_by_kind = {row['kind']: row['total'] or 0 for row in unassigned_totals}
-            cash = sum((Decimal(row['balance']) for row in account_totals), start=Decimal('0.00')) + unassigned_by_kind.get(Transaction.Kind.INCOME, 0) - unassigned_by_kind.get(Transaction.Kind.EXPENSE, 0)
-        else:
-            cash = business.opening_balance + all_by_kind.get(Transaction.Kind.INCOME, 0) - all_by_kind.get(Transaction.Kind.EXPENSE, 0)
+        cash = recorded_cash_position(business)['total']
         monthly = list(
             current_month.annotate(month=TruncMonth('occurred_on'))
             .values('month', 'kind').annotate(total=Sum('amount'), count=Count('id'))
@@ -381,8 +374,8 @@ class IntelligenceChatView(APIView):
 
         transaction_queryset = Transaction.objects.filter(business=business, is_voided=False)
         transactions = list(transaction_queryset.select_related('account', 'contact').order_by('-occurred_on', '-created_at')[:40])
-        accounts = list(FinancialAccount.objects.filter(business=business, is_active=True))
-        account_rows = FinancialAccountSerializer(accounts, many=True).data
+        cash_position = recorded_cash_position(business)
+        account_rows = cash_position['accounts']
         obligations = list(Obligation.objects.filter(business=business).select_related('contact').order_by('due_date', '-updated_at')[:40])
         question_lower = question.lower()
         today = timezone.localdate()
@@ -471,7 +464,7 @@ class IntelligenceChatView(APIView):
         due_soon_payables = list(Obligation.objects.filter(business=business, kind=Obligation.Kind.PAYABLE, balance__gt=0,
                                                             due_date__gte=today, due_date__lte=today + timedelta(days=7))
                                  .values('contact__name', 'description', 'balance', 'due_date').order_by('due_date'))
-        recorded_cash = sum((Decimal(str(row['balance'])) for row in account_rows), Decimal('0.00'))
+        recorded_cash = cash_position['total']
         due_soon_total = sum((row['balance'] or Decimal('0.00') for row in due_soon_payables), Decimal('0.00'))
         customer_days = defaultdict(lambda: {'customers': set(), 'transactions': 0, 'amount': Decimal('0.00')})
         for row in transaction_queryset.filter(kind=Transaction.Kind.INCOME, contact__isnull=False).values('occurred_on', 'contact_id', 'amount'):
@@ -500,10 +493,26 @@ class IntelligenceChatView(APIView):
             query_focus.append('record_checks')
         if any(term in question_lower for term in ('day', 'days', 'busy', 'busiest', 'most customers')):
             query_focus.append('customer_activity_by_day')
+        forecast_requested = any(term in question_lower for term in (
+            'forecast', 'projection', 'projected', 'future cash', 'cash flow', 'cashflow',
+            'run out', 'shortfall', 'next week', 'next month', 'cash buffer',
+        ))
+        cash_forecast = None
+        if forecast_requested:
+            forecast_horizon = 7 if 'next week' in question_lower or '7 day' in question_lower else 90 if '90 day' in question_lower else 30
+            full_forecast = build_cash_forecast(business, horizon_days=forecast_horizon)
+            cash_forecast = {
+                key: value for key, value in full_forecast.items()
+                if key not in ('timeline',)
+            }
+            cash_forecast['event_days'] = [
+                row for row in full_forecast['timeline'] if row['events']
+            ]
+            query_focus.append('cash_forecast')
         if not query_focus:
             query_focus = ['customer_balances', 'recent_payments', 'sales_by_description', 'customer_activity_by_day']
-        insights_response = FinanceInsightsView().get(request, business_id)
-        insights = insights_response.data.get('data', []) if insights_response.status_code == 200 else []
+        insights_result = evaluate_financial_intelligence(business)
+        insights = insights_result['data']
         context = {
             'business': {'name': business.name, 'currency': business.currency, 'opening_balance': business.opening_balance},
             'accounts': [{'name': row['name'], 'kind': row['kind'], 'balance': row['balance']} for row in account_rows],
@@ -540,6 +549,7 @@ class IntelligenceChatView(APIView):
                     'current_month_expenses_by_category': expense_categories,
                     'largest_current_month_expenses': largest_expenses,
                 },
+                'cash_forecast': cash_forecast,
                 'requested_date_analysis': requested_date_analysis,
                 'customer_activity_by_day_all_time': customer_activity_by_day,
             },
@@ -551,7 +561,7 @@ class IntelligenceChatView(APIView):
         if model not in {'gpt-4o-mini', 'gpt-4.1-mini'}:
             model = 'gpt-4o-mini'
         input_messages = [
-            {'role': 'system', 'content': 'You are Dorah, a careful financial controller for a small business. Answer only from the supplied saved-record context. The computed_analysis section is calculated by the backend from the business records; treat it as authoritative for customer balances, recent payments, sales rankings, sales totals, customer activity by day, cash affordability, expense comparisons, and record findings. When requested_date_analysis is present, use only that exact date for date-specific questions and do not mix it with today, this month, or all-time records. Use the query_focus list to prioritize the relevant analysis. Do not invent transactions, balances, dates, customers, or explanations, and do not calculate a total by adding only the displayed top items. For cash questions, use financial_analysis.recorded_cash_total and distinguish recorded account balances from bank balances, expected collections, and cash after known upcoming payables. For affordability questions, show the assumption and known obligations; never give a confident yes when records are incomplete. For expense questions, use current_month_expenses_by_category, largest_current_month_expenses, and the current/previous month totals. For sales questions, use sales_analysis.total_income as the only period total, state its period, and use sales_analysis.items_in_period for the item list. Include every relevant item when the user asks what was sold; if you choose to show only a ranking, label it clearly as a ranking and never call its subtotal the total sales. For customer questions, name the customer and show the recorded balance or matching payment. For product or item questions, explain that the ranking uses transaction descriptions unless a product catalogue exists. For day questions, distinguish number of recorded customers from number of transactions. If the records do not contain enough information, say exactly what is missing. Show relevant amounts with the business currency and thousands separators. Distinguish recorded cash from receivables, payables, expected collections, repayments, and internal transfers. Possible findings are review prompts, not confirmed errors. Never authorize, save, delete, or change records. Use the earlier conversation to resolve follow-up questions and pronouns such as “that”, “those”, or “which one”; answer the latest question rather than repeating an earlier answer. Format answers for a small chat window: use a short opening sentence, put each item in a numbered list on its own line, leave a blank line before the total or conclusion, bold important labels and totals with **double asterisks**, and finish with a separate "Next step:" line. Do not use tables, JSON, or long unbroken paragraphs.'},
+            {'role': 'system', 'content': 'You are Dorah, a careful financial controller for a small business. Answer only from the supplied saved-record context. The computed_analysis section is calculated by the backend from the business records; treat it as authoritative for customer balances, recent payments, sales rankings, sales totals, customer activity by day, cash affordability, expense comparisons, cash forecasts, and record findings. When requested_date_analysis is present, use only that exact date for date-specific questions and do not mix it with today, this month, or all-time records. Use the query_focus list to prioritize the relevant analysis. When cash_forecast is present, describe it as a projection based on recorded cash and dated obligations, state important assumptions or limitations, and use projected_closing_balance, lowest_balance, lowest_balance_date, first_buffer_breach, and event_days without inventing missing future activity. Do not invent transactions, balances, dates, customers, or explanations, and do not calculate a total by adding only the displayed top items. For cash questions, use financial_analysis.recorded_cash_total and distinguish recorded account balances from bank balances, expected collections, and cash after known upcoming payables. For affordability questions, show the assumption and known obligations; never give a confident yes when records are incomplete. For expense questions, use current_month_expenses_by_category, largest_current_month_expenses, and the current/previous month totals. For sales questions, use sales_analysis.total_income as the only period total, state its period, and use sales_analysis.items_in_period for the item list. Include every relevant item when the user asks what was sold; if you choose to show only a ranking, label it clearly as a ranking and never call its subtotal the total sales. For customer questions, name the customer and show the recorded balance or matching payment. For product or item questions, explain that the ranking uses transaction descriptions unless a product catalogue exists. For day questions, distinguish number of recorded customers from number of transactions. If the records do not contain enough information, say exactly what is missing. Show relevant amounts with the business currency and thousands separators. Distinguish recorded cash from receivables, payables, expected collections, repayments, and internal transfers. Possible findings are review prompts, not confirmed errors. Never authorize, save, delete, or change records. Use the earlier conversation to resolve follow-up questions and pronouns such as “that”, “those”, or “which one”; answer the latest question rather than repeating an earlier answer. Format answers for a small chat window: use a short opening sentence, put each item in a numbered list on its own line, leave a blank line before the total or conclusion, bold important labels and totals with **double asterisks**, and finish with a separate "Next step:" line. Do not use tables, JSON, or long unbroken paragraphs.'},
             *history,
             {'role': 'user', 'content': json.dumps({'today': timezone.localdate().isoformat(), 'question': question, 'saved_financial_context': context}, default=str)},
         ]
@@ -847,6 +857,41 @@ class PerformanceView(APIView):
                          'basis': 'recorded_transactions_and_balances', 'is_complete_profit_and_loss': False})
 
 
+class CashForecastView(APIView):
+    """Return a deterministic cash projection or a scenario variation."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, business_id):
+        business = owned_business(request, business_id)
+        if not business:
+            return Response({'detail': 'Business not found.'}, status=status.HTTP_404_NOT_FOUND)
+        try:
+            forecast = build_cash_forecast(
+                business,
+                horizon_days=request.query_params.get('horizon_days', 30),
+                cash_buffer=request.query_params.get('cash_buffer', '0.00'),
+            )
+        except ForecastInputError as error:
+            return Response({'detail': str(error)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'data': forecast})
+
+    def post(self, request, business_id):
+        business = owned_business(request, business_id)
+        if not business:
+            return Response({'detail': 'Business not found.'}, status=status.HTTP_404_NOT_FOUND)
+        try:
+            forecast = build_cash_forecast(
+                business,
+                horizon_days=request.data.get('horizon_days', 30),
+                cash_buffer=request.data.get('cash_buffer', '0.00'),
+                adjustments=request.data.get('adjustments', []),
+            )
+        except ForecastInputError as error:
+            return Response({'detail': str(error)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'data': forecast})
+
+
 class FinanceInsightsView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -854,210 +899,30 @@ class FinanceInsightsView(APIView):
         business = owned_business(request, business_id)
         if not business:
             return Response({'detail': 'Business not found.'}, status=status.HTTP_404_NOT_FOUND)
-        today = timezone.localdate()
-        findings = []
-        potential_impact = Decimal('0.00')
-        transactions = Transaction.objects.filter(business=business, is_voided=False)
-        period_start = today.replace(day=1)
-        previous_month_end = period_start - timedelta(days=1)
-        previous_month_start = previous_month_end.replace(day=1)
-        comparable_days = min(today.day, previous_month_end.day)
-        previous_period_end = previous_month_start + timedelta(days=comparable_days - 1)
+        return Response(evaluate_financial_intelligence(business))
 
-        # Health assessment values are calculated here, rather than generated by AI.
-        # They intentionally describe recorded movement, not a complete profit-and-loss
-        # statement, because Dorah may not yet have every sale, cost, or adjustment.
-        performance_transactions = transactions.filter(
-            kind__in=(Transaction.Kind.INCOME, Transaction.Kind.EXPENSE), obligation__isnull=True,
-        )
-        current_period = performance_transactions.filter(occurred_on__gte=period_start, occurred_on__lte=today)
-        previous_period = performance_transactions.filter(occurred_on__gte=previous_month_start, occurred_on__lte=previous_period_end)
-        current_totals = {row['kind']: row['total'] or Decimal('0.00') for row in current_period.values('kind').annotate(total=Sum('amount'))}
-        previous_totals = {row['kind']: row['total'] or Decimal('0.00') for row in previous_period.values('kind').annotate(total=Sum('amount'))}
-        current_income = current_totals.get(Transaction.Kind.INCOME, Decimal('0.00'))
-        current_expenses = current_totals.get(Transaction.Kind.EXPENSE, Decimal('0.00'))
-        previous_income = previous_totals.get(Transaction.Kind.INCOME, Decimal('0.00'))
-        previous_expenses = previous_totals.get(Transaction.Kind.EXPENSE, Decimal('0.00'))
 
-        def percentage_change(current, previous):
-            if previous <= 0:
-                return None
-            return int(((current - previous) * Decimal('100') / previous).quantize(Decimal('1')))
+class FindingStateView(APIView):
+    permission_classes = [IsAuthenticated]
 
-        current_record_count = current_period.count()
-        previous_record_count = previous_period.count()
-        total_record_count = performance_transactions.count()
-        has_comparable_periods = current_record_count >= 2 and previous_record_count >= 2
-        accounts = list(FinancialAccount.objects.filter(business=business, is_active=True))
-        if accounts:
-            account_rows = FinancialAccountSerializer(accounts, many=True).data
-            assigned_cash = sum((Decimal(str(row['balance'])) for row in account_rows), Decimal('0.00'))
-            unassigned = transactions.filter(account__isnull=True, kind__in=(Transaction.Kind.INCOME, Transaction.Kind.EXPENSE))
-            unassigned_totals = {row['kind']: row['total'] or Decimal('0.00') for row in unassigned.values('kind').annotate(total=Sum('amount'))}
-            recorded_cash = assigned_cash + unassigned_totals.get(Transaction.Kind.INCOME, Decimal('0.00')) - unassigned_totals.get(Transaction.Kind.EXPENSE, Decimal('0.00'))
-        else:
-            all_totals = {row['kind']: row['total'] or Decimal('0.00') for row in transactions.filter(kind__in=(Transaction.Kind.INCOME, Transaction.Kind.EXPENSE)).values('kind').annotate(total=Sum('amount'))}
-            recorded_cash = business.opening_balance + all_totals.get(Transaction.Kind.INCOME, Decimal('0.00')) - all_totals.get(Transaction.Kind.EXPENSE, Decimal('0.00'))
-
-        overdue = Obligation.objects.filter(business=business, kind=Obligation.Kind.RECEIVABLE,
-                                             balance__gt=0, due_date__lt=today).select_related('contact')
-        overdue_total = sum((item.balance for item in overdue), start=0)
-        if overdue.exists():
-            overdue_evidence = [
-                {'id': str(item.id), 'contact': item.contact.name, 'description': item.description,
-                 'due_date': item.due_date, 'balance': item.balance}
-                for item in overdue.order_by('due_date')[:10]
-            ]
-            findings.append({'id': 'overdue-receivables', 'severity': 'high', 'status': 'new',
-                             'title': 'Customer balances are overdue',
-                             'detail': f'{overdue.count()} customer balances totaling {overdue_total:,.2f} {business.currency} are past due.',
-                             'evidence_count': overdue.count(), 'source': 'obligations',
-                             'impact_amount': overdue_total,
-                             'action_label': 'Investigate receivables',
-                             'suggestion': 'Check the original due date and recent payments before following up. Keep this amount out of available cash until collected.',
-                             'evidence': overdue_evidence,
-                             'action_url': '/dashboard/receivables'})
-            potential_impact += overdue_total
-
-        next_week = today + timedelta(days=7)
-        upcoming_payables = Obligation.objects.filter(
-            business=business, kind=Obligation.Kind.PAYABLE, balance__gt=0,
-            due_date__gte=today, due_date__lte=next_week,
-        ).select_related('contact').order_by('due_date')
-        upcoming_total = upcoming_payables.aggregate(total=Sum('balance'))['total'] or Decimal('0.00')
-        if upcoming_total:
-            findings.append({'id': 'upcoming-payables', 'severity': 'review', 'status': 'planning',
-                             'title': 'Supplier obligations due in the next 7 days',
-                             'detail': f'Recorded supplier balances totaling {upcoming_total:,.2f} {business.currency} are due by {next_week}. Compare these dates with current account balances and expected collections before scheduling payments.',
-                             'evidence_count': upcoming_payables.count(), 'source': 'payables',
-                             'impact_amount': upcoming_total,
-                             'period_start': today, 'period_end': next_week,
-                             'action_label': 'Review upcoming bills',
-                             'suggestion': 'Compare these due dates with recorded account balances and expected customer collections.',
-                             'evidence': [{'id': str(item.id), 'contact': item.contact.name, 'description': item.description,
-                                           'due_date': item.due_date, 'balance': item.balance}
-                                          for item in upcoming_payables[:10]],
-                             'action_url': '/dashboard/payables'})
-            potential_impact += upcoming_total
-
-        current_period_expenses = Transaction.objects.filter(
-            business=business, is_voided=False, kind=Transaction.Kind.EXPENSE, obligation__isnull=True,
-            occurred_on__gte=period_start, occurred_on__lte=today,
-        )
-        previous_period_expenses = Transaction.objects.filter(
-            business=business, is_voided=False, kind=Transaction.Kind.EXPENSE, obligation__isnull=True,
-            occurred_on__gte=previous_month_start, occurred_on__lte=previous_period_end,
-        )
-        current_by_category = {row['category'] or '': row['total'] or Decimal('0.00')
-                               for row in current_period_expenses.values('category').annotate(total=Sum('amount'))}
-        previous_by_category = {row['category'] or '': row['total'] or Decimal('0.00')
-                                for row in previous_period_expenses.values('category').annotate(total=Sum('amount'))}
-        for raw_category, current_total in current_by_category.items():
-            category = raw_category or 'Uncategorized'
-            previous_total = previous_by_category.get(raw_category, Decimal('0.00'))
-            increase = current_total - previous_total
-            if previous_total < Decimal('10000.00') or increase < Decimal('5000.00') or current_total < previous_total * Decimal('1.35'):
-                continue
-            percentage = int((increase * 100 / previous_total).quantize(Decimal('1')))
-            evidence = []
-            for transaction in current_period_expenses.filter(category=raw_category)[:5]:
-                evidence.append({'id': str(transaction.id), 'date': transaction.occurred_on,
-                                 'description': transaction.description, 'amount': transaction.amount,
-                                 'counterparty': transaction.counterparty, 'period': 'current'})
-            for transaction in previous_period_expenses.filter(category=raw_category)[:5]:
-                evidence.append({'id': f'previous-{transaction.id}', 'date': transaction.occurred_on,
-                                 'description': transaction.description, 'amount': transaction.amount,
-                                 'counterparty': transaction.counterparty, 'period': 'previous'})
-            findings.append({'id': f'expense-increase-{raw_category or "uncategorized"}',
-                             'severity': 'review', 'status': 'new',
-                             'title': f'{category} expenses increased',
-                             'detail': f'{category} expenses increased {percentage}% from {previous_total:,.2f} {business.currency} to {current_total:,.2f} {business.currency}, comparing {previous_month_start}–{previous_period_end} with {period_start}–{today}.',
-                             'evidence_count': len(evidence), 'source': 'transactions',
-                             'impact_amount': increase, 'period_start': period_start,
-                             'period_end': today, 'comparison_start': previous_month_start,
-                             'comparison_end': previous_period_end,
-                             'action_label': 'Review expense activity',
-                             'suggestion': 'Inspect the listed transactions for new one-off costs or records filed under the wrong category.',
-                             'evidence': evidence,
-                             'action_url': '/dashboard/transactions'})
-            potential_impact += increase
-
-        recent = Transaction.objects.filter(business=business, is_voided=False, kind__in=(Transaction.Kind.INCOME, Transaction.Kind.EXPENSE),
-                                            obligation__isnull=True, occurred_on__gte=today - timedelta(days=90))
-        groups = {}
-        for item in recent:
-            duplicate_key = (item.kind, item.amount, item.occurred_on, item.account_id, item.contact_id,
-                             (item.counterparty or '').strip().lower(), item.description.strip().lower())
-            groups.setdefault(duplicate_key, []).append(item)
-        for duplicate_rows in groups.values():
-            if len(duplicate_rows) > 1:
-                findings.append({'id': f"possible-duplicate-{duplicate_rows[0].id}", 'severity': 'review', 'status': 'new',
-                                 'title': 'Possible duplicate transaction',
-                                 'detail': f'{len(duplicate_rows)} saved transactions share the same date, amount, description, and counterparty.',
-                                 'evidence_count': len(duplicate_rows), 'source': 'transactions',
-                                 'impact_amount': Decimal('0.00'), 'action_label': 'Compare transactions',
-                                 'suggestion': 'Matching details can also describe two legitimate purchases. Compare dates, counterparties, and account activity before changing either record.',
-                                 'transaction_ids': [str(item.id) for item in duplicate_rows],
-                                 'evidence': [{'id': str(item.id), 'date': item.occurred_on, 'description': item.description,
-                                               'amount': item.amount, 'counterparty': item.counterparty}
-                                              for item in duplicate_rows],
-                                 'action_url': '/dashboard/transactions'})
-
-        cash_after_known_payables = recorded_cash - upcoming_total
-        if upcoming_total and cash_after_known_payables < 0:
-            findings.append({'id': 'cash-coverage-risk', 'severity': 'high', 'status': 'new',
-                             'title': 'Recorded cash may not cover known supplier payments',
-                             'detail': f'Recorded cash is {recorded_cash:,.2f} {business.currency}, while supplier balances due in the next 7 days total {upcoming_total:,.2f} {business.currency}. This does not include future income or unrecorded commitments.',
-                             'evidence_count': upcoming_payables.count(), 'source': 'payables',
-                             'impact_amount': abs(cash_after_known_payables), 'period_start': today, 'period_end': next_week,
-                             'action_label': 'Review cash coverage',
-                             'suggestion': 'Confirm account balances, customer collections, and which supplier payments can be scheduled before committing to additional spending.',
-                             'evidence': [{'id': 'recorded-cash', 'description': 'Recorded cash across accounts', 'amount': recorded_cash},
-                                          {'id': 'upcoming-payables', 'description': 'Supplier balances due in 7 days', 'amount': upcoming_total}],
-                             'action_url': '/dashboard/payables'})
-
-        income_change = percentage_change(current_income, previous_income)
-        expense_change = percentage_change(current_expenses, previous_expenses)
-        if has_comparable_periods and income_change is not None and expense_change is not None and expense_change >= 15 and expense_change > income_change:
-            findings.append({'id': 'expenses-outpacing-income', 'severity': 'review', 'status': 'new',
-                             'title': 'Recorded expenses are growing faster than recorded income',
-                             'detail': f'Expenses changed {expense_change:+d}% while income changed {income_change:+d}% across comparable month-to-date periods. Review the expense categories and transactions behind the change.',
-                             'evidence_count': current_record_count + previous_record_count, 'source': 'transactions',
-                             'impact_amount': Decimal('0.00'), 'period_start': period_start, 'period_end': today,
-                             'comparison_start': previous_month_start, 'comparison_end': previous_period_end,
-                             'action_label': 'Review recorded performance',
-                             'suggestion': 'Inspect the largest expense changes first and confirm whether the rise is recurring, one-off, or incorrectly categorised.',
-                             'evidence': [{'id': 'current-income', 'description': 'Recorded income · current period', 'amount': current_income, 'period': 'current'},
-                                          {'id': 'current-expenses', 'description': 'Recorded expenses · current period', 'amount': current_expenses, 'period': 'current'},
-                                          {'id': 'previous-income', 'description': 'Recorded income · comparison period', 'amount': previous_income, 'period': 'previous'},
-                                          {'id': 'previous-expenses', 'description': 'Recorded expenses · comparison period', 'amount': previous_expenses, 'period': 'previous'}],
-                             'action_url': '/dashboard/performance'})
-
-        data_status = 'ready' if total_record_count >= 6 and accounts else 'limited'
-        if data_status == 'limited':
-            data_note = 'Add more dated income and expense records, plus at least one account, before relying on trend comparisons.'
-        elif not has_comparable_periods:
-            data_note = 'Current balances are available, but there are not yet two comparable periods for trend analysis.'
-        else:
-            data_note = 'Trend comparisons use dated, saved transactions. Results remain limited to the records Dorah has.'
-        health_status = 'needs_review' if cash_after_known_payables < 0 or (has_comparable_periods and income_change is not None and expense_change is not None and expense_change >= 15 and expense_change > income_change) else 'steady' if data_status == 'ready' else 'limited'
-        health_title = 'Your financial position needs review' if health_status == 'needs_review' else 'Your recorded position is building' if health_status == 'limited' else 'Your recorded position is steady'
-        health_detail = ('Known supplier commitments exceed recorded cash in the next 7 days. Confirm collections and payment timing before committing to more spending.' if cash_after_known_payables < 0 else 'Dorah has enough saved data to show your current position. Keep recording consistently to strengthen the next comparison.' if health_status == 'steady' else data_note)
-        health = {
-            'status': health_status, 'title': health_title, 'detail': health_detail,
-            'data_quality': {'status': data_status, 'record_count': total_record_count, 'account_count': len(accounts), 'note': data_note},
-            'performance': {'status': 'ready' if has_comparable_periods else 'limited', 'period_start': period_start, 'period_end': today,
-                            'comparison_start': previous_month_start, 'comparison_end': previous_period_end,
-                            'income': current_income, 'expenses': current_expenses, 'net_recorded_movement': current_income - current_expenses,
-                            'income_change_percent': income_change if has_comparable_periods else None,
-                            'expense_change_percent': expense_change if has_comparable_periods else None},
-            'cash_flow': {'status': 'needs_review' if cash_after_known_payables < 0 else 'ready' if accounts else 'limited',
-                          'recorded_cash': recorded_cash, 'known_payables_next_7_days': upcoming_total,
-                          'cash_after_known_payables': cash_after_known_payables, 'overdue_receivables': overdue_total,
-                          'note': 'Recorded cash less known supplier balances due in the next 7 days. It does not assume future income or unrecorded commitments.'},
-        }
-        findings.sort(key=lambda item: (item['severity'] != 'high', item['title']))
-        return Response({'data': findings,
-                         'summary': {'open_findings': len(findings), 'potential_impact': potential_impact},
-                         'health': health,
-                         'generated_from': 'saved_records', 'generated_at': timezone.now()})
+    def patch(self, request, business_id, finding_id):
+        business = owned_business(request, business_id)
+        if not business:
+            return Response({'detail': 'Business not found.'}, status=status.HTTP_404_NOT_FOUND)
+        if 'status' not in request.data and 'feedback' not in request.data:
+            return Response(
+                {'detail': 'Provide status or feedback to update the finding.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            finding = update_finding_lifecycle(
+                business,
+                finding_id,
+                status=request.data.get('status') if 'status' in request.data else None,
+                feedback=request.data.get('feedback') if 'feedback' in request.data else None,
+            )
+        except FinancialFinding.DoesNotExist:
+            return Response({'detail': 'Finding not found.'}, status=status.HTTP_404_NOT_FOUND)
+        except ValueError as error:
+            return Response({'detail': str(error)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'data': finding})

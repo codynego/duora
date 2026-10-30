@@ -59,11 +59,34 @@ export type FinanceInsight = {
   evidence_count: number; source: string; action_url: string; transaction_ids?: string[];
   impact_amount?: string; action_label?: string; suggestion?: string;
   period_start?: string; period_end?: string; comparison_start?: string; comparison_end?: string;
+  feedback?: '' | 'useful' | 'not_relevant' | 'handled'; first_seen_at?: string; last_seen_at?: string;
+  risk_label?: string; why_it_matters?: string;
+  metrics?: Array<{ label: string; value: string | number; format: 'currency' | 'number' | 'percent' | 'signed_percent' }>;
+  suggested_questions?: string[];
   evidence?: Array<{ id: string; contact?: string; description: string; due_date?: string; balance?: string; date?: string; amount?: string; counterparty?: string; period?: 'current' | 'previous' }>;
 };
 
+export async function updateFinanceFinding(businessId: string, findingId: string, input: {
+  status?: 'new' | 'planning' | 'resolved';
+  feedback?: '' | 'useful' | 'not_relevant' | 'handled';
+}) {
+  const response = await financeRequest<{ data: FinanceInsight }>(
+    `businesses/${businessId}/intelligence/findings/${encodeURIComponent(findingId)}/`,
+    { method: 'PATCH', body: JSON.stringify(input) },
+  );
+  return response.data;
+}
+
 export type FinancePerformanceMonth = { month: string; income: string; expenses: string; net: string };
 export type FinancePerformanceDay = { date: string; income: string; expenses: string; net: string };
+export type FinanceForecastEvent = { date: string; direction: 'inflow' | 'outflow'; amount: string; description: string; contact?: string; source: string; source_id?: string | null };
+export type FinanceForecastDay = { date: string; opening_balance: string; inflows: string; outflows: string; closing_balance: string; events: FinanceForecastEvent[] };
+export type FinanceForecast = {
+  currency: string; basis: string; horizon_days: number; period_start: string; period_end: string;
+  opening_balance: string; projected_closing_balance: string; lowest_balance: string; lowest_balance_date: string;
+  cash_buffer: string; first_buffer_breach: string | null; timeline: FinanceForecastDay[];
+  assumptions: string[]; limitations: { undated_open_obligations: { receivables: number; payables: number }; overdue_amounts_not_assigned_a_future_date: { receivables: string; payables: string } };
+};
 export type FinancialHealth = {
   status: 'needs_review' | 'steady' | 'limited'; title: string; detail: string;
   data_quality: { status: 'ready' | 'limited'; record_count: number; account_count: number; note: string };
@@ -75,6 +98,7 @@ export type FinanceWorkspace = {
   accounts: FinanceAccount[]; contacts: FinanceContact[]; obligations: FinanceObligation[];
   insights: FinanceInsight[]; intelligenceSummary: { open_findings: number; potential_impact: string }; financialHealth?: FinancialHealth;
   performance: FinancePerformanceMonth[]; performanceDaily: FinancePerformanceDay[];
+  forecast?: FinanceForecast;
 };
 
 export type FinanceOverview = {
@@ -152,18 +176,19 @@ export async function getFinanceOverview(businessId: string) {
 }
 
 export async function getFinanceWorkspace(businessId: string): Promise<FinanceWorkspace> {
-  const [accounts, contacts, obligations, insights, performance] = await Promise.all([
+  const [accounts, contacts, obligations, insights, performance, forecast] = await Promise.all([
     financeRequest<{ data: FinanceAccount[] }>(`businesses/${businessId}/accounts/`),
     financeRequest<{ data: FinanceContact[] }>(`businesses/${businessId}/contacts/`),
     financeRequest<{ data: FinanceObligation[] }>(`businesses/${businessId}/obligations/`),
     financeRequest<{ data: FinanceInsight[]; summary?: { open_findings: number; potential_impact: string }; health?: FinancialHealth }>(`businesses/${businessId}/intelligence/`),
     financeRequest<{ data: FinancePerformanceMonth[]; daily_data?: FinancePerformanceDay[] }>(`businesses/${businessId}/performance/`),
+    financeRequest<{ data: FinanceForecast }>(`businesses/${businessId}/forecast/?horizon_days=30`),
   ]);
   return { accounts: accounts.data, contacts: contacts.data, obligations: obligations.data,
     insights: insights.data,
     intelligenceSummary: insights.summary ?? { open_findings: insights.data.length, potential_impact: '0.00' },
     financialHealth: insights.health,
-    performance: performance.data, performanceDaily: performance.daily_data ?? [] };
+    performance: performance.data, performanceDaily: performance.daily_data ?? [], forecast: forecast.data };
 }
 
 export async function createFinanceContact(businessId: string, input: {
