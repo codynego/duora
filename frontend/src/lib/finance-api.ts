@@ -54,6 +54,12 @@ export type FinanceObligation = {
   affects_performance: boolean;
 };
 
+export type FinanceProduct = {
+  id: string; name: string; sku: string; category: string; description: string;
+  product_type: 'product' | 'service'; selling_price: string; cost_price: string | null;
+  is_active: boolean; status: 'active' | 'archived';
+};
+
 export type FinanceInsight = {
   id: string; severity: 'high' | 'review'; status: string; title: string; detail: string;
   evidence_count: number; source: string; action_url: string; transaction_ids?: string[];
@@ -96,6 +102,7 @@ export type FinancialHealth = {
 
 export type FinanceWorkspace = {
   accounts: FinanceAccount[]; contacts: FinanceContact[]; obligations: FinanceObligation[];
+  products: FinanceProduct[];
   insights: FinanceInsight[]; intelligenceSummary: { open_findings: number; potential_impact: string }; financialHealth?: FinancialHealth;
   performance: FinancePerformanceMonth[]; performanceDaily: FinancePerformanceDay[];
   forecast?: FinanceForecast;
@@ -176,15 +183,16 @@ export async function getFinanceOverview(businessId: string) {
 }
 
 export async function getFinanceWorkspace(businessId: string): Promise<FinanceWorkspace> {
-  const [accounts, contacts, obligations, insights, performance, forecast] = await Promise.all([
+  const [accounts, contacts, obligations, products, insights, performance, forecast] = await Promise.all([
     financeRequest<{ data: FinanceAccount[] }>(`businesses/${businessId}/accounts/`),
     financeRequest<{ data: FinanceContact[] }>(`businesses/${businessId}/contacts/`),
     financeRequest<{ data: FinanceObligation[] }>(`businesses/${businessId}/obligations/`),
+    financeRequest<{ data: FinanceProduct[] }>(`businesses/${businessId}/products/`),
     financeRequest<{ data: FinanceInsight[]; summary?: { open_findings: number; potential_impact: string }; health?: FinancialHealth }>(`businesses/${businessId}/intelligence/`),
     financeRequest<{ data: FinancePerformanceMonth[]; daily_data?: FinancePerformanceDay[] }>(`businesses/${businessId}/performance/`),
     financeRequest<{ data: FinanceForecast }>(`businesses/${businessId}/forecast/?horizon_days=30`),
   ]);
-  return { accounts: accounts.data, contacts: contacts.data, obligations: obligations.data,
+  return { accounts: accounts.data, contacts: contacts.data, obligations: obligations.data, products: products.data,
     insights: insights.data,
     intelligenceSummary: insights.summary ?? { open_findings: insights.data.length, potential_impact: '0.00' },
     financialHealth: insights.health,
@@ -242,8 +250,19 @@ export async function createFinanceTransaction(businessId: string, input: {
   transfer_account?: string | null;
   contact?: string | null;
   obligation?: string | null;
+  line_items?: Array<{ product: string; quantity: string; unit_price: string; discount_amount?: string }>;
 }) {
   const response = await financeRequest<{ data: FinanceTransaction }>(`businesses/${businessId}/transactions/`, {
+    method: 'POST', body: JSON.stringify(input),
+  });
+  return response.data;
+}
+
+export async function createFinanceProduct(businessId: string, input: {
+  name: string; sku?: string; category?: string; description?: string; product_type: 'product' | 'service';
+  selling_price: string; cost_price?: string | null;
+}) {
+  const response = await financeRequest<{ data: FinanceProduct }>(`businesses/${businessId}/products/`, {
     method: 'POST', body: JSON.stringify(input),
   });
   return response.data;

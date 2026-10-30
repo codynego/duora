@@ -18,9 +18,9 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.accounts.emailing import EmailDeliveryError, send_onboarding_email
-from .models import AiUsage, Business, Contact, FinancialAccount, FinancialFinding, Obligation, Transaction, TransactionAudit
+from .models import AiUsage, Business, Contact, FinancialAccount, FinancialFinding, Obligation, Product, Transaction, TransactionAudit
 from .serializers import (BusinessSerializer, ContactSerializer, FinancialAccountSerializer,
-                          ObligationSerializer, TransactionSerializer)
+                          ObligationSerializer, ProductSerializer, TransactionSerializer)
 from .services.balances import recorded_cash_position
 from .services.findings import evaluate_financial_intelligence, update_finding_lifecycle
 from .services.forecasting import ForecastInputError, build_cash_forecast
@@ -228,6 +228,37 @@ class BusinessOverviewView(APIView):
             'transactions': TransactionSerializer(transactions[:100], many=True).data,
             'is_sample': False,
         })
+
+
+class ProductListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, business_id):
+        business = owned_business(request, business_id)
+        if not business:
+            return Response({'detail': 'Business not found.'}, status=status.HTTP_404_NOT_FOUND)
+        return Response({'data': ProductSerializer(Product.objects.filter(business=business), many=True).data})
+
+    def post(self, request, business_id):
+        business = owned_business(request, business_id)
+        if not business:
+            return Response({'detail': 'Business not found.'}, status=status.HTTP_404_NOT_FOUND)
+        serializer = ProductSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        return Response({'data': ProductSerializer(serializer.save(business=business)).data}, status=status.HTTP_201_CREATED)
+
+
+class ProductDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, business_id, product_id):
+        business = owned_business(request, business_id)
+        product = Product.objects.filter(business=business, id=product_id).first() if business else None
+        if not product:
+            return Response({'detail': 'Product not found.'}, status=status.HTTP_404_NOT_FOUND)
+        serializer = ProductSerializer(product, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        return Response({'data': ProductSerializer(serializer.save()).data})
 
 
 class TransactionListView(APIView):

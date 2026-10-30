@@ -3,7 +3,7 @@ from decimal import Decimal
 
 from django.db.models import Sum
 
-from .models import Business, Contact, FinancialAccount, Obligation, Transaction
+from .models import Business, Contact, FinancialAccount, Obligation, Product, Transaction, TransactionLineItem
 from .services.balances import financial_account_balance
 
 
@@ -27,6 +27,15 @@ class BusinessSerializer(serializers.ModelSerializer):
         return value
 
 
+class TransactionLineItemSerializer(serializers.ModelSerializer):
+    product = serializers.PrimaryKeyRelatedField(queryset=Product.objects.all(), required=False, allow_null=True)
+
+    class Meta:
+        model = TransactionLineItem
+        fields = ('id', 'product', 'product_name', 'sku', 'quantity', 'unit_price', 'unit_cost', 'discount_amount', 'line_total')
+        read_only_fields = ('id', 'product_name', 'sku', 'unit_cost', 'line_total')
+
+
 class TransactionSerializer(serializers.ModelSerializer):
     account = serializers.PrimaryKeyRelatedField(queryset=FinancialAccount.objects.all(), required=False, allow_null=True)
     transfer_account = serializers.PrimaryKeyRelatedField(queryset=FinancialAccount.objects.all(), required=False, allow_null=True)
@@ -36,10 +45,11 @@ class TransactionSerializer(serializers.ModelSerializer):
     transfer_account_name = serializers.CharField(source='transfer_account.name', read_only=True, allow_null=True)
     contact_name = serializers.CharField(source='contact.name', read_only=True, allow_null=True)
     obligation_description = serializers.CharField(source='obligation.description', read_only=True, allow_null=True)
+    line_items = TransactionLineItemSerializer(many=True, required=False)
 
     class Meta:
         model = Transaction
-        fields = ('id', 'kind', 'description', 'amount', 'category', 'counterparty', 'account', 'account_name', 'transfer_account', 'transfer_account_name', 'contact', 'contact_name', 'obligation', 'obligation_description', 'occurred_on', 'occurred_at', 'is_voided', 'voided_at', 'void_reason', 'created_at', 'updated_at')
+        fields = ('id', 'kind', 'description', 'amount', 'category', 'counterparty', 'account', 'account_name', 'transfer_account', 'transfer_account_name', 'contact', 'contact_name', 'obligation', 'obligation_description', 'line_items', 'occurred_on', 'occurred_at', 'is_voided', 'voided_at', 'void_reason', 'created_at', 'updated_at')
         read_only_fields = ('id', 'is_voided', 'voided_at', 'void_reason', 'created_at', 'updated_at')
 
     def validate_amount(self, value):
@@ -95,7 +105,46 @@ class TransactionSerializer(serializers.ModelSerializer):
         if contact and ((kind == Transaction.Kind.INCOME and contact.kind != Contact.Kind.CUSTOMER)
                         or (kind == Transaction.Kind.EXPENSE and contact.kind != Contact.Kind.SUPPLIER)):
             raise serializers.ValidationError({'contact': 'Choose a customer for money received or a supplier for money paid.'})
+        line_items = attrs.get('line_items', [])
+        if line_items and kind != Transaction.Kind.INCOME:
+            raise serializers.ValidationError({'line_items': 'Products and services can only be attached to money received.'})
+        if business:
+            for item in line_items:
+                product = item.get('product')
+                if product and product.business_id != business.id:
+                    raise serializers.ValidationError({'line_items': 'Choose products in this business.'})
         return attrs
+
+    def create(self, validated_data):
+        line_items = validated_data.pop('line_items', [])
+        transaction = super().create(validated_data)
+        for item in line_items:
+            product = item.pop('product', None)
+            quantity = item['quantity']
+            unit_price = item['unit_price']
+            discount = item.get('discount_amount') or Decimal('0.00')
+            TransactionLineItem.objects.create(
+                transaction=transaction, product=product,
+                product_name=product.name if product else item.get('product_name', ''),
+                sku=product.sku if product else item.get('sku', ''),
+                quantity=quantity, unit_price=unit_price,
+                unit_cost=product.cost_price if product else item.get('unit_cost'),
+                discount_amount=discount,
+                line_total=(quantity * unit_price) - discount,
+            )
+        return transaction
+
+
+class ProductSerializer(serializers.ModelSerializer):
+    status = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Product
+        fields = ('id', 'name', 'sku', 'category', 'description', 'product_type', 'selling_price', 'cost_price', 'is_active', 'status', 'created_at', 'updated_at')
+        read_only_fields = ('id', 'status', 'created_at', 'updated_at')
+
+    def get_status(self, obj):
+        return 'active' if obj.is_active else 'archived'
 
 class FinancialAccountSerializer(serializers.ModelSerializer):
     balance = serializers.SerializerMethodField()

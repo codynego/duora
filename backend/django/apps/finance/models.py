@@ -122,6 +122,43 @@ class Transaction(models.Model):
         return f'{self.kind}: {self.description}'
 
 
+class Product(models.Model):
+    class Type(models.TextChoices):
+        PRODUCT = 'product', 'Product'
+        SERVICE = 'service', 'Service'
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    business = models.ForeignKey(Business, on_delete=models.CASCADE, related_name='products')
+    name = models.CharField(max_length=120)
+    sku = models.CharField(max_length=60, blank=True)
+    category = models.CharField(max_length=60, blank=True)
+    description = models.TextField(blank=True)
+    product_type = models.CharField(max_length=10, choices=Type.choices, default=Type.PRODUCT)
+    selling_price = models.DecimalField(max_digits=14, decimal_places=2, validators=[MinValueValidator(Decimal('0.00'))])
+    cost_price = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True, validators=[MinValueValidator(Decimal('0.00'))])
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ('name',)
+        constraints = [models.UniqueConstraint(fields=('business', 'sku'), condition=~models.Q(sku=''), name='finance_unique_product_sku')]
+
+
+class TransactionLineItem(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    transaction = models.ForeignKey(Transaction, on_delete=models.CASCADE, related_name='line_items')
+    product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True, blank=True, related_name='transaction_lines')
+    product_name = models.CharField(max_length=120)
+    sku = models.CharField(max_length=60, blank=True)
+    quantity = models.DecimalField(max_digits=12, decimal_places=3, validators=[MinValueValidator(Decimal('0.001'))])
+    unit_price = models.DecimalField(max_digits=14, decimal_places=2, validators=[MinValueValidator(Decimal('0.00'))])
+    unit_cost = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True, validators=[MinValueValidator(Decimal('0.00'))])
+    discount_amount = models.DecimalField(max_digits=14, decimal_places=2, default=0, validators=[MinValueValidator(Decimal('0.00'))])
+    line_total = models.DecimalField(max_digits=14, decimal_places=2, validators=[MinValueValidator(Decimal('0.00'))])
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
 class TransactionAudit(models.Model):
     class Action(models.TextChoices):
         CREATED = 'created', 'Created'
