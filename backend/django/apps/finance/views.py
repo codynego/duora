@@ -260,6 +260,14 @@ class ProductDetailView(APIView):
         serializer.is_valid(raise_exception=True)
         return Response({'data': ProductSerializer(serializer.save()).data})
 
+    def delete(self, request, business_id, product_id):
+        business = owned_business(request, business_id)
+        product = Product.objects.filter(business=business, id=product_id).first() if business else None
+        if not product:
+            return Response({'detail': 'Product not found.'}, status=status.HTTP_404_NOT_FOUND)
+        product.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
 
 class TransactionListView(APIView):
     permission_classes = [IsAuthenticated]

@@ -268,6 +268,20 @@ export async function createFinanceProduct(businessId: string, input: {
   return response.data;
 }
 
+export async function updateFinanceProduct(businessId: string, productId: string, input: Partial<{
+  name: string; sku: string; category: string; description: string; product_type: 'product' | 'service';
+  selling_price: string; cost_price: string | null; is_active: boolean;
+}>) {
+  const response = await financeRequest<{ data: FinanceProduct }>(`businesses/${businessId}/products/${productId}/`, {
+    method: 'PATCH', body: JSON.stringify(input),
+  });
+  return response.data;
+}
+
+export async function deleteFinanceProduct(businessId: string, productId: string) {
+  await financeRequest<unknown>(`businesses/${businessId}/products/${productId}/`, { method: 'DELETE' });
+}
+
 export type TransactionDraft = {
   kind: 'income' | 'expense' | 'transfer' | 'unknown';
   description: string;
