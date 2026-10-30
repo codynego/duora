@@ -5,17 +5,17 @@ import { ArrowRight, Check, ChevronRight, Scale } from 'lucide-react';
 import { breadcrumbSchema, publicPageMetadata, SITE_URL } from '@/lib/seo';
 import { comparisonPages } from '@/lib/comparison-pages';
 
-export function generateStaticParams() { return comparisonPages.map(({ slug }) => ({ competitor: slug })); }
-function getPage(slug: string) { return comparisonPages.find((page) => page.slug === slug); }
+export function generateStaticParams() { return comparisonPages.map(({ slug }) => ({ slug: `dorah-vs-${slug}` })); }
+function getPage(slug: string) { return comparisonPages.find((page) => `dorah-vs-${page.slug}` === slug); }
 
-export async function generateMetadata({ params }: { params: Promise<{ competitor: string }> }): Promise<Metadata> {
-  const page = getPage((await params).competitor);
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const page = getPage((await params).slug);
   if (!page) return {};
   return publicPageMetadata({ title: page.title, description: page.description, path: `/compare/dorah-vs-${page.slug}`, keywords: [`Dorah vs ${page.competitor}`, `${page.competitor} alternative`, 'small business finance software'] });
 }
 
-export default async function ComparisonPage({ params }: { params: Promise<{ competitor: string }> }) {
-  const page = getPage((await params).competitor);
+export default async function ComparisonPage({ params }: { params: Promise<{ slug: string }> }) {
+  const page = getPage((await params).slug);
   if (!page) notFound();
   const path = `/compare/dorah-vs-${page.slug}`;
   const schema = { '@context': 'https://schema.org', '@graph': [
